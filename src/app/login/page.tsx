@@ -21,7 +21,6 @@ export default function LoginPage() {
     }
   };
 
-  
   return (
     
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
@@ -34,7 +33,7 @@ export default function LoginPage() {
             </div>
 
             <nav>
-              <ul className="flex space-x-6 text-gray-700 font-semibold">
+              <ul className="flex space-x-8  text-gray-700 font-semibold">
                 <li>
                   <a href="/about" className="hover:text-blue-950 transition">
                     About Us
@@ -60,7 +59,7 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md"
       >
-        <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">
+        <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">
           Login
         </h2>
 
