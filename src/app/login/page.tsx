@@ -21,21 +21,57 @@ export default function LoginPage() {
     }
   };
 
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+    
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+
+     <header className="fixed top-0 left-0 right-0 flex justify-between items-center bg-white px-20 py-4 ">
+
+            <div className="flex items-center space-x-2">
+              <i className="ri-home-heart-fill text-4xl text-blue-950"></i>
+              <h4 className="text-xl text-black font-semibold">Dorm</h4>
+            </div>
+
+            <nav>
+              <ul className="flex space-x-6 text-gray-700 font-semibold">
+                <li>
+                  <a href="/about" className="hover:text-blue-950 transition">
+                    About Us
+                  </a>
+                </li>
+                <li>
+                  <a href="/contact" className="hover:text-blue-950 transition">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="/list-your-place" className="hover:text-blue-950 transition">
+                    List Your Place
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </header>
+
+      
+
       <form
         onSubmit={handleLogin}
         className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          เข้าสู่ระบบ
+        <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">
+          Login
         </h2>
+
+
+        <h3 className="text-gray-500 mb-5 text-center">Welcome to Dorm</h3>
 
         {errorMsg && <p className="text-red-600 text-sm mb-4">{errorMsg}</p>}
 
         <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            อีเมล
+            Email
           </label>
           <input
             id="email"
@@ -43,32 +79,39 @@ export default function LoginPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="กรอกอีเมล"
+            placeholder="Enter your email"
             required
           />
         </div>
 
         <div className="mb-6">
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            รหัสผ่าน
+            Password
           </label>
           <input
             id="password"
             type="password"
-            className="w-full px-4 py-2 border border-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="กรอกรหัสผ่าน"
+            placeholder="Enter your password"
             required
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          เข้าสู่ระบบ
-        </button>
+          <button
+            type="submit"
+            disabled={!(email && password)} 
+            className={`
+              w-full py-2 rounded-md transition
+              ${email && password 
+                ? 'bg-blue-950 text-white hover:bg-blue-900 cursor-pointer' 
+                : 'bg-gray-400 text-white cursor-not-allowed'
+              }
+            `}
+          >
+            Login
+          </button>
       </form>
     </div>
   );
