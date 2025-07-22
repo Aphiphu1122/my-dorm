@@ -1,45 +1,65 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
-const schema = z.object({
-  firstName: z.string(),
-  lastName: z.string(),
-  email: z.string().email(),
-  phone: z.string(),
-  birthday: z.string(),
-  address: z.string(),
-  nationalId: z.string(),
-  password: z.string().min(6),
+const prisma = new PrismaClient();
+
+// ✅ ตรวจสอบ input โดยใช้ Zod
+const RegisterSchema = z.object({
+  firstName: z.string().min(1, "กรุณาระบุชื่อ"),
+  lastName: z.string().min(1, "กรุณาระบุนามสกุล"),
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+  phone: z.string().min(9, "กรุณาระบุเบอร์โทรให้ครบถ้วน"),
+  birthday: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "วันเกิดไม่ถูกต้อง" }),
+  address: z.string().min(1, "กรุณาระบุที่อยู่"),
+  nationalId: z.string().min(13, "เลขบัตรประชาชนไม่ถูกต้อง"),
+  password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
   confirmPassword: z.string(),
+  supabaseId: z.string().uuid("รูปแบบ User ID ไม่ถูกต้อง"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "รหัสผ่านไม่ตรงกัน",
+  path: ["confirmPassword"],
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const parsed = schema.safeParse(body);
 
-    if (!parsed.success) {
-      return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
+    // ✅ validate body
+    const result = RegisterSchema.safeParse(body);
+    if (!result.success) {
+      const errorMessage = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
+      return new Response(JSON.stringify({ error: errorMessage }), { status: 400 });
     }
 
     const {
-      firstName, lastName, email, phone,
-      birthday, address, nationalId, password,
-    } = parsed.data;
+      firstName,
+      lastName,
+      email,
+      phone,
+      birthday,
+      address,
+      nationalId,
+      password,
+      supabaseId,
+    } = result.data;
 
-    const exists = await db.user.findFirst({
-      where: { OR: [{ email }, { nationalId }] },
-    });
+    // ✅ ตรวจสอบว่า email มีอยู่แล้วหรือยัง
+    const existing = await prisma.profile.findUnique({
+  where: { email },
+});
+if (existing) {
+  return new Response(
+    JSON.stringify({ error: "อีเมลนี้ถูกใช้งานแล้ว" }),
+    { status: 400 }
+  );
+}
 
-    if (exists) {
-      return NextResponse.json({ error: "อีเมลหรือบัตรประชาชนนี้ถูกใช้งานแล้ว" }, { status: 409 });
-    }
-
+    // ✅ เข้ารหัสรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await db.user.create({
+    // ✅ สร้างผู้ใช้
+    const user = await prisma.profile.create({
       data: {
         firstName,
         lastName,
@@ -49,14 +69,15 @@ export async function POST(req: Request) {
         address,
         nationalId,
         password: hashedPassword,
+        userId: supabaseId,
       },
     });
 
-    return NextResponse.json({ message: "ส่งคำขอสมัครเรียบร้อย" });
-
+    return new Response(JSON.stringify({ message: "สมัครสมาชิกสำเร็จ", user }), { status: 201 });
   } catch (error) {
-    const err = error as Error;
-    console.error("❌ API Error:", err.message);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดในระบบ" }, { status: 500 });
+    console.error("Registration error:", error);
+    return new Response(JSON.stringify({ error: "เกิดข้อผิดพลาดภายในระบบ" }), { status: 500 });
+  } finally {
+    await prisma.$disconnect(); // ✅ ปิดการเชื่อมต่อ Prisma
   }
 }
