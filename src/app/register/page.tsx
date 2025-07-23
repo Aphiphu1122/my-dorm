@@ -114,7 +114,7 @@ export default function RegisterPage() {
 
 
      {/* Content */}
-    <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto mt-28 px-4 py-12 gap-10">
+    <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto mt-20 px-4 py-12 gap-10">
       
       {/* Left Side */}
        <div className="md:w-1/2 md:sticky md:top-70 self-start text-center md:text-left space-y-6">
