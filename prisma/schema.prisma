@@ -18,6 +18,7 @@ model profile {
   nationalId String   @unique
   password   String
   userId     String   @unique
+  role       String   @default("user")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

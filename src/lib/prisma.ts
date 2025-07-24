@@ -1,4 +1,5 @@
-import { PrismaClient } from "@/generated/prisma"; // 👈 ตรงกับ output path ที่ generate
+// src/lib/prisma.ts
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

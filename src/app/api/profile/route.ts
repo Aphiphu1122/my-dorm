@@ -1,7 +1,7 @@
-// app/api/profile/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -10,27 +10,57 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // ต้องใช้ Service Role Key เพื่อดึงข้อมูล user ได้
 );
 
-// 🔹 POST: Create user profile
+// ✅ กำหนดชนิดข้อมูลของ body ให้ชัดเจน
+type ProfileData = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  birthday: string;
+  address: string;
+  nationalId: string;
+  password: string; // ✅ เพิ่ม!
+  userId: string;
+  role?: "user" | "admin"; // optional ได้
+};
+
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { email, firstName, lastName, phone, birthday, address, nationalId } = body;
+  const body = (await req.json()) as ProfileData;
+
+  const {
+    email,
+    firstName,
+    lastName,
+    phone,
+    birthday,
+    address,
+    nationalId,
+    password, // ✅ destructure
+    userId,
+    role = "user",
+  } = body;
 
   try {
-    const existing = await prisma.userProfile.findUnique({ where: { email } });
+    const existing = await prisma.profile.findUnique({ where: { email } });
 
     if (existing) {
       return NextResponse.json({ message: "Profile already exists" }, { status: 409 });
     }
 
-    const profile = await prisma.userProfile.create({
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const profile = await prisma.profile.create({
       data: {
         email,
         firstName,
         lastName,
         phone,
-        birthday: birthday ? new Date(birthday) : undefined,
+        birthday: new Date(birthday),
         address,
         nationalId,
+        password: hashedPassword,
+        userId,
+        role,
       },
     });
 
@@ -47,7 +77,7 @@ export async function PUT(req: Request) {
   const { email, ...data } = body;
 
   try {
-    const updated = await prisma.userProfile.update({
+    const updated = await prisma.profile.update({
       where: { email },
       data: {
         ...data,
@@ -81,7 +111,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const profile = await prisma.userProfile.findUnique({
+    const profile = await prisma.profile.findUnique({
       where: { email: user.email! },
     });
 
