@@ -96,6 +96,7 @@ export default function RegisterPage() {
 
   return (
     <>
+     <div className="bg-white min-h-screen">
       {/* Header */}
       <header className="w-full fixed top-0 left-0 right-0 flex justify-between items-center bg-white px-20 py-4 shadow-md z-50">
         <div className="flex items-center space-x-2">
@@ -114,7 +115,7 @@ export default function RegisterPage() {
 
 
      {/* Content */}
-    <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto mt-20 px-4 py-12 gap-10">
+    <div className="flex flex-col md:flex-row w-full  max-w-6xl mx-auto mt-17 px-4 py-12 gap-10">
       
       {/* Left Side */}
        <div className="md:w-1/2 md:sticky md:top-70 self-start text-center md:text-left space-y-6">
@@ -134,7 +135,7 @@ export default function RegisterPage() {
       <div className="md:w-1/2">
         <main className="w-full bg-white p-8 rounded-xl shadow-xl">
           <h1 className="text-3xl font-bold mb-2 text-center text-blue-950">Register</h1>
-          <h3 className="text-gray-500 mb-6 text-center">  Sign in to manage your account</h3>
+          <h3 className="text-gray-500 mb-6 text-center">  Sign up to manage your account</h3>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* ชื่อ */}
@@ -288,6 +289,7 @@ export default function RegisterPage() {
             </button>
           </form>
         </main>
+        </div>
       </div>
     </div>
     </>
