@@ -63,18 +63,29 @@ export default function LoginPage() {
         </nav>
       </header>
 
-      
+      {/* Content */}
+      <div className="flex flex-col md:flex-row justify-center items-center w-full max-w-6xl mt-24 px-4 py-12 gap-10">
+        {/* Left Section */}
+        <div className="md:w-1/2 text-center md:text-left space-y-6">
+          <h1 className="text-4xl font-bold text-blue-950">Welcome to Dorm</h1>
+          <p className="text-gray-600 text-lg">
+            Easy-to-use dormitory management system for everyone
+          </p>
+          <p className="text-gray-700">
+            Don&apos;t have an account?{" "}
+            <a href="/register" className="text-blue-600 hover:underline font-semibold">
+              Sign up here
+            </a>
+          </p>
+        </div>
 
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md"
-      >
-        <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">
-          Login
-        </h2>
-
-
-        <h3 className="text-gray-500 mb-5 text-center">Welcome to Dorm</h3>
+        {/* Login Form */}
+        <form
+          onSubmit={handleLogin}
+          className="bg-white p-8 rounded-lg shadow-lg w-full md:w-1/2 max-w-md"
+        >
+          <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">Login</h2>
+          <h3 className="text-gray-500 mb-5 text-center">Sign in to manage your account</h3>
 
           {errorMsg && <p className="text-red-600 text-sm mb-4">{errorMsg}</p>}
 
@@ -110,18 +121,17 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={!(email && password)} 
-            className={`
-              w-full py-2 rounded-md transition
-              ${email && password 
-                ? 'bg-blue-950 text-white hover:bg-blue-900 cursor-pointer' 
-                : 'bg-gray-400 text-white cursor-not-allowed'
-              }
-            `}
+            disabled={!(email && password)}
+            className={`w-full py-2 rounded-md transition ${
+              email && password
+                ? "bg-blue-950 text-white hover:bg-blue-900 cursor-pointer"
+                : "bg-gray-400 text-white cursor-not-allowed"
+            }`}
           >
             Login
           </button>
         </form>
       </div>
+    </div>
   );
 }
