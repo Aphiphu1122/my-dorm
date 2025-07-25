@@ -7,6 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+model room {
+  id         String      @id @default(uuid())
+  roomNumber String      @unique
+  status     RoomStatus  @default(AVAILABLE)
+
+  tenant     profile?    @relation("UserRoom")
+  tenantId   String?     @unique
+}
+
 model profile {
   id         String   @id @default(uuid())
   firstName  String
@@ -19,6 +34,10 @@ model profile {
   password   String
   userId     String   @unique
   role       String   @default("user")
+
+  room       Room?    @relation("UserRoom", fields: [roomId], references: [id])
+  roomId     String?  @unique
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

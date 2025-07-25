@@ -15,6 +15,7 @@ export const RegisterSchema = z
     password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
     confirmPassword: z.string().min(6, "กรุณายืนยันรหัสผ่าน"),
     userId: z.string().uuid("User ID ต้องเป็น UUID"),
+    roomId: z.string().uuid("กรุณาเลือกห้องที่ว่าง"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "รหัสผ่านไม่ตรงกัน",

@@ -4,7 +4,6 @@ import { z } from "zod";
 
 const prisma = new PrismaClient();
 
-// ✅ สร้าง schema ด้วย Zod
 const RegisterSchema = z
   .object({
     firstName: z.string().min(1, "กรุณาระบุชื่อ"),
@@ -20,6 +19,7 @@ const RegisterSchema = z
     confirmPassword: z.string(),
     userId: z.string().uuid("รูปแบบ userId (UUID) ไม่ถูกต้อง"),
     role: z.enum(["user", "admin"]).default("user"),
+    roomId: z.string().uuid("กรุณาระบุรหัสห้องที่ถูกต้อง"), // ✅ เพิ่มตรงนี้
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "รหัสผ่านไม่ตรงกัน",
@@ -30,7 +30,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // ✅ Validate input
     const result = RegisterSchema.safeParse(body);
     if (!result.success) {
       const errorMessage =
@@ -51,16 +50,25 @@ export async function POST(req: Request) {
       password,
       userId,
       role,
+      roomId,
     } = result.data;
+
+    // ✅ ตรวจสอบว่าห้องมีอยู่ และว่าง
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+    });
+
+    if (!room || room.status !== "AVAILABLE") {
+      return new Response(
+        JSON.stringify({ error: "ไม่สามารถเลือกห้องนี้ได้ (ไม่มีอยู่หรือไม่ว่าง)" }),
+        { status: 400 }
+      );
+    }
 
     // ✅ ตรวจสอบซ้ำ (email / nationalId / userId)
     const existing = await prisma.profile.findFirst({
       where: {
-        OR: [
-          { email },
-          { nationalId },
-          { userId },
-        ],
+        OR: [{ email }, { nationalId }, { userId }],
       },
     });
 
@@ -73,10 +81,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ เข้ารหัสรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ บันทึกลงฐานข้อมูล
+    // ✅ สร้างผู้ใช้
     const user = await prisma.profile.create({
       data: {
         firstName,
@@ -89,6 +96,18 @@ export async function POST(req: Request) {
         password: hashedPassword,
         userId,
         role,
+        room: {
+          connect: { id: roomId },
+        },
+      },
+    });
+
+    // ✅ อัปเดตห้อง
+    await prisma.room.update({
+      where: { id: roomId },
+      data: {
+        status: "OCCUPIED",
+        tenantId: user.id,
       },
     });
 
@@ -103,6 +122,6 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect(); // ปิด connection
+    await prisma.$disconnect();
   }
 }

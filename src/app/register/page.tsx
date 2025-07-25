@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RegisterSchema } from "@/lib/validations/registerSchema";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -20,8 +20,24 @@ export default function RegisterPage() {
   });
 
   const [userId] = useState(uuidv4());
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [availableRooms, setAvailableRooms] = useState<{ id: string; roomNumber: string; status: string }[]>([]);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch("/api/rooms/available");
+        const data = await res.json();
+        if (res.ok) setAvailableRooms(data.rooms || []);
+      } catch (err) {
+        console.error("ไม่สามารถโหลดข้อมูลห้อง:", err);
+      }
+    };
+    fetchRooms();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,22 +48,22 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
-    const result = RegisterSchema.safeParse({ ...form, userId });
+    const result = RegisterSchema.safeParse({ ...form, userId, roomId: selectedRoomId });
 
-    if (!result.success) {
-      const msg = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
-      setError(msg);
-      return;
-    }
+if (!result.success) {
+  const msg = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
+  setError(msg);
+  return;
+}
 
-    try {
-      const res = await fetch("/api/registeruser", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...form, userId }),
-      });
+try {
+  const res = await fetch("/api/registeruser", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ...form, userId, roomId: selectedRoomId }),
+  });
 
       const data = await res.json();
 
@@ -234,14 +250,34 @@ export default function RegisterPage() {
                 />
               </div>
 
+               {/* Fields ทั้งหมดเหมือนเดิม... */}
+
+              {/* 🆕 เลือกห้อง */}
+              <div>
+                <label className="block mb-1 font-medium text-gray-700">เลือกห้อง</label>
+                <select
+                  value={selectedRoomId}
+                  onChange={(e) => setSelectedRoomId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
+                  required
+                >
+                  <option value="">-- เลือกห้อง --</option>
+                  {availableRooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      ห้อง {room.roomNumber} {room.status === "AVAILABLE" ? "🟢 ว่าง" : "🔴 ไม่ว่าง"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {error && <p className="text-red-600 text-sm font-medium">{error}</p>}
               {success && <p className="text-green-600 text-sm font-medium">{success}</p>}
 
               <button
                 type="submit"
-                disabled={!Object.values(form).every((v) => v.trim() !== "")}
+                disabled={!Object.values(form).every((v) => v.trim() !== "") || !selectedRoomId}
                 className={`w-full font-semibold py-2 rounded-lg transition duration-200 ${
-                  Object.values(form).every((v) => v.trim() !== "")
+                  Object.values(form).every((v) => v.trim() !== "") && selectedRoomId
                     ? "bg-blue-950 text-white hover:bg-blue-900"
                     : "bg-gray-400 text-white cursor-not-allowed"
                 }`}
