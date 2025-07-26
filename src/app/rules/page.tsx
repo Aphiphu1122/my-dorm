@@ -6,7 +6,6 @@ export default function RulesContractPage() {
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 py-10 bg-white min-h-screen">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Regulations & Rental Contract</h1>
 
-      {/* Rules & Regulations */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Rules & Regulations</h2>
         <div className="space-y-4 divide-y divide-gray-200">
@@ -40,7 +39,6 @@ export default function RulesContractPage() {
         </div>
       </section>
 
-      {/* Rental Contract */}
       <section>
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Rental Contract</h2>
         <div className="space-y-4 divide-y divide-gray-200">
