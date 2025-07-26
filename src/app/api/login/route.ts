@@ -38,14 +38,18 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
-    // ✅ ตั้ง cookie role
-    response.cookies.set("role", user.role, {
-      path: "/",
-      httpOnly: true,
-      maxAge: 60 * 60 * 24, // 1 วัน
+         response.cookies.set("role", user.role, {
+          path: "/",
+          httpOnly: true,
+          maxAge: 60 * 60 * 24,
+    });
+        response.cookies.set("userId", user.userId, {
+          path: "/",
+          httpOnly: true,
+          maxAge: 60 * 60 * 24,
     });
 
-    return response;
+return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
