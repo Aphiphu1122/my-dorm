@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const url = request.nextUrl;
+  const { pathname } = request.nextUrl;
   const role = request.cookies.get("role")?.value;
 
-  if (url.pathname.startsWith("/admin") && role !== "admin") {
+  // ป้องกันเข้าถึง /admin/* ถ้าไม่ใช่ admin
+  if (pathname.startsWith("/admin") && role !== "admin") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // ป้องกันเข้าถึง /profile ถ้ายังไม่ได้ login (ไม่มี role)
+  if (pathname === "/profile" && !role) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

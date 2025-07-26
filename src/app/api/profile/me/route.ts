@@ -10,7 +10,6 @@ export async function GET() {
     const userId = cookieStore.get("userId")?.value;
     const role = cookieStore.get("role")?.value;
 
-    // ✅ log userId และ role ออกมา
     console.log("🍪 Cookie userId:", userId);
     console.log("🍪 Cookie role:", role);
 

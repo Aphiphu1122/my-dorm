@@ -39,15 +39,18 @@ export async function POST(req: Request) {
     );
 
          response.cookies.set("role", user.role, {
-          path: "/",
-          httpOnly: true,
-          maxAge: 60 * 60 * 24,
-    });
-        response.cookies.set("userId", user.userId, {
-          path: "/",
-          httpOnly: true,
-          maxAge: 60 * 60 * 24,
-    });
+  path: "/",
+  httpOnly: true,
+  maxAge: 60 * 60 * 24,
+  secure: process.env.NODE_ENV === "production", // ✅ เพิ่มตรงนี้
+});
+
+response.cookies.set("userId", user.userId, {
+  path: "/",
+  httpOnly: true,
+  maxAge: 60 * 60 * 24,
+  secure: process.env.NODE_ENV === "production",
+});
 
 return response;
   } catch (error) {
