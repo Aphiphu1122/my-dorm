@@ -14,12 +14,12 @@ enum RoomStatus {
 }
 
 model room {
-  id         String      @id @default(uuid())
-  roomNumber String      @unique
-  status     RoomStatus  @default(AVAILABLE)
+  id         String     @id @default(uuid())
+  roomNumber String     @unique
+  status     RoomStatus @default(AVAILABLE)
 
-  tenant     profile?    @relation("UserRoom")
-  tenantId   String?     @unique
+  tenant   profile? @relation("UserRoom", fields: [tenantId], references: [id])
+  tenantId String?  @unique
 }
 
 model profile {
@@ -35,9 +35,8 @@ model profile {
   userId     String   @unique
   role       String   @default("user")
 
-  room       Room?    @relation("UserRoom", fields: [roomId], references: [id])
-  roomId     String?  @unique
+  room room? @relation("UserRoom")
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
