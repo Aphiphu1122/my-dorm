@@ -129,7 +129,7 @@ export default function RoomManagementPage() {
               className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700"
               onClick={() => handleDeleteRoom(room.id, room.roomNumber)}
             >
-              ลบ
+              Delete
             </button>
 
             <Link href={`/admin/rooms/${room.id}`}>

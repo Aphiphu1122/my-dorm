@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const rooms = await prisma.room.findMany({
+    const rooms = await prisma.room.findMany({
     include: {
       tenant: {
         select: {
@@ -25,7 +25,18 @@ export async function GET() {
     orderBy: { roomNumber: "asc" },
   });
 
-  return NextResponse.json({ rooms });
+    // Sync สถานะให้ status = MAINTENANCE หากมีอยู่, ถ้าไม่ก็เช็คจาก tenant
+  const updatedRooms = rooms.map((room) => ({
+    ...room,
+    status:
+      room.status === "MAINTENANCE"
+        ? "MAINTENANCE"
+        : room.tenant
+        ? "OCCUPIED"
+        : "AVAILABLE",
+  }));
+
+return NextResponse.json({ rooms: updatedRooms });
 }
 
 export async function POST(req: NextRequest) {
