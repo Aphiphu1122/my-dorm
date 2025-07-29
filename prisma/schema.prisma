@@ -14,64 +14,61 @@ enum RoomStatus {
 }
 
 enum MaintenanceStatus {
-  PENDING      
-  IN_PROGRESS   
-  COMPLETED     
+  PENDING
+  IN_PROGRESS
+  COMPLETED
 }
 
 enum MaintenanceCategory {
-  ELECTRICITY     
-  PLUMBING        
-  INTERNET        
-  AIR_CONDITIONER 
-  FURNITURE       
-  OTHER           
+  ELECTRICITY
+  PLUMBING
+  INTERNET
+  AIR_CONDITIONER
+  FURNITURE
+  OTHER
 }
 
 model room {
-  id         String      @id @default(uuid())
-  roomNumber String      @unique
-  status     RoomStatus  @default(AVAILABLE)
-
-  tenant     profile?    @relation("UserRoom", fields: [tenantId], references: [id])
-  tenantId   String?     @unique
-
+  id                  String               @id @default(uuid())
+  roomNumber          String               @unique
+  status              RoomStatus           @default(AVAILABLE)
+  tenantId            String?              @unique
   maintenanceRequests maintenanceRequest[]
+  tenant              profile?             @relation("UserRoom")
 }
 
 model profile {
   id         String   @id @default(uuid())
+  userId     String   @unique
+  email      String   @unique
+  password   String
   firstName  String
   lastName   String
-  email      String   @unique
   phone      String
   birthday   DateTime
   address    String
   nationalId String   @unique
-  password   String
-  userId     String   @unique
+
   role       String   @default("user")
-
-  room       room?    @relation("UserRoom")
-
-  maintenanceRequests maintenanceRequest[]
-
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  roomId     String?  @unique
+  room       room?    @relation("UserRoom", fields: [roomId], references: [id])
+  maintenanceRequests maintenanceRequest[]
 }
 
 model maintenanceRequest {
   id          String              @id @default(uuid())
   description String
-  category    MaintenanceCategory
   imageUrl    String?
   status      MaintenanceStatus   @default(PENDING)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-
-  room        room                @relation(fields: [roomId], references: [id])
   roomId      String
-
-  user        profile             @relation(fields: [userId], references: [id])
   userId      String
+  category    MaintenanceCategory
+  room        room                @relation(fields: [roomId], references: [id])
+  user        profile             @relation(fields: [userId], references: [id])
 }
+

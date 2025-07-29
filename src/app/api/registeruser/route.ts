@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 const RegisterSchema = z
   .object({
@@ -54,7 +52,7 @@ export async function POST(req: Request) {
     } = result.data;
 
     // ✅ ตรวจสอบว่าห้องมีอยู่ และว่าง
-    const room = await prisma.room.findUnique({
+    const room = await db.room.findUnique({
       where: { id: roomId },
     });
 
@@ -66,7 +64,7 @@ export async function POST(req: Request) {
     }
 
     // ✅ ตรวจสอบซ้ำ (email / nationalId / userId)
-    const existing = await prisma.profile.findFirst({
+    const existing = await db.profile.findFirst({
       where: {
         OR: [{ email }, { nationalId }, { userId }],
       },
@@ -84,7 +82,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // ✅ สร้างผู้ใช้
-    const user = await prisma.profile.create({
+    const user = await db.profile.create({
       data: {
         firstName,
         lastName,
@@ -103,7 +101,7 @@ export async function POST(req: Request) {
     });
 
     // ✅ อัปเดตห้อง
-    await prisma.room.update({
+    await db.room.update({
       where: { id: roomId },
       data: {
         status: "OCCUPIED",
@@ -122,6 +120,6 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    await db.$disconnect();
   }
 }

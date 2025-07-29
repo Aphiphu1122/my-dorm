@@ -1,3 +1,4 @@
+// /api/login/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -8,7 +9,6 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    // ✅ ค้นหาผู้ใช้จาก email
     const user = await prisma.profile.findUnique({
       where: { email },
     });
@@ -17,13 +17,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ไม่พบผู้ใช้งาน" }, { status: 404 });
     }
 
-    // ✅ ตรวจสอบรหัสผ่านด้วย bcrypt
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return NextResponse.json({ error: "รหัสผ่านไม่ถูกต้อง" }, { status: 401 });
     }
 
-    // ✅ สร้าง cookie สำหรับ role
     const response = NextResponse.json(
       {
         message: "เข้าสู่ระบบสำเร็จ",
@@ -38,21 +36,22 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
-         response.cookies.set("role", user.role, {
-  path: "/",
-  httpOnly: true,
-  maxAge: 60 * 60 * 24,
-  secure: process.env.NODE_ENV === "production", // ✅ เพิ่มตรงนี้
-});
+    // ✅ ใช้ user.id (primary key) แทน user.userId
+    response.cookies.set("userId", user.id, {
+      path: "/",
+      httpOnly: true,
+      maxAge: 60 * 60 * 24,
+      secure: process.env.NODE_ENV === "production",
+    });
 
-response.cookies.set("userId", user.userId, {
-  path: "/",
-  httpOnly: true,
-  maxAge: 60 * 60 * 24,
-  secure: process.env.NODE_ENV === "production",
-});
+    response.cookies.set("role", user.role, {
+      path: "/",
+      httpOnly: true,
+      maxAge: 60 * 60 * 24,
+      secure: process.env.NODE_ENV === "production",
+    });
 
-return response;
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
