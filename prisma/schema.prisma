@@ -13,6 +13,21 @@ enum RoomStatus {
   MAINTENANCE
 }
 
+enum MaintenanceStatus {
+  PENDING      
+  IN_PROGRESS   
+  COMPLETED     
+}
+
+enum MaintenanceCategory {
+  ELECTRICITY     
+  PLUMBING        
+  INTERNET        
+  AIR_CONDITIONER 
+  FURNITURE       
+  OTHER           
+}
+
 model room {
   id         String      @id @default(uuid())
   roomNumber String      @unique
@@ -20,6 +35,8 @@ model room {
 
   tenant     profile?    @relation("UserRoom", fields: [tenantId], references: [id])
   tenantId   String?     @unique
+
+  maintenanceRequests maintenanceRequest[]
 }
 
 model profile {
@@ -37,6 +54,24 @@ model profile {
 
   room       room?    @relation("UserRoom")
 
+  maintenanceRequests maintenanceRequest[]
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model maintenanceRequest {
+  id          String              @id @default(uuid())
+  description String
+  category    MaintenanceCategory
+  imageUrl    String?
+  status      MaintenanceStatus   @default(PENDING)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  room        room                @relation(fields: [roomId], references: [id])
+  roomId      String
+
+  user        profile             @relation(fields: [userId], references: [id])
+  userId      String
 }
