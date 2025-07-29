@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserIdFromCookie } from '@/lib/auth'
 import { db } from '@/lib/prisma'
 import { v4 as uuidv4 } from 'uuid'
-import { uploadImageToStorage } from '@/lib/upload'
+import { uploadImageToStorage } from '@/lib/uploadImageToStorage'
 import { MaintenanceCategory } from '@prisma/client' // ✅ ต้องเพิ่ม
 
 export async function POST(req: NextRequest) {
