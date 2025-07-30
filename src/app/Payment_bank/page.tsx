@@ -72,7 +72,9 @@ export default function PaymentPage() {
             {bankAccounts.map((account) => (
               <div
                 key={account.id}
-                className="flex flex-wrap md:flex-nowrap items-center justify-between py-4 gap-4"
+                className="flex flex-wrap md:flex-nowrap items-center justify-between py-4 gap-4
+                  transform transition-transform duration-200 ease-in-out
+                  hover:scale-105 hover:shadow-lg rounded-md"
               >
                 <div className="flex items-center space-x-4 min-w-0 flex-1">
                   <img

@@ -83,7 +83,7 @@ export default function MaintenancePage() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl mx-auto p-6 bg-white">
-        <h1 className="text-2xl font-bold ">Repair Requests</h1>
+        <h1 className="text-2xl font-bold mb-">Repair Requests</h1>
         <p className="text-gray-600 mb-6">Submit and track your repair requests</p>
 
         {/* Submit Form */}
@@ -157,14 +157,15 @@ export default function MaintenancePage() {
 
       <div className="flex justify-end">
           <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className={`bg-[#0F3659] text-white px-4 py-2 rounded ${
-              loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-90'
-            }`}
-          >
-            {loading ? 'Submitting...' : 'Submit Request'}
-          </button>
+          onClick={handleSubmit}
+          disabled={loading}
+          className={`bg-[#0F3659] text-white px-4 py-2 rounded 
+            transform transition-transform duration-200 ease-in-out
+            hover:scale-105
+            ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-90'}`}
+        >
+          {loading ? 'Submitting...' : 'Submit Request'}
+        </button>
         </div>
       </div>
 
