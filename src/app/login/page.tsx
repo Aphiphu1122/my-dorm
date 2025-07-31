@@ -1,13 +1,17 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AboutUsPage from "@/components/about";
+import ContactPage from "@/components/contact"; 
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -15,35 +19,24 @@ export default function LoginPage() {
 
     try {
       const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-    "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-      credentials: "include", // ✅ สำคัญมาก
-    });
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(data.error || "เข้าสู่ระบบไม่สำเร็จ");
+        setErrorMsg(data.error || "Login failed");
         return;
       }
 
-      // ✅ ตรวจสอบ role จาก response
       const role = data.user?.role || "user";
+      router.push(role === "admin" ? "/admin" : "/profile");
 
-      if (role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/profile");
-      }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setErrorMsg(err.message);
-      } else {
-        setErrorMsg("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
-      }
+      setErrorMsg(err instanceof Error ? err.message : "An error occurred during login");
     }
   };
 
@@ -57,9 +50,22 @@ export default function LoginPage() {
         </div>
         <nav>
           <ul className="flex space-x-8 text-gray-700 font-semibold">
-            <li><a href="/about" className="hover:text-blue-950 transition">About Us</a></li>
-            <li><a href="/contact" className="hover:text-blue-950 transition">Contact</a></li>
-            <li><a href="/list-your-place" className="hover:text-blue-950 transition">List Your Place</a></li>
+            <li>
+              <button
+                onClick={() => setShowAboutModal(true)}
+                className="hover:text-blue-950 transition"
+              >
+                About Us
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="hover:text-blue-950 transition"
+              >
+                Contact
+              </button>
+            </li>
           </ul>
         </nav>
       </header>
@@ -74,7 +80,10 @@ export default function LoginPage() {
           </p>
           <p className="text-gray-700">
             Don&apos;t have an account?{" "}
-            <a href="/register" className="text-blue-600 hover:underline font-semibold">
+            <a
+              href="/register"
+              className="text-blue-600 hover:underline font-semibold"
+            >
               Sign up here
             </a>
           </p>
@@ -85,10 +94,16 @@ export default function LoginPage() {
           onSubmit={handleLogin}
           className="bg-white p-8 rounded-lg shadow-lg w-full md:w-1/2 max-w-md"
         >
-          <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">Login</h2>
-          <h3 className="text-gray-500 mb-5 text-center">Sign in to manage your account</h3>
+          <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">
+            Login
+          </h2>
+          <h3 className="text-gray-500 mb-5 text-center">
+            Sign in to manage your account
+          </h3>
 
-          {errorMsg && <p className="text-red-600 text-sm mb-4">{errorMsg}</p>}
+          {errorMsg && (
+            <p className="text-red-600 text-sm mb-4">{errorMsg}</p>
+          )}
 
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -133,6 +148,50 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
+
+      {/* Modal: About Us */}
+      {showAboutModal && (
+        <div
+          className="fixed inset-0 bg-white bg-opacity-70 flex justify-center items-start pt-20 z-50 overflow-auto"
+          onClick={() => setShowAboutModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-3xl w-full mx-4 shadow-lg relative max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowAboutModal(false)}
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-3xl font-bold"
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+            <AboutUsPage />
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Contact */}
+      {showContactModal && (
+        <div
+          className="fixed inset-0 bg-white bg-opacity-70 flex justify-center items-start pt-20 z-50 overflow-auto"
+          onClick={() => setShowContactModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-3xl w-full mx-4 shadow-lg relative max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowContactModal(false)}
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-3xl font-bold"
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+            <ContactPage />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

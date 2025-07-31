@@ -17,6 +17,7 @@
     "cloudinary": "^2.7.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "keen-slider": "^6.8.6",
     "next": "15.4.2",
     "react": "19.1.0",
     "react-datepicker": "^8.4.0",
