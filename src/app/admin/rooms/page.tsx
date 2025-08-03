@@ -31,16 +31,19 @@ export default function RoomManagementPage() {
       setLoading(true);
       const res = await fetch("/api/admin/rooms", { credentials: "include" });
       const data = await res.json();
+      console.log("📦 rooms response:", data); // ตรวจสอบว่ามี rooms จริงไหม
 
+      // ป้องกัน error ถ้า data.rooms เป็น undefined
       if (Array.isArray(data.rooms)) {
         setRooms(data.rooms);
       } else {
         console.warn("⚠️ API ไม่ได้ส่ง rooms เป็น array:", data);
-        setRooms([]);
+        setRooms([]); // fallback เป็น array ว่าง
       }
     } catch (err) {
       console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
       toast.error("โหลดข้อมูลห้องล้มเหลว");
+      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,10 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+<<<<<<< HEAD
+=======
+  // เพิ่ม state สำหรับ modal
+>>>>>>> 5d40da917da510b1dc3daacae3b41b1fa6cc8096
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
@@ -55,20 +59,20 @@ export default function RegisterPage() {
 
     const result = RegisterSchema.safeParse({ ...form, userId, roomId: selectedRoomId });
 
-if (!result.success) {
-  const msg = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
-  setError(msg);
-  return;
-}
+    if (!result.success) {
+      const msg = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
+      setError(msg);
+      return;
+    }
 
-try {
-  const res = await fetch("/api/registeruser", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ ...form, userId, roomId: selectedRoomId }),
-  });
+    try {
+      const res = await fetch("/api/registeruser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...form, userId, roomId: selectedRoomId }),
+      });
 
       const data = await res.json();
 
