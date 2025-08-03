@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
@@ -27,18 +28,29 @@ export default function RoomManagementPage() {
 
   const fetchRooms = async () => {
     try {
+      setLoading(true);
       const res = await fetch("/api/admin/rooms", { credentials: "include" });
       const data = await res.json();
-      setRooms(data.rooms);
+
+      if (Array.isArray(data.rooms)) {
+        setRooms(data.rooms);
+      } else {
+        console.warn("⚠️ API ไม่ได้ส่ง rooms เป็น array:", data);
+        setRooms([]);
+      }
     } catch (err) {
-      console.error("โหลดข้อมูลห้องล้มเหลว:", err);
+      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
+      toast.error("โหลดข้อมูลห้องล้มเหลว");
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddRoom = async () => {
-    if (!newRoomNumber.trim()) return alert("กรุณากรอกหมายเลขห้อง");
+    if (!newRoomNumber.trim()) {
+      toast.error("กรุณากรอกหมายเลขห้อง");
+      return;
+    }
 
     const res = await fetch("/api/admin/rooms", {
       method: "POST",
@@ -49,10 +61,11 @@ export default function RoomManagementPage() {
 
     if (res.ok) {
       setNewRoomNumber("");
+      toast.success("เพิ่มห้องสำเร็จ");
       fetchRooms();
     } else {
       const data = await res.json();
-      alert(`ไม่สามารถเพิ่มห้องได้: ${data.error}`);
+      toast.error(`ไม่สามารถเพิ่มห้องได้: ${data.error}`);
     }
   };
 
@@ -66,10 +79,11 @@ export default function RoomManagementPage() {
     });
 
     if (res.ok) {
+      toast.success(`ลบห้อง ${roomNumber} สำเร็จ`);
       fetchRooms();
     } else {
       const data = await res.json();
-      alert(`ลบห้องไม่สำเร็จ: ${data.error}`);
+      toast.error(`ลบห้องไม่สำเร็จ: ${data.error}`);
     }
   };
 
@@ -82,17 +96,18 @@ export default function RoomManagementPage() {
     });
 
     if (res.ok) {
+      toast.success("อัปเดตสถานะเรียบร้อย");
       fetchRooms();
     } else {
       const data = await res.json();
-      alert(`อัปเดตสถานะไม่สำเร็จ: ${data.error}`);
+      toast.error(`อัปเดตสถานะไม่สำเร็จ: ${data.error}`);
     }
   };
 
-  if (loading) return <p className="p-6">กำลังโหลดข้อมูล...</p>;
-
   return (
     <div className="p-6">
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">All Rooms</h1>
         <div className="flex gap-2">
@@ -112,52 +127,58 @@ export default function RoomManagementPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
-        {rooms.map((room) => (
-          <div
-            key={room.id}
-            className={`rounded p-4 text-center relative ${
-              room.status === "OCCUPIED"
-                ? "bg-green-400 text-white"
-                : room.status === "MAINTENANCE"
-                ? "bg-yellow-400 text-white"
-                : "bg-gray-300 text-gray-800"
-            }`}
-          >
-            {/* 🔴 ปุ่มลบ */}
-            <button
-              className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700"
-              onClick={() => handleDeleteRoom(room.id, room.roomNumber)}
+      {loading ? (
+        <div className="flex justify-center items-center p-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-900 border-solid border-b-transparent"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-5 gap-4">
+          {rooms.map((room) => (
+            <div
+              key={room.id}
+              className={`rounded p-4 text-center relative ${
+                room.status === "OCCUPIED"
+                  ? "bg-green-400 text-white"
+                  : room.status === "MAINTENANCE"
+                  ? "bg-yellow-400 text-white"
+                  : "bg-gray-300 text-gray-800"
+              }`}
             >
-              Delete
-            </button>
+              <button
+                className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700"
+                onClick={() => handleDeleteRoom(room.id, room.roomNumber)}
+              >
+                Delete
+              </button>
 
-            <Link href={`/admin/rooms/${room.id}`}>
-              <div className="font-bold text-lg cursor-pointer">{room.roomNumber}</div>
-            </Link>
-            <div className="text-sm mt-1">
-              สถานะ:{" "}
-              {room.status === "AVAILABLE"
-                ? "ว่าง"
-                : room.status === "OCCUPIED"
-                ? "มีผู้เช่า"
-                : "กำลังซ่อม"}
+              <Link href={`/admin/rooms/${room.id}`}>
+                <div className="font-bold text-lg cursor-pointer">{room.roomNumber}</div>
+              </Link>
+
+              <div className="text-sm mt-1">
+                สถานะ:{" "}
+                {room.status === "AVAILABLE"
+                  ? "ว่าง"
+                  : room.status === "OCCUPIED"
+                  ? "มีผู้เช่า"
+                  : "กำลังซ่อม"}
+              </div>
+
+              <select
+                className="mt-2 text-black p-1 rounded"
+                value={room.status}
+                onChange={(e) =>
+                  handleStatusChange(room.id, e.target.value as RoomStatus)
+                }
+              >
+                <option value="AVAILABLE">ว่าง</option>
+                <option value="OCCUPIED">มีผู้เช่า</option>
+                <option value="MAINTENANCE">กำลังซ่อม</option>
+              </select>
             </div>
-
-            <select
-              className="mt-2 text-black p-1 rounded"
-              value={room.status}
-              onChange={(e) =>
-                handleStatusChange(room.id, e.target.value as RoomStatus)
-              }
-            >
-              <option value="AVAILABLE">ว่าง</option>
-              <option value="OCCUPIED">มีผู้เช่า</option>
-              <option value="MAINTENANCE">กำลังซ่อม</option>
-            </select>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

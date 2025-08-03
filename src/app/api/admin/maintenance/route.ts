@@ -1,38 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
-import { checkAdminAuth } from "@/lib/authMiddleware";
+import { cookies } from "next/headers";
 
-export async function GET(_req: NextRequest) {
-  // ✅ 1. ตรวจสอบสิทธิ์ว่าเป็น admin หรือไม่
-  const userIdOrResponse = await checkAdminAuth();
-  if (userIdOrResponse instanceof NextResponse) return userIdOrResponse;
-
+export async function GET() {
   try {
-    // ✅ 2. ดึงรายการแจ้งซ่อมทั้งหมด พร้อมข้อมูลห้องและผู้แจ้ง
-    const requests = await db.maintenanceRequest.findMany({
+    // ✅ ตรวจสอบว่าเป็นแอดมินจาก cookie
+    const cookieStore = await cookies();
+    const role = cookieStore.get("role")?.value;
+
+    if (role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // ✅ ดึงรายการแจ้งซ่อม (เรียงล่าสุดก่อน)
+    const maintenanceRequests = await db.maintenanceRequest.findMany({
       orderBy: { createdAt: "desc" },
-      include: {
+      select: {
+        id: true,
+        description: true,
+        status: true,
+        category: true,
+        createdAt: true,
+        updatedAt: true,
         room: {
           select: {
-            id: true,
             roomNumber: true,
-            status: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
           },
         },
       },
     });
 
-    // ✅ 3. ส่งกลับข้อมูล
-    return NextResponse.json({ requests });
+    return NextResponse.json({ maintenanceRequests });
   } catch (err) {
     console.error("[GET /api/admin/maintenance]", err);
     return NextResponse.json(

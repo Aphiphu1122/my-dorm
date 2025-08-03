@@ -17,6 +17,7 @@ enum MaintenanceStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  CANCLE
 }
 
 enum MaintenanceCategory {
