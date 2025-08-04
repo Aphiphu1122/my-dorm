@@ -29,6 +29,11 @@ enum MaintenanceCategory {
   OTHER
 }
 
+enum BillStatus {
+  UNPAID
+  PAID
+}
+
 model room {
   id                  String               @id @default(uuid())
   roomNumber          String               @unique
@@ -36,6 +41,8 @@ model room {
   tenantId            String?              @unique
   maintenanceRequests maintenanceRequest[]
   tenant              profile?             @relation("UserRoom")
+
+  bills               bill[]               @relation("RoomBills")
 }
 
 model profile {
@@ -57,6 +64,8 @@ model profile {
   roomId     String?  @unique
   room       room?    @relation("UserRoom", fields: [roomId], references: [id])
   maintenanceRequests maintenanceRequest[]
+
+  bills      bill[]   @relation("TenantBills")
 }
 
 model maintenanceRequest {
@@ -73,3 +82,26 @@ model maintenanceRequest {
   user        profile             @relation(fields: [userId], references: [id])
 }
 
+model bill {
+  id             String     @id @default(uuid())
+  billingMonth   DateTime
+  rentAmount     Float
+  waterUnit      Float
+  waterRate      Float
+  electricUnit   Float
+  electricRate   Float
+  totalAmount    Float
+  status         BillStatus @default(UNPAID)
+
+  paymentSlipUrl String?
+  paymentDate    DateTime?
+
+  roomId         String
+  tenantId       String
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  room           room       @relation("RoomBills", fields: [roomId], references: [id])     
+  tenant         profile    @relation("TenantBills", fields: [tenantId], references: [id]) 
+}

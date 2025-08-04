@@ -79,8 +79,4 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   );
 };
 
-<<<<<<< HEAD
 export default Sidebar;
-=======
-export default Sidebar;
->>>>>>> 5d40da917da510b1dc3daacae3b41b1fa6cc8096

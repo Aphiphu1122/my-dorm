@@ -1,10 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-<<<<<<< HEAD
 import Image from 'next/image';
-=======
->>>>>>> 5d40da917da510b1dc3daacae3b41b1fa6cc8096
 import 'remixicon/fonts/remixicon.css';
 
 const images = [
@@ -36,19 +33,12 @@ export default function AboutUsPage() {
       <div className="flex flex-col md:flex-row items-center max-w-7xl mx-auto gap-10">
         {/* Image carousel */}
         <div className="relative w-full md:w-[60%] h-[400px] rounded-xl overflow-hidden shadow-lg">
-<<<<<<< HEAD
           <Image
             src={images[current]}
             alt={`Dorm image ${current + 1}`}
             fill
             className="object-cover transition-all duration-500 rounded-xl"
             sizes="(max-width: 768px) 100vw, 60vw"
-=======
-          <img
-            src={images[current]}
-            alt={`Dorm image ${current + 1}`}
-            className="w-full h-full object-cover transition-all duration-500"
->>>>>>> 5d40da917da510b1dc3daacae3b41b1fa6cc8096
           />
           <button
             onClick={goPrev}

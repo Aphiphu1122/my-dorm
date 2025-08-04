@@ -33,7 +33,7 @@ export default function LoginPage() {
       }
 
       const role = data.user?.role || "user";
-      router.push(role === "admin" ? "/admin" : "/profile");
+      router.push(role === "admin" ? "/admin" : "/home");
 
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "An error occurred during login");
