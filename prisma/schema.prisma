@@ -42,7 +42,7 @@ model room {
   maintenanceRequests maintenanceRequest[]
   tenant              profile?             @relation("UserRoom")
 
-  bills               bill[]               @relation("RoomBills")
+  bills bill[] @relation("RoomBills")
 }
 
 model profile {
@@ -57,15 +57,15 @@ model profile {
   address    String
   nationalId String   @unique
 
-  role       String   @default("user")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  roomId     String?  @unique
-  room       room?    @relation("UserRoom", fields: [roomId], references: [id])
+  roomId              String?              @unique
+  room                room?                @relation("UserRoom", fields: [roomId], references: [id])
   maintenanceRequests maintenanceRequest[]
 
-  bills      bill[]   @relation("TenantBills")
+  bills bill[] @relation("TenantBills")
 }
 
 model maintenanceRequest {
@@ -83,25 +83,25 @@ model maintenanceRequest {
 }
 
 model bill {
-  id             String     @id @default(uuid())
-  billingMonth   DateTime
-  rentAmount     Float
-  waterUnit      Float
-  waterRate      Float
-  electricUnit   Float
-  electricRate   Float
-  totalAmount    Float
-  status         BillStatus @default(UNPAID)
+  id           String     @id @default(uuid())
+  tenantId     String
+  roomId       String
+  billingMonth DateTime
+  rentAmount   Float
+  waterUnit    Float
+  waterRate    Float
+  electricUnit Float
+  electricRate Float
+  totalAmount  Float
+  status       BillStatus @default(UNPAID)
 
   paymentSlipUrl String?
   paymentDate    DateTime?
+  transactionRef String?
 
-  roomId         String
-  tenantId       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-
-  room           room       @relation("RoomBills", fields: [roomId], references: [id])     
-  tenant         profile    @relation("TenantBills", fields: [tenantId], references: [id]) 
+  tenant profile @relation("TenantBills", fields: [tenantId], references: [id])
+  room   room    @relation("RoomBills", fields: [roomId], references: [id])
 }

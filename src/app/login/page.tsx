@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import AboutUsPage from "@/components/about";
-import ContactPage from "@/components/contact"; 
+import ContactPage from "@/components/contact";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,8 +34,10 @@ export default function LoginPage() {
         return;
       }
 
+      toast.success("เข้าสู่ระบบสำเร็จ");
+
       const role = data.user?.role || "user";
-      router.push(role === "admin" ? "/admin" : "/home");
+      router.push(role === "admin" ? "/admin/rooms" : "/home");
 
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "An error occurred during login");

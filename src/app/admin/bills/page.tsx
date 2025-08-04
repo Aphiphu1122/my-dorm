@@ -76,7 +76,7 @@ export default function AdminBillListPage() {
                 <th className="py-2 px-4 border-b">ผู้เช่า</th>
                 <th className="py-2 px-4 border-b">รวมยอด</th>
                 <th className="py-2 px-4 border-b">สถานะ</th>
-                <th className="py-2 px-4 border-b text-center">ดูรายละเอียด</th>
+                <th className="py-2 px-4 border-b text-center">รายละเอียดบิล</th>
               </tr>
             </thead>
             <tbody>
@@ -99,7 +99,7 @@ export default function AdminBillListPage() {
                   </td>
                   <td className="py-2 px-4 border-b text-center">
                     <Link href={`/admin/bills/${bill.id}`}>
-                      <button className="text-blue-600 hover:underline">ดู</button>
+                      <button className="text-blue-400 hover:underline">ดูรายละเอียด</button>
                     </Link>
                   </td>
                 </tr>

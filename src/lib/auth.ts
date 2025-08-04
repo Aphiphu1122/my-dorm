@@ -29,3 +29,14 @@ export async function checkAdminAuthOrReject(): Promise<string | NextResponse> {
 
   return userId
 }
+
+export async function checkUserAuthOrReject(): Promise<string | NextResponse> {
+  const userId = await getUserIdFromCookie()
+  const role = await getRoleFromCookie()
+
+  if (!userId || role !== 'user') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  return userId
+}

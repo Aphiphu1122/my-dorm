@@ -1,35 +1,68 @@
-import { db } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { getRoleFromCookie } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/prisma'
+import { checkAdminAuthOrReject } from '@/lib/auth'
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const role = await getRoleFromCookie();
-  if (role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+export const dynamic = "force-dynamic";
 
-  const bill = await db.bill.findUnique({
-    where: { id: params.id },
-    include: {
-      tenant: { select: { firstName: true, lastName: true } },
-      room: { select: { roomNumber: true } },
-    },
-  });
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const authResult = await checkAdminAuthOrReject()
+  if (authResult instanceof NextResponse) return authResult
 
-  if (!bill) return NextResponse.json(null, { status: 404 });
-  return NextResponse.json(bill);
+  const billId = params.id
+
+  try {
+    const bill = await db.bill.findUnique({
+      where: { id: billId },
+      select: {
+        id: true,
+        billingMonth: true,
+        rentAmount: true,
+        waterUnit: true,
+        waterRate: true,
+        electricUnit: true,
+        electricRate: true,
+        totalAmount: true,
+        status: true,
+        paymentSlipUrl: true,
+        paymentDate: true,
+        transactionRef: true,
+        tenant: { select: { firstName: true, lastName: true } },
+        room: { select: { roomNumber: true } },
+      },
+    });
+
+    if (!bill) {
+      return NextResponse.json({ error: 'ไม่พบข้อมูลบิล' }, { status: 404 });
+    }
+
+    return NextResponse.json(bill);
+  } catch (err) {
+    console.error('Error fetching bill:', err);
+    return NextResponse.json({ error: 'เกิดข้อผิดพลาด' }, { status: 500 });
+  }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const role = await getRoleFromCookie();
-  if (role !== "admin") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const authResult = await checkAdminAuthOrReject()
+  if (authResult instanceof NextResponse) return authResult
 
-  const body = await req.json();
-  const updated = await db.bill.update({
-    where: { id: params.id },
-    data: {
-      status: body.status,
-      paymentDate: body.status === "PAID" ? new Date() : null,
-    },
-  });
+  const billId = params.id
 
-  return NextResponse.json(updated);
+  try {
+    const { status } = await req.json()
+
+    if (!status || !["PAID", "UNPAID"].includes(status)) {
+      return NextResponse.json({ error: 'สถานะไม่ถูกต้อง' }, { status: 400 })
+    }
+
+    const updated = await db.bill.update({
+      where: { id: billId },
+      data: { status },
+    })
+
+    return NextResponse.json({ success: true, bill: updated })
+  } catch (err) {
+    console.error("❌ Error updating bill status:", err)
+    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ' }, { status: 500 })
+  }
 }

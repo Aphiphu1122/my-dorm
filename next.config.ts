@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     domains: [
       "s.isanook.com",
       "bcdn.renthub.in.th",
-      "res.cloudinary.com", // ✅ เพิ่ม domain ของ Cloudinary ตรงนี้
+      "res.cloudinary.com",
     ],
   },
 };
