@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { getUserIdFromCookie } from "@/lib/auth";
 import { z } from "zod";
+import { BillStatus } from "@prisma/client";
 
 // ✅ PATCH: schema สำหรับแนบสลิป
 const patchSchema = z.object({
@@ -74,7 +75,7 @@ export async function PATCH(
     }
 
     const { paymentSlipUrl, paymentDate, transactionRef } = parsed.data;
-    console.log("🔎 PATCH received:", { paymentSlipUrl, paymentDate, transactionRef }); // ✅ ตรวจค่าที่ได้มาจริง
+    console.log("🔎 PATCH received:", { paymentSlipUrl, paymentDate, transactionRef });
 
 
     const updated = await db.bill.update({
@@ -83,6 +84,7 @@ export async function PATCH(
         paymentSlipUrl: paymentSlipUrl ?? current.paymentSlipUrl,
         paymentDate: paymentDate ? new Date(paymentDate) : current.paymentDate,
         transactionRef: transactionRef ?? current.transactionRef,
+        status: BillStatus.PENDING_APPROVAL, // ✅ อัปเดตสถานะใหม่
       },
     });
 

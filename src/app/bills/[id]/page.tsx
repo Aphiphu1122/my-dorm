@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
+import Link from "next/link";
+
+type BillStatus = "PAID" | "UNPAID" | "PENDING_APPROVAL";
 
 type Bill = {
   id: string;
@@ -14,7 +17,7 @@ type Bill = {
   electricUnit: number;
   electricRate: number;
   totalAmount: number;
-  status: "PAID" | "UNPAID";
+  status: BillStatus;
   paymentSlipUrl?: string;
   paymentDate?: string;
   transactionRef?: string;
@@ -49,7 +52,7 @@ export default function BillDetailPage() {
     fetchBill();
   }, [billId]);
 
-    const handleUpload = async () => {
+  const handleUpload = async () => {
     if (!bill) return;
     if (!slipFile) return toast.error("กรุณาเลือกสลิปก่อน");
     if (!transactionRef) return toast.error("กรุณากรอกเลขอ้างอิงการโอน");
@@ -66,8 +69,7 @@ export default function BillDetailPage() {
 
       if (res.ok) {
         toast.success("แนบสลิปสำเร็จ");
-
-        router.push("/bills");
+        router.refresh(); // ใช้ refresh แทน push
       } else {
         const errorData = await res.json();
         toast.error("อัปโหลดไม่สำเร็จ: " + (errorData.error || "เกิดข้อผิดพลาด"));
@@ -83,6 +85,12 @@ export default function BillDetailPage() {
 
   const waterTotal = bill.waterUnit * bill.waterRate;
   const electricTotal = bill.electricUnit * bill.electricRate;
+
+  const statusDisplay = {
+    UNPAID: { text: "❌ ยังไม่ชำระ", color: "text-red-600" },
+    PENDING_APPROVAL: { text: "⏳ รอตรวจสอบ", color: "text-yellow-600" },
+    PAID: { text: "✅ ชำระแล้ว", color: "text-green-600" },
+  };
 
   return (
     <div className="max-w-2xl mx-auto mt-8 p-6 bg-white text-black rounded shadow">
@@ -100,8 +108,8 @@ export default function BillDetailPage() {
         </div>
         <div className="flex justify-between">
           <span>สถานะ</span>
-          <span className={bill.status === "PAID" ? "text-green-600" : "text-red-600"}>
-            {bill.status === "PAID" ? "✅ ชำระแล้ว" : "❌ ยังไม่ชำระ"}
+          <span className={statusDisplay[bill.status].color}>
+            {statusDisplay[bill.status].text}
           </span>
         </div>
       </section>
@@ -125,43 +133,77 @@ export default function BillDetailPage() {
         </div>
       </section>
 
-      <section className="mb-4">
-        <label className="block font-medium mb-1 text-blue-800">เลขอ้างอิงการโอน (Transaction Ref)</label>
-        <input
-          type="text"
-          value={transactionRef}
-          onChange={(e) => setTransactionRef(e.target.value)}
-          className="w-full p-2 border rounded"
-          placeholder="เช่น 0123456789"
-        />
-      </section>
-
-      {bill.paymentSlipUrl && (
-        <div className="mb-4">
-          <label className="block font-medium mb-1 text-blue-800">สลิปที่แนบไว้</label>
+      {/* PENDING_APPROVAL */}
+      {bill.status === "PENDING_APPROVAL" && bill.paymentSlipUrl && (
+        <div className="mt-6">
+          <p className="text-yellow-600 font-semibold mb-2">
+            ⏳ ระบบได้รับสลิปของคุณแล้ว รอการตรวจสอบจากเจ้าของหอพัก
+          </p>
           <Image
             src={bill.paymentSlipUrl}
             alt="slip"
             width={400}
             height={250}
             className="rounded border"
-            unoptimized // ✅ ถ้าลิงก์ไม่อยู่ใน domains ของ next.config.js
+            unoptimized
           />
         </div>
       )}
 
-      <section className="mt-4">
-        <label className="block font-medium mb-1 text-blue-800">แนบสลิปโอนเงิน</label>
-        <div className="flex items-center gap-2">
-          <input type="file" onChange={(e) => setSlipFile(e.target.files?.[0] || null)} />
-          <button
-            onClick={handleUpload}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      {/* PAID */}
+      {bill.status === "PAID" && (
+        <div className="mt-6">
+          <p className="text-green-600 font-semibold mb-2">🧾 ชำระเงินเรียบร้อยแล้ว</p>
+          {bill.paymentSlipUrl && (
+            <Image
+              src={bill.paymentSlipUrl}
+              alt="slip"
+              width={400}
+              height={250}
+              className="rounded border mb-2"
+              unoptimized
+            />
+          )}
+          <Link
+            href={`/bills/${bill.id}/receipt`}
+            target="_blank"
+            className="text-blue-600 underline"
           >
-            📤 Upload
-          </button>
+            ดูใบเสร็จ (PDF)
+          </Link>
         </div>
-      </section>
+      )}
+
+      {/* UNPAID */}
+      {bill.status === "UNPAID" && (
+        <>
+          <section className="mb-4">
+            <label className="block font-medium mb-1 text-blue-800">
+              เลขอ้างอิงการโอน (Transaction Ref)
+            </label>
+            <input
+              type="text"
+              value={transactionRef}
+              onChange={(e) => setTransactionRef(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="เช่น 0123456789"
+            />
+          </section>
+
+          <section className="mt-4">
+            <label className="block font-medium mb-1 text-blue-800">แนบสลิปโอนเงิน</label>
+            <div className="flex items-center gap-2">
+              <input type="file" onChange={(e) => setSlipFile(e.target.files?.[0] || null)} />
+              <button
+                onClick={handleUpload}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                📤 Upload
+              </button>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

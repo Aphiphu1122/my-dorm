@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 
+type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
+
 type Bill = {
   id: string;
   billingMonth: string;
@@ -14,7 +16,7 @@ type Bill = {
   electricUnit: number;
   electricRate: number;
   totalAmount: number;
-  status: 'PAID' | 'UNPAID';
+  status: BillStatus;
   paymentSlipUrl?: string;
   paymentDate?: string;
   transactionRef?: string;
@@ -33,7 +35,6 @@ export default function AdminBillDetailPage() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<'PAID' | 'UNPAID'>('UNPAID');
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
@@ -47,8 +48,7 @@ export default function AdminBillDetailPage() {
 
         if (!res.ok) throw new Error('โหลดข้อมูลไม่สำเร็จ');
         const data = await res.json();
-        setBill(data);
-        setSelectedStatus(data.status);
+        setBill(data.bill);
       } catch (err) {
         console.error('Fetch bill error:', err);
         toast.error('ไม่พบข้อมูลบิล');
@@ -61,7 +61,7 @@ export default function AdminBillDetailPage() {
     fetchBill();
   }, [id, router]);
 
-  const handleUpdateStatus = async () => {
+  const handleApprovePayment = async () => {
     if (!id || typeof id !== 'string') return;
 
     try {
@@ -71,14 +71,14 @@ export default function AdminBillDetailPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ status: selectedStatus }),
+        body: JSON.stringify({ status: 'PAID' }),
       });
 
       if (!res.ok) throw new Error();
-      toast.success('อัปเดตสถานะเรียบร้อย');
+      toast.success('✅ อนุมัติการชำระเงินแล้ว');
       router.refresh();
     } catch {
-      toast.error('อัปเดตสถานะไม่สำเร็จ');
+      toast.error('❌ อัปเดตสถานะไม่สำเร็จ');
     } finally {
       setUpdating(false);
     }
@@ -90,7 +90,13 @@ export default function AdminBillDetailPage() {
   const waterTotal = bill.waterUnit * bill.waterRate;
   const electricTotal = bill.electricUnit * bill.electricRate;
 
-  return (
+  const statusLabel = {
+    UNPAID: "❌ ค้างชำระ",
+    PENDING_APPROVAL: "⏳ รอตรวจสอบ",
+    PAID: "✅ ชำระแล้ว",
+  };
+
+ return (
     <div className="max-w-3xl mx-auto mt-8 p-6 bg-white text-black rounded shadow">
       <h1 className="text-2xl font-bold mb-4">รายละเอียดบิล</h1>
 
@@ -102,29 +108,20 @@ export default function AdminBillDetailPage() {
         <p>⚡ ไฟฟ้า: {bill.electricUnit} หน่วย x {bill.electricRate} บาท = {electricTotal.toLocaleString()} บาท</p>
         <p>💵 ค่าเช่า: {bill.rentAmount.toLocaleString()} บาท</p>
         <p className="font-bold">💰 รวมทั้งหมด: {bill.totalAmount.toLocaleString()} บาท</p>
-        <p>📌 สถานะปัจจุบัน: {bill.status === 'PAID' ? '✅ ชำระแล้ว' : '❌ ค้างชำระ'}</p>
+        <p>📌 สถานะปัจจุบัน: {statusLabel[bill.status]}</p>
       </div>
 
-      <div className="mt-6">
-        <label htmlFor="status" className="font-semibold block mb-1">อัปเดตสถานะ:</label>
-        <select
-          id="status"
-          className="border p-2 rounded w-full max-w-xs"
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value as 'PAID' | 'UNPAID')}
-        >
-          <option value="UNPAID">❌ ค้างชำระ</option>
-          <option value="PAID">✅ ชำระแล้ว</option>
-        </select>
-
-        <button
-          onClick={handleUpdateStatus}
-          disabled={updating}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {updating ? 'กำลังบันทึก...' : '💾 บันทึกการเปลี่ยนแปลง'}
-        </button>
-      </div>
+      {bill.status === "PENDING_APPROVAL" && (
+        <div className="mt-6">
+          <button
+            onClick={handleApprovePayment}
+            disabled={updating}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            {updating ? "กำลังอนุมัติ..." : "✅ อนุมัติการชำระเงิน"}
+          </button>
+        </div>
+      )}
 
       {bill.paymentSlipUrl && (
         <div className="mt-8 border-t pt-6">

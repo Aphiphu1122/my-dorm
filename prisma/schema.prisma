@@ -30,8 +30,9 @@ enum MaintenanceCategory {
 }
 
 enum BillStatus {
-  UNPAID
-  PAID
+  UNPAID           
+  PENDING_APPROVAL 
+  PAID             
 }
 
 model room {

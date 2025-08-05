@@ -1,14 +1,15 @@
-// 📁 src/app/bills/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
+
 type Bill = {
   id: string;
   billingMonth: string;
   totalAmount: number;
-  status: "UNPAID" | "PAID";
+  status: BillStatus;
 };
 
 export default function BillsPage() {
@@ -25,6 +26,18 @@ export default function BillsPage() {
 
     fetchBills();
   }, []);
+
+  const renderStatus = (status: BillStatus) => {
+    switch (status) {
+      case "PAID":
+        return <span className="text-green-600">✅ ชำระแล้ว</span>;
+      case "PENDING_APPROVAL":
+        return <span className="text-yellow-600">⏳ รอตรวจสอบ</span>;
+      case "UNPAID":
+      default:
+        return <span className="text-red-600">❌ ค้างชำระ</span>;
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto mt-8">
@@ -43,14 +56,7 @@ export default function BillsPage() {
                   เดือน: {new Date(bill.billingMonth).toLocaleDateString("th-TH", { year: "numeric", month: "long" })}
                 </p>
                 <p>ยอดรวม: {bill.totalAmount.toFixed(2)} บาท</p>
-                <p>
-                  สถานะ:{" "}
-                  {bill.status === "PAID" ? (
-                    <span className="text-green-600">✅ ชำระแล้ว</span>
-                  ) : (
-                    <span className="text-yellow-600">🕒 ค้างชำระ</span>
-                  )}
-                </p>
+                <p>สถานะ: {renderStatus(bill.status)}</p>
               </div>
               <Link
                 href={`/bills/${bill.id}`}

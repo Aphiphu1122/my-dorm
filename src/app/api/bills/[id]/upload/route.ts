@@ -21,15 +21,17 @@ export const POST = async (
       return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
     }
 
-    // 🟢 ใช้ฟังก์ชันที่คุณสร้างไว้
+    // ✅ อัปโหลดรูป
     const imageUrl = await uploadImageToStorage(file, `bill-${billId}`);
 
+    // ✅ อัปเดตสถานะเป็น PENDING_APPROVAL
     const updated = await db.bill.update({
       where: { id: billId },
       data: {
         paymentSlipUrl: imageUrl,
         paymentDate: new Date(),
         transactionRef,
+        status: "PENDING_APPROVAL", // ✅ เพิ่มตรงนี้
       },
     });
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 
+type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
+
 type Bill = {
   id: string;
   billingMonth: string;
@@ -14,7 +16,7 @@ type Bill = {
   electricUnit: number;
   electricRate: number;
   totalAmount: number;
-  status: "UNPAID" | "PAID";
+  status: BillStatus;
   createdAt: string;
   room: {
     roomNumber: string;
@@ -45,13 +47,24 @@ export default function AdminBillListPage() {
       toast.error(
         error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการโหลดบิล"
       );
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
 
-  return (
+  const getStatusLabel = (status: BillStatus) => {
+    switch (status) {
+      case "PAID":
+        return <span className="text-green-600 font-semibold">✅ ชำระแล้ว</span>;
+      case "PENDING_APPROVAL":
+        return <span className="text-yellow-600 font-semibold">🕒 รอตรวจสอบ</span>;
+      case "UNPAID":
+      default:
+        return <span className="text-red-600 font-semibold">❌ ยังไม่ชำระ</span>;
+    }
+  };
+
+    return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">รายการบิลทั้งหมด</h1>
@@ -68,9 +81,9 @@ export default function AdminBillListPage() {
         <p>ยังไม่มีรายการบิล</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-black border">
+          <table className="min-w-full bg-white border">
             <thead>
-              <tr className="bg-gray-600 text-left">
+              <tr className="bg-gray-100 text-left">
                 <th className="py-2 px-4 border-b">เดือน</th>
                 <th className="py-2 px-4 border-b">ห้อง</th>
                 <th className="py-2 px-4 border-b">ผู้เช่า</th>
@@ -91,15 +104,11 @@ export default function AdminBillListPage() {
                   </td>
                   <td className="py-2 px-4 border-b">{bill.totalAmount.toFixed(2)} บาท</td>
                   <td className="py-2 px-4 border-b">
-                    {bill.status === "PAID" ? (
-                      <span className="text-green-600 font-semibold">ชำระแล้ว</span>
-                    ) : (
-                      <span className="text-red-600 font-semibold">ยังไม่ชำระ</span>
-                    )}
+                    {getStatusLabel(bill.status)}
                   </td>
                   <td className="py-2 px-4 border-b text-center">
                     <Link href={`/admin/bills/${bill.id}`}>
-                      <button className="text-blue-400 hover:underline">ดูรายละเอียด</button>
+                      <button className="text-blue-500 hover:underline">ดูรายละเอียด</button>
                     </Link>
                   </td>
                 </tr>
