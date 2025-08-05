@@ -11,19 +11,20 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   if (role !== "admin")
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const room = await prisma.room.findUnique({
-    where: { id: params.id },
-    include: {
-      tenant: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
+    const room = await prisma.room.findUnique({
+      where: { id: params.id },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
         },
       },
-    },
-  });
+    });
 
   if (!room) return NextResponse.json({ error: "ไม่พบห้อง" }, { status: 404 });
   return NextResponse.json({ room });
