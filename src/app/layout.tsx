@@ -40,7 +40,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">
+      <body className="bg-white text-black antialiased min-h-screen">
         {children}
         <Toaster position="top-center" reverseOrder={false} /> {/* ✅ เพิ่มตรงนี้ */}
       </body>
