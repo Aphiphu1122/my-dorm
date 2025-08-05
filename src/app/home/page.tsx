@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 
-// Sample types
-interface Bill {
+type Bill = {
   id: string;
   billingMonth: string;
   totalAmount: number;
-  status: 'PAID' | 'UNPAID';
-}
+  status: 'PAID' | 'UNPAID' | 'PENDING_APPROVAL';
+};
 
 interface UserProfile {
   firstName: string;
@@ -84,24 +83,40 @@ export default function HomePage() {
         <h2 className="text-xl font-semibold mb-3">Payment History</h2>
         <div className="overflow-x-auto border rounded-md">
           <table className="min-w-full table-auto text-sm">
-            <thead>
+            <thead>     
               <tr className="bg-gray-100 text-left">
                 <th className="p-3">Date</th>
                 <th className="p-3">Amount</th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {bills.map((bill) => (
+                {bills.map((bill) => (
                 <tr key={bill.id} className="border-t">
-                  <td className="p-3">{new Date(bill.billingMonth).toLocaleDateString('th-TH')}</td>
+                  <td className="p-3">
+                    {new Date(bill.billingMonth).toLocaleDateString('th-TH', {
+                      year: 'numeric',
+                      month: 'long',
+                    })}
+                  </td>
                   <td className="p-3">{bill.totalAmount.toLocaleString()} Bath</td>
                   <td className="p-3">
                     {bill.status === 'PAID' ? (
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">paid</span>
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">✅ ชำระแล้ว</span>
+                    ) : bill.status === 'PENDING_APPROVAL' ? (
+                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">⏳ รอตรวจสอบ</span>
                     ) : (
-                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">in progress</span>
+                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">❌ ค้างชำระ</span>
                     )}
+                  </td>
+                  <td className="p-3">
+                    <a
+                      href={`/bills/${bill.id}`}
+                      className="text-blue-600 underline text-sm hover:text-blue-800"
+                    >
+                      ดูรายละเอียด
+                    </a>
                   </td>
                 </tr>
               ))}
