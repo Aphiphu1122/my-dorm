@@ -65,58 +65,89 @@ export default function AdminBillListPage() {
   };
 
     return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">รายการบิลทั้งหมด</h1>
-        <Link href="/admin/bills/create">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            + สร้างบิลใหม่
-          </button>
-        </Link>
-      </div>
-
-      {loading ? (
-        <p>กำลังโหลด...</p>
-      ) : bills.length === 0 ? (
-        <p>ยังไม่มีรายการบิล</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border">
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="py-2 px-4 border-b">เดือน</th>
-                <th className="py-2 px-4 border-b">ห้อง</th>
-                <th className="py-2 px-4 border-b">ผู้เช่า</th>
-                <th className="py-2 px-4 border-b">รวมยอด</th>
-                <th className="py-2 px-4 border-b">สถานะ</th>
-                <th className="py-2 px-4 border-b text-center">รายละเอียดบิล</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bills.map((bill) => (
-                <tr key={bill.id}>
-                  <td className="py-2 px-4 border-b">
-                    {format(new Date(bill.billingMonth), "MMMM yyyy")}
-                  </td>
-                  <td className="py-2 px-4 border-b">{bill.room?.roomNumber || "-"}</td>
-                  <td className="py-2 px-4 border-b">
-                    {bill.tenant?.firstName} {bill.tenant?.lastName}
-                  </td>
-                  <td className="py-2 px-4 border-b">{bill.totalAmount.toFixed(2)} บาท</td>
-                  <td className="py-2 px-4 border-b">
-                    {getStatusLabel(bill.status)}
-                  </td>
-                  <td className="py-2 px-4 border-b text-center">
-                    <Link href={`/admin/bills/${bill.id}`}>
-                      <button className="text-blue-500 hover:underline">ดูรายละเอียด</button>
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+  <div className="p-6">
+    <div className="flex items-center justify-between mb-4">
+      <h1 className="text-2xl font-bold">รายการบิลทั้งหมด</h1>
+      <Link href="/admin/bills/create">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          + สร้างบิลใหม่
+        </button>
+      </Link>
     </div>
+
+    {loading ? (
+      <p>กำลังโหลด...</p>
+    ) : bills.length === 0 ? (
+      <p>ยังไม่มีรายการบิล</p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white border">
+          <thead>
+            <tr className="bg-gray-100 text-left">
+              <th className="py-2 px-4 border-b">เดือน</th>
+              <th className="py-2 px-4 border-b">ห้อง</th>
+              <th className="py-2 px-4 border-b">ผู้เช่า</th>
+              <th className="py-2 px-4 border-b">รวมยอด</th>
+              <th className="py-2 px-4 border-b">สถานะ</th>
+              <th className="py-2 px-4 border-b text-center">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bills.map((bill) => (
+              <tr key={bill.id}>
+                <td className="py-2 px-4 border-b">
+                  {format(new Date(bill.billingMonth), "MMMM yyyy")}
+                </td>
+                <td className="py-2 px-4 border-b">{bill.room?.roomNumber || "-"}</td>
+                <td className="py-2 px-4 border-b">
+                  {bill.tenant?.firstName} {bill.tenant?.lastName}
+                </td>
+                <td className="py-2 px-4 border-b">
+                  {bill.totalAmount.toFixed(2)} บาท
+                </td>
+                <td className="py-2 px-4 border-b">{getStatusLabel(bill.status)}</td>
+                <td className="py-2 px-4 border-b text-center space-x-2">
+                  <Link href={`/admin/bills/${bill.id}`}>
+                    <button className="text-blue-500 hover:underline">ดูรายละเอียด</button>
+                  </Link>
+
+                  {/* ✅ แสดงปุ่มลบเฉพาะเมื่อสถานะไม่ใช่ PAID */}
+                  {bill.status !== "PAID" && (
+                    <button
+                      onClick={async () => {
+                        const confirmed = window.confirm(
+                          "คุณแน่ใจหรือไม่ว่าต้องการลบบิลนี้?"
+                        );
+                        if (!confirmed) return;
+
+                        try {
+                          const res = await fetch(`/api/admin/bills/${bill.id}`, {
+                            method: "DELETE",
+                          });
+
+                          if (!res.ok) {
+                            throw new Error("ลบบิลไม่สำเร็จ");
+                          }
+
+                          toast.success("ลบบิลสำเร็จ");
+                          fetchBills(); // reload list
+                        } catch (err) {
+                          toast.error("เกิดข้อผิดพลาดในการลบ");
+                          console.error(err);
+                        }
+                      }}
+                      className="text-red-500 hover:underline"
+                    >
+                      ลบบิล
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
   );
 }

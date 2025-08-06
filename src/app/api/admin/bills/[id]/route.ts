@@ -54,7 +54,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const { status } = await req.json();
 
-    // ✅ ตรวจสอบว่าค่า status เป็น enum ที่ถูกต้อง
     if (!status || !Object.values(BillStatus).includes(status)) {
       return NextResponse.json({ error: 'สถานะไม่ถูกต้อง' }, { status: 400 });
     }
@@ -69,6 +68,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     console.error("❌ Error updating bill status:", err);
     return NextResponse.json(
       { error: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ' },
+      { status: 500 }
+    );
+  }
+}
+
+// ✅ DELETE
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const authResult = await checkAdminAuthOrReject();
+  if (authResult instanceof NextResponse) return authResult;
+
+  const billId = params.id;
+
+  try {
+    const deleted = await db.bill.delete({
+      where: { id: billId },
+    });
+
+    return NextResponse.json({ success: true, deleted }, { status: 200 });
+  } catch (err) {
+    console.error("❌ Error deleting bill:", err);
+    return NextResponse.json(
+      { error: 'เกิดข้อผิดพลาดในการลบบิล' },
       { status: 500 }
     );
   }

@@ -61,6 +61,18 @@ export async function POST(req: Request) {
       },
     });
 
+        // แจ้งเตือนผู้เช่า
+    await db.notification.create({
+      data: {
+        userId: tenantId,
+        message: `📢 มีบิลใหม่ของเดือน ${new Date(billingMonth).toLocaleDateString("th-TH", {
+          year: "numeric",
+          month: "long",
+        })}`,
+        type: "BILL_CREATED",
+      },
+    });
+
     return NextResponse.json({ bill }, { status: 201 });
   } catch (error) {
     console.error("Create bill error:", error);

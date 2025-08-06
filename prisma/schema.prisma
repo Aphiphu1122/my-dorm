@@ -67,6 +67,8 @@ model profile {
   maintenanceRequests maintenanceRequest[]
 
   bills bill[] @relation("TenantBills")
+
+  notifications notification[]
 }
 
 model maintenanceRequest {
@@ -105,4 +107,15 @@ model bill {
 
   tenant profile @relation("TenantBills", fields: [tenantId], references: [id])
   room   room    @relation("RoomBills", fields: [roomId], references: [id])
+}
+
+model notification {
+  id        String   @id @default(uuid())
+  userId    String   
+  message   String
+  type      String   
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user profile @relation(fields: [userId], references: [id])
 }

@@ -1,14 +1,21 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
+import NotificationBell from '@/components/NotificationBell';
 
 type Bill = {
   id: string;
   billingMonth: string;
   totalAmount: number;
   status: 'PAID' | 'UNPAID' | 'PENDING_APPROVAL';
+};
+
+type Notification = {
+  id: string;
+  message: string;
+  createdAt: string;
 };
 
 interface UserProfile {
@@ -23,6 +30,8 @@ interface UserProfile {
 export default function HomePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [hasNewBill, setHasNewBill] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -31,7 +40,7 @@ export default function HomePage() {
       const data = await res.json();
       setUser({
         ...data.user,
-        rentAmount: data.user?.room?.rentAmount ?? 3000 // fallback if missing
+        rentAmount: data.user?.room?.rentAmount ?? 3000,
       });
     };
 
@@ -42,20 +51,66 @@ export default function HomePage() {
       setBills(data.bills);
     };
 
+      const fetchNotifications = async () => {
+    const res = await fetch('/api/notifications/me');
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const notiArray = Array.isArray(data) ? data : data.notifications;
+
+    if (!Array.isArray(notiArray)) {
+      console.error("Notification data is not an array:", data);
+      return;
+    }
+
+    setNotifications(notiArray);
+
+    const currentMonth = new Date().getMonth();
+    const newBillNoti = notiArray.some((n: Notification) => {
+      const createdMonth = new Date(n.createdAt).getMonth();
+      return createdMonth === currentMonth;
+    });
+
+    setHasNewBill(newBillNoti);
+  };
+
+
     fetchProfile();
     fetchBills();
+    fetchNotifications();
   }, []);
+
+  const handleClearNotifications = async () => {
+  try {
+    await fetch('/api/notifications/me', {
+      method: 'DELETE',
+    });
+    setNotifications([]);
+    setHasNewBill(false);
+    toast.success('ล้างการแจ้งเตือนเรียบร้อยแล้ว');
+  } catch (err) {
+    console.error('Failed to delete notifications', err);
+    toast.error('ไม่สามารถล้างการแจ้งเตือนได้');
+  }
+};
 
   return (
     <div className="min-h-screen bg-white text-black max-w-5xl mx-auto px-4 py-8">
-    <div className="max-w-4xl mx-auto px-4 py-8 text-black">
-      <h1 className="text-3xl font-bold">Hello , {user?.firstName} {user?.lastName}</h1>
-      <p className="text-gray-600 mb-6">Welcome to the dormitory website</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Hello , {user?.firstName} {user?.lastName}</h1>
+          <p className="text-gray-600">Welcome to the dormitory website</p>
+        </div>
+        <NotificationBell
+          notifications={notifications}
+          hasNew={hasNewBill}
+          onClearNotifications={handleClearNotifications}
+        />
+      </div>
 
-      {/* Slide banner */}
       <div className="w-full h-52 overflow-hidden rounded-xl mb-8">
         <Image
-          src="/dormpic.jpg" // change to your dynamic banner later
+          src="/dormpic.jpg"
           alt="Banner"
           width={800}
           height={208}
@@ -63,7 +118,6 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Tenant Info */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Tenant Info</h2>
         <div className="flex items-center gap-2 text-lg">
@@ -78,7 +132,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Payment History */}
       <div>
         <h2 className="text-xl font-semibold mb-3">Payment History</h2>
         <div className="overflow-x-auto border rounded-md">
@@ -92,7 +145,7 @@ export default function HomePage() {
               </tr>
             </thead>
             <tbody>
-                {bills.map((bill) => (
+              {bills.map((bill) => (
                 <tr key={bill.id} className="border-t">
                   <td className="p-3">
                     {new Date(bill.billingMonth).toLocaleDateString('th-TH', {
@@ -122,14 +175,13 @@ export default function HomePage() {
               ))}
               {bills.length === 0 && (
                 <tr>
-                  <td className="p-3 text-gray-500 italic" colSpan={3}>No payment history found.</td>
+                  <td className="p-3 text-gray-500 italic" colSpan={4}>No payment history found.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
-    </div>
     </div>
   );
 }
