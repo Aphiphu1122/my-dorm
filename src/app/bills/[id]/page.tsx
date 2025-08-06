@@ -69,7 +69,7 @@ export default function BillDetailPage() {
 
       if (res.ok) {
         toast.success("แนบสลิปสำเร็จ");
-        router.refresh(); // ใช้ refresh แทน push
+        router.refresh();
       } else {
         const errorData = await res.json();
         toast.error("อัปโหลดไม่สำเร็จ: " + (errorData.error || "เกิดข้อผิดพลาด"));
@@ -133,7 +133,6 @@ export default function BillDetailPage() {
         </div>
       </section>
 
-      {/* PENDING_APPROVAL */}
       {bill.status === "PENDING_APPROVAL" && bill.paymentSlipUrl && (
         <div className="mt-6">
           <p className="text-yellow-600 font-semibold mb-2">
@@ -150,7 +149,6 @@ export default function BillDetailPage() {
         </div>
       )}
 
-      {/* PAID */}
       {bill.status === "PAID" && (
         <div className="mt-6">
           <p className="text-green-600 font-semibold mb-2">🧾 ชำระเงินเรียบร้อยแล้ว</p>
@@ -165,16 +163,15 @@ export default function BillDetailPage() {
             />
           )}
           <Link
-            href={`/bills/${bill.id}/receipt`}
+            href={`/bills/${bill.id}/print`}
             target="_blank"
             className="text-blue-600 underline"
           >
-            ดูใบเสร็จ (PDF)
+            🧾 ดูใบเสร็จ
           </Link>
         </div>
       )}
 
-      {/* UNPAID */}
       {bill.status === "UNPAID" && (
         <>
           <section className="mb-4">
