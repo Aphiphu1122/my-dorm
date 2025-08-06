@@ -96,34 +96,34 @@ export default function AdminBillDetailPage() {
     PAID: "✅ ชำระแล้ว",
   };
 
- return (
-    <div className="max-w-3xl mx-auto mt-8 p-6 bg-white text-black rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">รายละเอียดบิล</h1>
+  return (
+  <div className="max-w-3xl mx-auto mt-8 p-6 bg-white text-black rounded shadow">
+    <h1 className="text-2xl font-bold mb-4">รายละเอียดบิล</h1>
 
-      <div className="space-y-2">
-        <p>👤 ผู้เช่า: {bill.tenant.firstName} {bill.tenant.lastName}</p>
-        <p>🏠 ห้องพัก: {bill.room.roomNumber}</p>
-        <p>🗓 เดือน: {new Date(bill.billingMonth).toLocaleDateString("th-TH", { year: "numeric", month: "long" })}</p>
-        <p>💧 น้ำ: {bill.waterUnit} หน่วย x {bill.waterRate} บาท = {waterTotal.toLocaleString()} บาท</p>
-        <p>⚡ ไฟฟ้า: {bill.electricUnit} หน่วย x {bill.electricRate} บาท = {electricTotal.toLocaleString()} บาท</p>
-        <p>💵 ค่าเช่า: {bill.rentAmount.toLocaleString()} บาท</p>
-        <p className="font-bold">💰 รวมทั้งหมด: {bill.totalAmount.toLocaleString()} บาท</p>
-        <p>📌 สถานะปัจจุบัน: {statusLabel[bill.status]}</p>
+    <div className="space-y-2">
+      <p>👤 ผู้เช่า: {bill.tenant.firstName} {bill.tenant.lastName}</p>
+      <p>🏠 ห้องพัก: {bill.room.roomNumber}</p>
+      <p>🗓 เดือน: {new Date(bill.billingMonth).toLocaleDateString("th-TH", { year: "numeric", month: "long" })}</p>
+      <p>💧 น้ำ: {bill.waterUnit} หน่วย x {bill.waterRate} บาท = {waterTotal.toLocaleString()} บาท</p>
+      <p>⚡ ไฟฟ้า: {bill.electricUnit} หน่วย x {bill.electricRate} บาท = {electricTotal.toLocaleString()} บาท</p>
+      <p>💵 ค่าเช่า: {bill.rentAmount.toLocaleString()} บาท</p>
+      <p className="font-bold">💰 รวมทั้งหมด: {bill.totalAmount.toLocaleString()} บาท</p>
+      <p>📌 สถานะปัจจุบัน: {statusLabel[bill.status]}</p>
+    </div>
+
+    {bill.status === "PENDING_APPROVAL" && (
+      <div className="mt-6">
+        <button
+          onClick={handleApprovePayment}
+          disabled={updating}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {updating ? "กำลังอนุมัติ..." : "✅ อนุมัติการชำระเงิน"}
+        </button>
       </div>
+    )}
 
-      {bill.status === "PENDING_APPROVAL" && (
-        <div className="mt-6">
-          <button
-            onClick={handleApprovePayment}
-            disabled={updating}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            {updating ? "กำลังอนุมัติ..." : "✅ อนุมัติการชำระเงิน"}
-          </button>
-        </div>
-      )}
-
-      {bill.paymentSlipUrl && (
+          {bill.paymentSlipUrl && (
         <div className="mt-8 border-t pt-6">
           <h2 className="text-lg font-semibold mb-3 text-blue-700">🧾 ข้อมูลการชำระเงิน</h2>
 
@@ -147,6 +147,19 @@ export default function AdminBillDetailPage() {
           />
         </div>
       )}
-    </div>
+
+      {bill.status === "PAID" && (
+        <div className="mt-6">
+          <a
+            href={`/receipts/${bill.id}/print`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            🔎 ดูใบเสร็จ (HTML พร้อมพิมพ์)
+          </a>
+        </div>
+      )}
+  </div>
   );
-}
+}   
