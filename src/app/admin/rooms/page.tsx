@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
+
 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
@@ -21,6 +22,7 @@ export default function RoomManagementPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [newRoomNumber, setNewRoomNumber] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | RoomStatus>("ALL");
 
   useEffect(() => {
     fetchRooms();
@@ -31,19 +33,17 @@ export default function RoomManagementPage() {
       setLoading(true);
       const res = await fetch("/api/admin/rooms", { credentials: "include" });
       const data = await res.json();
-      console.log("📦 rooms response:", data); // ตรวจสอบว่ามี rooms จริงไหม
+      console.log("📦 rooms response:", data);
 
-      // ป้องกัน error ถ้า data.rooms เป็น undefined
       if (Array.isArray(data.rooms)) {
         setRooms(data.rooms);
       } else {
         console.warn("⚠️ API ไม่ได้ส่ง rooms เป็น array:", data);
-        setRooms([]); // fallback เป็น array ว่าง
+        setRooms([]);
       }
     } catch (err) {
       console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
       toast.error("โหลดข้อมูลห้องล้มเหลว");
-      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
     } finally {
       setLoading(false);
     }
@@ -107,6 +107,11 @@ export default function RoomManagementPage() {
     }
   };
 
+  const filteredRooms = useMemo(() => {
+    if (filterStatus === "ALL") return rooms;
+    return rooms.filter((room) => room.status === filterStatus);
+  }, [rooms, filterStatus]);
+
   return (
     <div className="p-6">
       <Toaster position="top-right" reverseOrder={false} />
@@ -130,13 +135,27 @@ export default function RoomManagementPage() {
         </div>
       </div>
 
+      <div className="mb-4">
+        <label className="mr-2 font-semibold">Filter สถานะ:</label>
+        <select
+          className="border rounded px-2 py-1"
+          value={filterStatus}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as RoomStatus | "ALL")}
+        >
+          <option value="ALL">ทั้งหมด</option>
+          <option value="AVAILABLE">ว่าง</option>
+          <option value="OCCUPIED">มีผู้เช่า</option>
+          <option value="MAINTENANCE">กำลังซ่อม</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="flex justify-center items-center p-10">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-900 border-solid border-b-transparent"></div>
         </div>
       ) : (
         <div className="grid grid-cols-5 gap-4">
-          {rooms.map((room) => (
+          {filteredRooms.map((room) => (
             <div
               key={room.id}
               className={`rounded p-4 text-center relative ${
