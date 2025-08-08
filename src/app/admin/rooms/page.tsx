@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation"; 
 import toast, { Toaster } from "react-hot-toast";
-
+import Sidebar from "@/components/sidebar";
 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
@@ -19,6 +19,8 @@ type Room = {
 };
 
 export default function RoomManagementPage() {
+  const router = useRouter();
+
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [newRoomNumber, setNewRoomNumber] = useState("");
@@ -33,16 +35,12 @@ export default function RoomManagementPage() {
       setLoading(true);
       const res = await fetch("/api/admin/rooms", { credentials: "include" });
       const data = await res.json();
-      console.log("📦 rooms response:", data);
-
       if (Array.isArray(data.rooms)) {
         setRooms(data.rooms);
       } else {
-        console.warn("⚠️ API ไม่ได้ส่ง rooms เป็น array:", data);
         setRooms([]);
       }
-    } catch (err) {
-      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
+    } catch {
       toast.error("โหลดข้อมูลห้องล้มเหลว");
     } finally {
       setLoading(false);
@@ -54,14 +52,12 @@ export default function RoomManagementPage() {
       toast.error("กรุณากรอกหมายเลขห้อง");
       return;
     }
-
     const res = await fetch("/api/admin/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ roomNumber: newRoomNumber }),
     });
-
     if (res.ok) {
       setNewRoomNumber("");
       toast.success("เพิ่มห้องสำเร็จ");
@@ -72,15 +68,17 @@ export default function RoomManagementPage() {
     }
   };
 
-  const handleDeleteRoom = async (roomId: string, roomNumber: string) => {
-    const confirmDelete = confirm(`คุณต้องการลบห้อง ${roomNumber} หรือไม่?`);
-    if (!confirmDelete) return;
-
+  const handleDeleteRoom = async (
+    e: React.MouseEvent,
+    roomId: string,
+    roomNumber: string
+  ) => {
+    e.stopPropagation();
+    if (!confirm(`คุณต้องการลบห้อง ${roomNumber} หรือไม่?`)) return;
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
       method: "DELETE",
       credentials: "include",
     });
-
     if (res.ok) {
       toast.success(`ลบห้อง ${roomNumber} สำเร็จ`);
       fetchRooms();
@@ -90,14 +88,18 @@ export default function RoomManagementPage() {
     }
   };
 
-  const handleStatusChange = async (roomId: string, newStatus: RoomStatus) => {
+  const handleStatusChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+    roomId: string
+  ) => {
+    e.stopPropagation();
+    const newStatus = e.target.value as RoomStatus;
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ status: newStatus }),
     });
-
     if (res.ok) {
       toast.success("อัปเดตสถานะเรียบร้อย");
       fetchRooms();
@@ -113,94 +115,109 @@ export default function RoomManagementPage() {
   }, [rooms, filterStatus]);
 
   return (
-    <div className="p-6">
-      <Toaster position="top-right" reverseOrder={false} />
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar role="admin" />
 
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">All Rooms</h1>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            className="border px-2 py-1 rounded"
-            placeholder="หมายเลขห้อง"
-            value={newRoomNumber}
-            onChange={(e) => setNewRoomNumber(e.target.value)}
-          />
-          <button
-            className="bg-blue-900 text-white px-4 py-2 rounded"
-            onClick={handleAddRoom}
-          >
-            ➕ เพิ่มห้อง
-          </button>
-        </div>
-      </div>
+      <div className="flex-1 p-8 max-w-5xl mx-auto">
+        <Toaster position="top-right" reverseOrder={false} />
 
-      <div className="mb-4">
-        <label className="mr-2 font-semibold">Filter สถานะ:</label>
-        <select
-          className="border rounded px-2 py-1"
-          value={filterStatus}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as RoomStatus | "ALL")}
-        >
-          <option value="ALL">ทั้งหมด</option>
-          <option value="AVAILABLE">ว่าง</option>
-          <option value="OCCUPIED">มีผู้เช่า</option>
-          <option value="MAINTENANCE">กำลังซ่อม</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center p-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-900 border-solid border-b-transparent"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-5 gap-4">
-          {filteredRooms.map((room) => (
-            <div
-              key={room.id}
-              className={`rounded p-4 text-center relative ${
-                room.status === "OCCUPIED"
-                  ? "bg-green-400 text-white"
-                  : room.status === "MAINTENANCE"
-                  ? "bg-yellow-400 text-white"
-                  : "bg-gray-300 text-gray-800"
-              }`}
+        {/* Header + Add Room */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Rooms</h1>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <input
+              type="text"
+              className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+              placeholder="Room number"
+              value={newRoomNumber}
+              onChange={(e) => setNewRoomNumber(e.target.value)}
+            />
+            <button
+              className="bg-[#0F3659] text-white px-6 py-2 rounded-md hover:scale-105 transition duration-200"
+              onClick={handleAddRoom}
             >
-              <button
-                className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700"
-                onClick={() => handleDeleteRoom(room.id, room.roomNumber)}
-              >
-                Delete
-              </button>
-
-              <Link href={`/admin/rooms/${room.id}`}>
-                <div className="font-bold text-lg cursor-pointer">{room.roomNumber}</div>
-              </Link>
-
-              <div className="text-sm mt-1">
-                สถานะ:{" "}
-                {room.status === "AVAILABLE"
-                  ? "ว่าง"
-                  : room.status === "OCCUPIED"
-                  ? "มีผู้เช่า"
-                  : "กำลังซ่อม"}
-              </div>
-
-              <select
-                className="mt-2 text-black p-1 rounded"
-                value={room.status}
-                onChange={(e) =>
-                  handleStatusChange(room.id, e.target.value as RoomStatus)
-                }
-              >
-                <option value="AVAILABLE">ว่าง</option>
-                <option value="OCCUPIED">มีผู้เช่า</option>
-                <option value="MAINTENANCE">กำลังซ่อม</option>
-              </select>
-            </div>
-          ))}
+              + Add Room
+            </button>
+          </div>
         </div>
-      )}
+
+        {/* Filter */}
+        <div className="mb-6 flex items-center gap-3">
+          <label htmlFor="filterStatus" className="font-semibold text-gray-700">
+            Filter Status:
+          </label>
+          <select
+            id="filterStatus"
+            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            value={filterStatus}
+            onChange={(e) =>
+              setFilterStatus(e.target.value as RoomStatus | "ALL")
+            }
+          >
+            <option value="ALL">All</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="OCCUPIED">Occupied</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </div>
+
+        {/* Rooms grid */}
+        {loading ? (
+          <div className="flex justify-center items-center p-16">
+            <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-blue-600 border-b-transparent"></div>
+          </div>
+        ) : filteredRooms.length === 0 ? (
+          <p className="text-center text-gray-500 text-lg mt-10">No rooms found.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredRooms.map((room) => (
+              <div
+                key={room.id}
+                onClick={() => router.push(`/admin/rooms/${room.id}`)}
+                className={`relative rounded-lg p-4 shadow-md transition-transform duration-300 cursor-pointer
+                  hover:scale-105 hover:shadow-lg
+                  ${
+                    room.status === "OCCUPIED"
+                      ? "bg-[#88D64C] text-white"
+                      : room.status === "MAINTENANCE"
+                      ? "bg-[#FFAE00] text-white"
+                      : "bg-gray-200 text-gray-900"
+                  }
+                `}
+                aria-label={`Room ${room.roomNumber}, status ${room.status}`}
+              >
+                {/* Delete button */}
+                <button
+                  onClick={(e) => handleDeleteRoom(e, room.id, room.roomNumber)}
+                  className="absolute top-3 right-3 bg-gray-400 hover:bg-gray-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
+                  aria-label={`Delete room ${room.roomNumber}`}
+                >
+                  ×
+                </button>
+
+                {/* Room Number */}
+                <h2 className="text-2xl font-bold mb-2">{room.roomNumber}</h2>
+
+                {/* Status text */}
+                <p className="mb-3 font-medium capitalize">{room.status.toLowerCase()}</p>
+
+                {/* Status select */}
+                <select
+                  aria-label={`Change status for room ${room.roomNumber}`}
+                  value={room.status}
+                  onChange={(e) => handleStatusChange(e, room.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full text-gray-900 rounded-md px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                >
+                  <option value="AVAILABLE">Available</option>
+                  <option value="OCCUPIED">Occupied</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

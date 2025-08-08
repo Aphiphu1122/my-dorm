@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Sidebar from "@/components/sidebar";
 
 interface Profile {
   id: string;
@@ -14,7 +15,7 @@ interface Profile {
   userId: string;
   createdAt: string;
   roomNumber: string;
-  status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE"; // ถ้ามีส่งมาด้วย
+  status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 }
 
 type RoomStatus = "ALL" | "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
@@ -59,69 +60,92 @@ export default function AdminUsersPage() {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) return <p className="p-4">กำลังโหลด...</p>;
-
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">📋 รายชื่อผู้เช่าทั้งหมด</h1>
+    <div className="flex min-h-screen bg-white">
+      <Sidebar role="admin" />
 
-      {/* ค้นหาและกรอง */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="🔍 ค้นหาชื่อ / อีเมล"
-          className="border px-4 py-2 rounded w-full sm:w-1/2"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <div>
-          <label className="mr-2 font-semibold">Filter สถานะ:</label>
-          <select
-            className="border rounded px-2 py-1"
-            value={filterStatus}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setFilterStatus(e.target.value as RoomStatus)
-            }
-          >
-            <option value="ALL">✨ ทั้งหมด</option>
-            <option value="AVAILABLE">ว่าง</option>
-            <option value="OCCUPIED">มีผู้เช่า</option>
-          </select>
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Tenant List</h1>
+            <h2 className=" text-gray-400 mt-2">
+              Manage all tenants registered in the system
+            </h2>
+          </div>
         </div>
-      </div>
 
-      {/* ตาราง */}
-      <div className="overflow-x-auto">
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-700 text-left text-white">
-              <th className="border p-2">ชื่อ</th>
-              <th className="border p-2">นามสกุล</th>
-              <th className="border p-2">อีเมล</th>
-              <th className="border p-2">เบอร์โทร</th>
-              <th className="border p-2">userID</th>
-              <th className="border p-2">ห้องพัก</th>
-              <th className="border p-2">วันที่สมัคร</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-100">
-                <td className="border p-2">{u.firstName}</td>
-                <td className="border p-2">{u.lastName}</td>
-                <td className="border p-2">{u.email}</td>
-                <td className="border p-2">{u.phone}</td>
-                <td className="border p-2">{u.userId}</td>
-                <td className="border p-2">{u.roomNumber || "-"}</td>
-                <td className="border p-2">
-                  {new Date(u.createdAt).toLocaleDateString("th-TH")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+        {/* Filter and Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
+          <div className="relative w-full sm:w-2/3">
+            <i className="ri-search-2-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            <input
+              type="text"
+              placeholder="Search name / email"
+              className="border border-gray-400 px-4 py-2 pl-12 rounded-md shadow-sm w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <label className="font-medium text-gray-700">Filter status:</label>
+            <select
+              className="border border-gray-400 rounded-md px-3 py-2 shadow-sm"
+              value={filterStatus}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setFilterStatus(e.target.value as RoomStatus)
+              }
+            >
+              <option value="ALL">All</option>
+              <option value="AVAILABLE">Available</option>
+              <option value="OCCUPIED">Occupied</option>
+            </select>
+          </div>
+        </div>
+
+
+        {/* Content */}
+        {loading ? (
+          <p className="text-gray-600">⏳ Loading tenant data...</p>
+        ) : (
+          <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg">
+            <table className="min-w-full table-auto text-sm text-left">
+              <thead className="border border-gray-200 bg-white  text-gray-600">
+                <tr>
+                  <th className="px-4 py-3">First Name</th>
+                  <th className="px-4 py-3">Last Name</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">User ID</th>
+                  <th className="px-4 py-3">Room </th>
+                  <th className="px-4 py-3">Sign Up Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-gray-200 bg-white text-gray-800 hover:bg-gray-200 transition"
+                  >
+                    <td className="px-4 py-3">{u.firstName}</td>
+                    <td className="px-4 py-3">{u.lastName}</td>
+                    <td className="px-4 py-3">{u.email}</td>
+                    <td className="px-4 py-3">{u.phone}</td>
+                    <td className="px-4 py-3">{u.userId}</td>
+                    <td className="px-4 py-3">
+                      {u.roomNumber ? u.roomNumber : "-"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {new Date(u.createdAt).toLocaleDateString("th-TH")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

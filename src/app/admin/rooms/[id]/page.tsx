@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import Link from "next/link";
+import Sidebar from "@/components/sidebar";
 
 type RoomDetail = {
   id: string;
@@ -39,42 +40,57 @@ export default async function RoomDetailPage({ params }: { params: { id: string 
   if (!room) return notFound();
 
   return (
-    <div className="max-w-xl mx-auto mt-8 bg-white p-6 rounded shadow text-black">
-      <h1 className="text-2xl font-bold mb-4">ข้อมูลห้อง {room.roomNumber}</h1>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar role="admin" />
 
-      <p className="mb-2">
-        <strong>สถานะ:</strong>{" "}
-        {room.status === "OCCUPIED"
-          ? "มีผู้เช่า"
-          : room.status === "AVAILABLE"
-          ? "ว่าง"
-          : "กำลังซ่อม"}
-      </p>
 
-      {room.tenant ? (
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold mb-2">ข้อมูลผู้เช่า</h2>
-          <p>
-            <strong>ชื่อ:</strong> {room.tenant.firstName} {room.tenant.lastName}
+      {/* main */}
+      <div className="flex-1 p-8 max-w-5xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 ">Room {room.roomNumber}</h1>
+          <p className="text-gray-500 mb-8">Manage room information</p>
+
+          <p className="mb-8">
+            <h2 className="text-xl font-semibold text-blue-950 mb-2">Room Info</h2>
+           
+              <div className="rounded-lg shadow p-6 border border-gray-200 grid grid-cols-2">
+              <span className="text-gray-700 font-medium">Status</span>
+              <span className="text-right text-gray-900">
+                {room.status === "OCCUPIED"
+                  ? "Occupied" 
+                  : room.status === "AVAILABLE"
+                  ? "Available"
+                  : "Maintenance"}
+              </span>
+            </div>
           </p>
-          <p>
-            <strong>อีเมล:</strong> {room.tenant.email}
-          </p>
-          <p>
-            <strong>เบอร์โทร:</strong> {room.tenant.phone ?? "-"}
-          </p>
+            
+        
+
+          {room.tenant ? (
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-blue-950 mb-2">Tenant information</h2>
+              <p>
+                <strong>Name :</strong> {room.tenant.firstName} {room.tenant.lastName}
+              </p>
+              <p>
+                <strong>Email :</strong> {room.tenant.email}
+              </p>
+              <p>
+                <strong>Phone number:</strong> {room.tenant.phone ?? "-"}
+              </p>
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">ไม่มีผู้เช่าในห้องนี้</p>
+          )}
+
+          <div className="mt-6">
+            <Link href="/admin/rooms">
+              <button className=" inline-block bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 text-sm transition duration-200 transform hover:scale-105">
+                 Back to All Room
+              </button>
+            </Link>
+          </div>
         </div>
-      ) : (
-        <p className="text-gray-500 italic">ไม่มีผู้เช่าในห้องนี้</p>
-      )}
-
-      <div className="mt-6">
-        <Link href="/admin/rooms">
-          <button className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 text-sm">
-            ← กลับไปหน้าห้องทั้งหมด
-          </button>
-        </Link>
       </div>
-    </div>
   );
 }

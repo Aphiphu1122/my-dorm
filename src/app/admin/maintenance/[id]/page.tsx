@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Sidebar from "@/components/sidebar";
+import { toast } from "react-hot-toast";
 
 interface MaintenanceRequest {
   id: string;
@@ -25,146 +26,177 @@ interface MaintenanceRequest {
 
 export default function MaintenanceDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [request, setRequest] = useState<MaintenanceRequest | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [updating, setUpdating] = useState(false);
 
-useEffect(() => {
-  if (!id || typeof id !== 'string') return;
+  useEffect(() => {
+    if (!id || typeof id !== "string") return;
 
-  const fetchRequest = async () => {
-    console.log("📤 เรียก API ด้วย id:", id);
-    try {
-      const res = await fetch(`/api/admin/maintenance/${id}`);
-      console.log("📥 ได้ response แล้ว:", res.status);
-
-      if (!res.ok) {
-        console.error("❌ response ไม่สำเร็จ:", res.statusText);
-        return;
+    const fetchRequest = async () => {
+      try {
+        const res = await fetch(`/api/admin/maintenance/${id}`);
+        if (!res.ok) throw new Error("ไม่พบข้อมูล");
+        const data = await res.json();
+        setRequest(data.request);
+      } catch (error) {
+        toast.error("ไม่พบข้อมูลการแจ้งซ่อม");
+        router.push("/admin/maintenance");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await res.json();
-      console.log("✅ data ที่ได้จาก API:", data);
-      setRequest(data.request);
-    } catch (error) {
-      console.error("❌ Failed to fetch maintenance request", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchRequest();
+  }, [id, router]);
 
-  fetchRequest();
-}, [id]);
-
-
-  const getStatusEmoji = (status: string) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case "PENDING":
-        return "⏳";
+        return { label: "Pending", color: "text-yellow-700 bg-yellow-100" };
       case "IN_PROGRESS":
-        return "🟡";
+        return { label: "In Progress", color: "text-blue-700 bg-blue-100" };
       case "COMPLETED":
-        return "🟢";
+        return { label: "Completed", color: "text-green-700 bg-green-100" };
       case "CANCLE":
-        return "🔴";
+        return { label: "Cancelled", color: "text-red-700 bg-red-100" };
       default:
-        return "";
+        return { label: "Unknown", color: "text-gray-700 bg-gray-100" };
     }
   };
 
-  if (loading) {
-    console.log("⏳ กำลังโหลดข้อมูล...");
-    return <p className="p-4">Loading...</p>;
-  }
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!request) return;
 
-  if (!request) {
-    console.warn("⚠️ ไม่พบข้อมูล request");
-    return <p className="p-4">ไม่พบข้อมูลรายการซ่อม</p>;
-  }
+    try {
+      setUpdating(true);
+      const res = await fetch(`/api/admin/maintenance/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("อัปเดตสถานะเรียบร้อยแล้ว");
+      router.refresh();
+    } catch {
+      toast.error("อัปเดตล้มเหลว");
+    } finally {
+      setUpdating(false);
+    }
+  };
 
-  console.log("🎯 แสดงข้อมูล request:", request);
+  if (loading)
+    return (
+      <p className="text-center mt-8 text-gray-600 dark:text-gray-300">
+        กำลังโหลด...
+      </p>
+    );
+  if (!request)
+    return (
+      <p className="text-center mt-8 text-red-600 dark:text-red-400">
+        ไม่พบข้อมูลการแจ้งซ่อม
+      </p>
+    );
+
+  const status = getStatusLabel(request.status);
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">รายละเอียดการแจ้งซ่อม</h1>
+    <div className="bg-white min-h-screen flex">
+      <div className="fixed top-0 left-0 h-full w-[250px] border-r border-gray-200 bg-white z-10">
+        <Sidebar role="admin" />
+      </div>
 
-      <div className="bg-black shadow p-4 rounded-xl space-y-4">
-        <p><strong>Request ID:</strong> {request.id}</p>
-        <p><strong>วันที่แจ้ง:</strong> {new Date(request.createdAt).toLocaleString()}</p>
-        <p><strong>สถานะ:</strong> {getStatusEmoji(request.status)} {request.status}</p>
-        <p><strong>หมวดหมู่:</strong> {request.category}</p>
-        <p><strong>คำอธิบาย:</strong> {request.description}</p>
+      <main className="ml-[250px] flex-1 pt-8 pr-8 pb-8 pl-32 max-w-6xl mx-auto overflow-y-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Maintenance Detail</h1>
+        <p className="text-gray-500 mb-8">Manage maintenance requests</p>
 
-        <hr />
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold text-blue-950 mb-3">Request Info</h2>
 
-        <p><strong>ห้อง:</strong> {request.room.roomNumber}</p>
-
-        <p><strong>ผู้แจ้ง:</strong> {request.user.firstName} {request.user.lastName}</p>
-        <p><strong>อีเมล:</strong> {request.user.email}</p>
-        <p><strong>โทรศัพท์:</strong> {request.user.phone}</p>
-
-        {request.imageUrl && (
-          <div>
-            <p className="font-semibold">รูปภาพ:</p>
-            <Image
-              src={request.imageUrl}
-              alt="Maintenance Image"
-              width={600}
-              height={400}
-              className="rounded border mt-2"
-            />
+          <div className="rounded-lg shadow p-4 border border-gray-200">
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <span className="text-gray-700">Request ID</span>
+              <span className="text-right text-gray-900">{request.id}</span>
+            </div>
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <span className="text-gray-700">Date</span>
+              <span className="text-right text-gray-900">
+                {new Date(request.createdAt).toLocaleString("th-TH")}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <span className="text-gray-700">Status</span>
+              <span className={`inline-block text-sm font-medium px-2 py-0.5 rounded-full justify-self-end ${status.color}`}>
+                {status.label}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <span className="text-gray-700">Category</span>
+              <span className="text-right text-gray-900">{request.category}</span>
+            </div>
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <p className="text-gray-700 mb-1 font-medium">Description</p>
+              <p className="text-right text-gray-900">{request.description}</p>
+            </div>
+            {request.imageUrl && (
+              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <p className="text-gray-700 mb-1 font-medium">Image</p>
+                <Image
+                  src={request.imageUrl}
+                  alt="Maintenance Image"
+                  width={400}
+                  height={300}
+                  className="rounded border justify-self-end"
+                  unoptimized
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <span className="text-gray-700">Room</span>
+              <span className="text-right text-gray-900">{request.room.roomNumber}</span>
+            </div>
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <span className="text-gray-700">Reporter</span>
+              <span className="text-right text-gray-900">
+                {request.user.firstName} {request.user.lastName} ({request.user.email})
+              </span>
+            </div>
+            <div className="grid grid-cols-2 px-6 py-4 ">
+              <label htmlFor="status" className="text-gray-700 ">
+                Update status :
+              </label>
+              <select
+                id="status"
+                className="border border-gray-400 px-4 py-2 rounded text-gray-900 w-full max-w-sm justify-self-end"
+                value={request.status}
+                onChange={(e) => handleUpdateStatus(e.target.value)}
+                disabled={updating}
+              >
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCLE">Cancelled</option>
+              </select>
+            </div>
           </div>
-        )}
+    
 
- {/* ✅ Section สำหรับอัปเดตสถานะ */}
-  <hr />
-  <div className="mt-4">
-    <label htmlFor="status" className="font-semibold block mb-1">อัปเดตสถานะ:</label>
-    <select
-      id="status"
-      className="border p-2 rounded w-full max-w-xs text-black"
-      value={request.status}
-      onChange={(e) => setRequest({ ...request, status: e.target.value })}
-    >
-      <option value="PENDING">⏳ รอดำเนินการ</option>
-      <option value="IN_PROGRESS">🟡 กำลังดำเนินการ</option>
-      <option value="COMPLETED">🟢 เสร็จสิ้น</option>
-      <option value="CANCLE">🔴 ยกเลิก</option>
-    </select>
+          <div>
+            
+          </div>
+        </section>
 
-    <button
-      onClick={async () => {
-        try {
-          const res = await fetch(`/api/admin/maintenance/${request.id}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ status: request.status }),
-          });
 
-          if (!res.ok) throw new Error("อัปเดตสถานะไม่สำเร็จ");
 
-          alert("✅ อัปเดตสถานะเรียบร้อยแล้ว!");
-          router.refresh(); // reload page
-        } catch (err) {
-          console.error("❌ อัปเดตล้มเหลว", err);
-          alert("❌ อัปเดตล้มเหลว");
-        }
-      }}
-      className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-    >
-      อัปเดตสถานะ
-    </button>
-  </div>
-
-  <button
-    className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-    onClick={() => router.back()}
-  >
-    ย้อนกลับ
-  </button>
-</div>
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => router.back()}
+            className="inline-block px-8 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
+          > Back
+          </button>
+        </div>
+      </main>
     </div>
   );
 }
