@@ -50,7 +50,7 @@ export default async function RoomDetailPage({ params }: { params: { id: string 
           <p className="text-gray-500 mb-8">Manage room information</p>
 
           <p className="mb-8">
-            <h2 className="text-xl font-semibold text-blue-950 mb-2">Room Info</h2>
+            <h2 className="text-xl font-semibold text-blue-950">Room Info</h2>
            
               <div className="rounded-lg shadow p-6 border border-gray-200 grid grid-cols-2">
               <span className="text-gray-700 font-medium">Status</span>
