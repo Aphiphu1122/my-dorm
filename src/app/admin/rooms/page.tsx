@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
-
+import Sidebar from "@/components/sidebar";
 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
@@ -24,6 +24,10 @@ export default function RoomManagementPage() {
   const [newRoomNumber, setNewRoomNumber] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | RoomStatus>("ALL");
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     fetchRooms();
   }, []);
@@ -31,18 +35,27 @@ export default function RoomManagementPage() {
   const fetchRooms = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/rooms", { credentials: "include" });
-      const data = await res.json();
-      console.log("📦 rooms response:", data);
 
-      if (Array.isArray(data.rooms)) {
+      const res = await fetch("/api/admin/rooms", {
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (
+        res.ok &&
+        typeof data === "object" &&
+        data !== null &&
+        Array.isArray(data.rooms)
+      ) {
         setRooms(data.rooms);
       } else {
-        console.warn("⚠️ API ไม่ได้ส่ง rooms เป็น array:", data);
+        console.warn("❗️โครงสร้าง response ไม่ถูกต้อง:", data);
+        toast.error("ข้อมูลห้องไม่ถูกต้อง");
         setRooms([]);
       }
-    } catch (err) {
-      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
+    } catch (error) {
+      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", error);
       toast.error("โหลดข้อมูลห้องล้มเหลว");
     } finally {
       setLoading(false);
@@ -73,13 +86,13 @@ export default function RoomManagementPage() {
   };
 
   const handleDeleteRoom = async (roomId: string, roomNumber: string) => {
-    const confirmDelete = confirm(`คุณต้องการลบห้อง ${roomNumber} หรือไม่?`);
-    if (!confirmDelete) return;
-
+    setDeleting(true);
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
       method: "DELETE",
       credentials: "include",
     });
+    setDeleting(false);
+    setShowDeleteModal(false);
 
     if (res.ok) {
       toast.success(`ลบห้อง ${roomNumber} สำเร็จ`);
@@ -113,94 +126,180 @@ export default function RoomManagementPage() {
   }, [rooms, filterStatus]);
 
   return (
-    <div className="p-6">
-      <Toaster position="top-right" reverseOrder={false} />
+    <>
+      <div className="flex min-h-screen">
+        {/* Sidebar ซ้าย */}
+        <Sidebar role="admin" />
 
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">All Rooms</h1>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            className="border px-2 py-1 rounded"
-            placeholder="หมายเลขห้อง"
-            value={newRoomNumber}
-            onChange={(e) => setNewRoomNumber(e.target.value)}
-          />
-          <button
-            className="bg-blue-900 text-white px-4 py-2 rounded"
-            onClick={handleAddRoom}
-          >
-            ➕ เพิ่มห้อง
-          </button>
-        </div>
-      </div>
+        {/* คอลัมน์ขวา (ทุกอย่างต้องอยู่ในนี้ เพื่อไม่ให้หล่นไป “ข้างล่าง”) */}
+        <div className="flex-1 p-8 w-full">
+          <Toaster position="top-right" />
 
-      <div className="mb-4">
-        <label className="mr-2 font-semibold">Filter สถานะ:</label>
-        <select
-          className="border rounded px-2 py-1"
-          value={filterStatus}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterStatus(e.target.value as RoomStatus | "ALL")}
-        >
-          <option value="ALL">ทั้งหมด</option>
-          <option value="AVAILABLE">ว่าง</option>
-          <option value="OCCUPIED">มีผู้เช่า</option>
-          <option value="MAINTENANCE">กำลังซ่อม</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center p-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-900 border-solid border-b-transparent"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-5 gap-4">
-          {filteredRooms.map((room) => (
-            <div
-              key={room.id}
-              className={`rounded p-4 text-center relative ${
-                room.status === "OCCUPIED"
-                  ? "bg-green-400 text-white"
-                  : room.status === "MAINTENANCE"
-                  ? "bg-yellow-400 text-white"
-                  : "bg-gray-300 text-gray-800"
-              }`}
-            >
-              <button
-                className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700"
-                onClick={() => handleDeleteRoom(room.id, room.roomNumber)}
-              >
-                Delete
-              </button>
-
-              <Link href={`/admin/rooms/${room.id}`}>
-                <div className="font-bold text-lg cursor-pointer">{room.roomNumber}</div>
-              </Link>
-
-              <div className="text-sm mt-1">
-                สถานะ:{" "}
-                {room.status === "AVAILABLE"
-                  ? "ว่าง"
-                  : room.status === "OCCUPIED"
-                  ? "มีผู้เช่า"
-                  : "กำลังซ่อม"}
+          {/* Header + Controls */}
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">All Rooms</h1>
+                <p className="text-gray-600">จัดการห้องพักและสถานะ</p>
               </div>
 
-              <select
-                className="mt-2 text-black p-1 rounded"
-                value={room.status}
-                onChange={(e) =>
-                  handleStatusChange(room.id, e.target.value as RoomStatus)
-                }
-              >
-                <option value="AVAILABLE">ว่าง</option>
-                <option value="OCCUPIED">มีผู้เช่า</option>
-                <option value="MAINTENANCE">กำลังซ่อม</option>
-              </select>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Filter */}
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="filter"
+                    className="font-medium text-gray-700 whitespace-nowrap"
+                  >
+                    กรองสถานะ:
+                  </label>
+                  <select
+                    id="filter"
+                    className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+                    value={filterStatus}
+                    onChange={(e) =>
+                      setFilterStatus(e.target.value as "ALL" | RoomStatus)
+                    }
+                  >
+                    <option value="ALL">ทั้งหมด</option>
+                    <option value="AVAILABLE">ว่าง</option>
+                    <option value="OCCUPIED">มีผู้เช่า</option>
+                    <option value="MAINTENANCE">กำลังซ่อม</option>
+                  </select>
+                </div>
+
+                {/* Add Room */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-52 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+                    placeholder="Room number"
+                    value={newRoomNumber}
+                    onChange={(e) => setNewRoomNumber(e.target.value)}
+                  />
+                  <button
+                    className="bg-[#0F3659] text-white px-5 py-2 rounded-md hover:scale-105 transition"
+                    onClick={handleAddRoom}
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
             </div>
-          ))}
+
+            {/* เนื้อหา: Loading / Empty / Grid */}
+            {loading ? (
+              <div className="flex justify-center items-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#0F3659] border-b-transparent border-solid" />
+              </div>
+            ) : filteredRooms.length === 0 ? (
+              <div className="py-16 text-center text-gray-600">
+                ไม่มีห้องที่ตรงกับเงื่อนไข
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredRooms.map((room) => {
+                  const isOccupied = room.status === "OCCUPIED";
+                  const isMaint = room.status === "MAINTENANCE";
+                  const cardClass =
+                    isOccupied
+                      ? "bg-green-500 text-white"
+                      : isMaint
+                      ? "bg-yellow-400 text-gray-900"
+                      : "bg-gray-200 text-gray-900";
+                  return (
+                    <div
+                      key={room.id}
+                      className={`rounded-lg p-4 text-center relative shadow-sm ${cardClass}`}
+                    >
+                      {/* ปุ่มลบ */}
+                      <button
+                        onClick={() => {
+                          setSelectedRoom(room);
+                          setShowDeleteModal(true);
+                        }}
+                        className="absolute top-2 right-2 bg-black/20 hover:bg-black/40 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
+                        aria-label={`Delete room ${room.roomNumber}`}
+                        title="Delete"
+                      >
+                        ×
+                      </button>
+
+                      {/* เลขห้อง */}
+                      <Link href={`/admin/rooms/${room.id}`}>
+                        <div className="font-extrabold text-xl cursor-pointer">
+                          {room.roomNumber}
+                        </div>
+                      </Link>
+
+                      {/* สถานะ */}
+                      <div className="text-sm mt-1">
+                        สถานะ:{" "}
+                        {room.status === "AVAILABLE"
+                          ? "ว่าง"
+                          : room.status === "OCCUPIED"
+                          ? "มีผู้เช่า"
+                          : "กำลังซ่อม"}
+                      </div>
+
+                      {/* เปลี่ยนสถานะ */}
+                      <select
+                        className="mt-3 text-black bg-white/90 p-2 rounded-md w-full"
+                        value={room.status}
+                        onChange={(e) =>
+                          handleStatusChange(
+                            room.id,
+                            e.target.value as RoomStatus
+                          )
+                        }
+                      >
+                        <option value="AVAILABLE">ว่าง</option>
+                        <option value="OCCUPIED">มีผู้เช่า</option>
+                        <option value="MAINTENANCE">กำลังซ่อม</option>
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modal ยืนยันการลบ */}
+      {showDeleteModal && selectedRoom && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-lg max-w-sm w-full text-center shadow-xl border border-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold mb-4">
+              คุณต้องการลบห้อง {selectedRoom.roomNumber} ใช่หรือไม่?
+            </h2>
+            <div className="flex justify-center gap-3">
+              <button
+                className={`bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 ${
+                  deleting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                onClick={() =>
+                  handleDeleteRoom(selectedRoom.id, selectedRoom.roomNumber)
+                }
+                disabled={deleting}
+              >
+                {deleting ? "⏳ กำลังลบ..." : "✅ ยืนยัน"}
+              </button>
+              <button
+                className="bg-gray-200 text-gray-900 px-4 py-2 rounded"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                ❌ ยกเลิก
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

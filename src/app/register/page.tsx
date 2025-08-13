@@ -28,10 +28,6 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-<<<<<<< HEAD
-=======
-  // เพิ่ม state สำหรับ modal
->>>>>>> 5d40da917da510b1dc3daacae3b41b1fa6cc8096
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 

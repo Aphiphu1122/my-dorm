@@ -43,7 +43,11 @@ model room {
   maintenanceRequests maintenanceRequest[]
   tenant              profile?             @relation("UserRoom")
 
-  bills bill[] @relation("RoomBills")
+  bills     bill[]    @relation("RoomBills")
+
+  createdAt  DateTime   @default(now())    
+  updatedAt  DateTime   @updatedAt      
+
 }
 
 model profile {

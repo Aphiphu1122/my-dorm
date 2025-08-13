@@ -37,7 +37,7 @@ export default function LoginPage() {
       toast.success("เข้าสู่ระบบสำเร็จ");
 
       const role = data.user?.role || "user";
-      router.push(role === "admin" ? "/admin/rooms" : "/home");
+      router.push(role === "admin" ? "/admin/dashboard" : "/home");
 
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "An error occurred during login");

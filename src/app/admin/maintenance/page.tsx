@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import Sidebar from "@/components/sidebar";
+
+type RequestStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCEL";
 
 type Request = {
   id: string;
   description: string;
-  status: string;
+  status: RequestStatus;
   createdAt: string;
   room: { roomNumber: string };
 };
@@ -15,70 +19,140 @@ export default function MaintenanceListPage() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
   const fetchRequests = async () => {
     try {
       const res = await fetch("/api/admin/maintenance");
+      if (!res.ok) {
+        throw new Error("โหลดข้อมูลรายการแจ้งซ่อมไม่สำเร็จ");
+      }
       const data = await res.json();
-      console.log("✅ ได้ข้อมูล:", data);
       setRequests(data.maintenanceRequests);
-    } catch (err) {
-      console.error("❌ โหลดล้มเหลว", err);
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "เกิดข้อผิดพลาดในการโหลดรายการแจ้งซ่อม"
+      );
     } finally {
       setLoading(false);
     }
   };
-  fetchRequests();
-}, []);
 
-  const getStatusEmoji = (status: string) => {
+  const getStatusLabel = (status: RequestStatus) => {
     switch (status) {
       case "PENDING":
-        return "⏳";
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-yellow-700 bg-yellow-100 font-semibold text-sm">
+            ⏳ Pending
+          </span>
+        );
       case "IN_PROGRESS":
-        return "🟡";
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-blue-700 bg-blue-100 font-semibold text-sm">
+            🟡 In Progress
+          </span>
+        );
       case "COMPLETED":
-        return "🟢";
-      case "CANCLE":
-        return "🔴";
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-green-700 bg-green-100 font-semibold text-sm">
+            🟢 Completed
+          </span>
+        );
+      case "CANCEL":
+        return (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-red-700 bg-red-100 font-semibold text-sm">
+            🔴 Cancelled
+          </span>
+        );
       default:
-        return "";
+        return null;
     }
   };
 
-  if (loading) return <p className="p-4">กำลังโหลดข้อมูล...</p>;
-
-  if (!Array.isArray(requests)) return <p>ไม่มีข้อมูลรายการซ่อม</p>;
-
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">รายการแจ้งซ่อม</h1>
-      <table className="w-full table-auto border-collapse border rounded">
-        <thead className="bg-gray-900">
-          <tr>
-            <th className="p-2 text-left">Submission Date</th>
-            <th className="p-2 text-left">Request ID</th>
-            <th className="p-2 text-left">Room</th>
-            <th className="p-2 text-left">Description</th>
-            <th className="p-2 text-left">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests.map((req) => (
-            <tr key={req.id} className="border-t hover:bg-gray-50">
-              <td className="p-2">{new Date(req.createdAt).toLocaleDateString()}</td>
-              <td className="p-2">
-                <Link href={`/admin/maintenance/${req.id}`} className="text-blue-600 underline">
-                  #{req.id.slice(0, 6)}
-                </Link>
-              </td>
-              <td className="p-2">{req.room.roomNumber}</td>
-              <td className="p-2">{req.description}</td>
-              <td className="p-2">{getStatusEmoji(req.status)} {req.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="flex min-h-screen bg-white">
+      <Sidebar role="admin" />
+
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Maintenance Requests</h1>
+            <h2 className="text-gray-400 mt-2">Manage your maintenance requests</h2>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 border-solid border-b-transparent"></div>
+          </div>
+        ) : requests.length === 0 ? (
+          <p className="text-center text-gray-500 text-lg mt-10">No maintenance requests found.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 bg-white">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  {["Submission Date", "Request ID", "Room", "Description", "Status"].map((header) => (
+                    <th
+                      key={header}
+                      className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+                <tbody className="divide-y divide-gray-100">
+                  {requests.map((req) => (
+                    <tr
+                      key={req.id}
+                      className="hover:bg-gray-200 cursor-pointer transition-colors duration-150 ease-in-out"
+                      onClick={() => {
+                        window.location.href = `/admin/maintenance/${req.id}`;
+                      }}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          window.location.href = `/admin/maintenance/${req.id}`;
+                        }
+                      }}
+                      role="link"
+                      aria-label={`View details for maintenance request ${req.id} in room ${req.room.roomNumber}`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {new Date(req.createdAt).toLocaleDateString("th-TH")}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                        <Link
+                          href={`/admin/maintenance/${req.id}`}
+                          onClick={e => e.stopPropagation()}
+                          className="text-blue-600 underline"
+                        >
+                          #{req.id.slice(0, 6)}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                        {req.room.roomNumber}
+                      </td>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-gray-700 max-w-xs truncate"
+                        title={req.description}
+                      >
+                        {req.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusLabel(req.status)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

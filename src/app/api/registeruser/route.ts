@@ -1,6 +1,7 @@
 import { db } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { syncRoomStatus } from "@/lib/syncRoomStatus";
 
 const RegisterSchema = z
   .object({
@@ -17,7 +18,7 @@ const RegisterSchema = z
     confirmPassword: z.string(),
     userId: z.string().uuid("รูปแบบ userId (UUID) ไม่ถูกต้อง"),
     role: z.enum(["user", "admin"]).default("user"),
-    roomId: z.string().uuid("กรุณาระบุรหัสห้องที่ถูกต้อง"), // ✅ เพิ่มตรงนี้
+    roomId: z.string().uuid("กรุณาระบุรหัสห้องที่ถูกต้อง"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "รหัสผ่านไม่ตรงกัน",
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ สร้างผู้ใช้
+    // ✅ สร้างผู้ใช้ และเชื่อมกับห้อง
     const user = await db.profile.create({
       data: {
         firstName,
@@ -100,14 +101,8 @@ export async function POST(req: Request) {
       },
     });
 
-    // ✅ อัปเดตห้อง
-    await db.room.update({
-      where: { id: roomId },
-      data: {
-        status: "OCCUPIED",
-        tenantId: user.id,
-      },
-    });
+    // ✅ ใช้ฟังก์ชัน sync สถานะห้อง
+    await syncRoomStatus(roomId);
 
     return new Response(
       JSON.stringify({ message: "สมัครสมาชิกสำเร็จ", user }),

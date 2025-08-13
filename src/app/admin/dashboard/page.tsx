@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
+import Sidebar from "@/components/sidebar";
 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
@@ -99,7 +100,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleDeleteRoom = async (roomId: string, roomNumber: string) => {
+  const handleDeleteRoom = async (e: unknown, roomId: string, roomNumber: string) => {
     const confirmDelete = confirm(`คุณต้องการลบห้อง ${roomNumber} หรือไม่?`);
     if (!confirmDelete) return;
 
@@ -135,117 +136,135 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="p-6">
-      <Toaster position="top-right" />
+    <div className="flex min-h-screen">
+      <Sidebar role="admin" />
 
-      {/* ===== Rooms Section ===== */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">All Rooms</h1>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            className="border px-2 py-1 rounded"
-            placeholder="หมายเลขห้อง"
-            value={newRoomNumber}
-            onChange={(e) => setNewRoomNumber(e.target.value)}
-          />
-          <button
-            className="bg-blue-900 text-white px-4 py-2 rounded"
-            onClick={handleAddRoom}
-          >
-            ➕ เพิ่มห้อง
-          </button>
-        </div>
-      </div>
+      {/*  Dashboard  */}
+      <div className="flex-1 p-8 max-w-5xl mx-auto">
+        <Toaster position="top-right" />
 
-      {loadingRooms ? (
-        <p>กำลังโหลดห้อง...</p>
-      ) : (
-        <div className="grid grid-cols-5 gap-4 mb-10">
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              className={`rounded p-4 text-center relative ${
-                room.status === "OCCUPIED"
-                  ? "bg-green-400 text-white"
-                  : room.status === "MAINTENANCE"
-                  ? "bg-yellow-400 text-white"
-                  : "bg-gray-300 text-gray-800"
-              }`}
+        {/* ===== Rooms Section ===== */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Rooms</h1>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+              placeholder="Room number"
+              value={newRoomNumber}
+              onChange={(e) => setNewRoomNumber(e.target.value)}
+            />
+            <button
+              className="bg-[#0F3659] text-white px-6 py-2 rounded-md hover:scale-105 transition duration-200"
+              onClick={handleAddRoom}
             >
-              <button
-                className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded hover:bg-red-700"
-                onClick={() => handleDeleteRoom(room.id, room.roomNumber)}
+              + Add Room
+            </button>
+          </div>
+        </div>
+
+        {loadingRooms ? (
+          <p>⏳Loading rooms...</p>
+        ) : (
+          <div className="grid grid-cols-5 gap-4 mb-10">
+            {rooms.map((room) => (
+              <div
+                key={room.id}
+                className={`relative rounded-lg p-4 shadow-md transition-transform duration-300 cursor-pointer
+                  hover:scale-105 hover:shadow-lg
+                  ${
+                  room.status === "OCCUPIED"
+                      ? "bg-[#88D64C] text-white"
+                      : room.status === "MAINTENANCE"
+                      ? "bg-[#FFAE00] text-white"
+                      : "bg-gray-200 text-gray-900"
+                }`}
               >
-                Delete
-              </button>
+                {/* Delete button */}
+                <button
+                  onClick={(e) => handleDeleteRoom(e, room.id, room.roomNumber)}
+                  className="absolute top-3 right-3 bg-gray-400 hover:bg-gray-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
+                  aria-label={`Delete room ${room.roomNumber}`}
+                >
+                  ×
+                </button>
 
-              <Link href={`/admin/rooms/${room.id}`}>
-                <div className="font-bold text-lg cursor-pointer">{room.roomNumber}</div>
-              </Link>
+                <Link href={`/admin/rooms/${room.id}`}>
+                  <div className="font-bold text-lg cursor-pointer">
+                    {room.roomNumber}
+                  </div>
+                </Link>
 
-              <div className="text-sm mt-1">
-                สถานะ:{" "}
-                {room.status === "AVAILABLE"
-                  ? "ว่าง"
-                  : room.status === "OCCUPIED"
-                  ? "มีผู้เช่า"
-                  : "กำลังซ่อม"}
+                <div className="text-sm mt-1">
+                  Status:{" "}
+                  {room.status === "AVAILABLE"
+                    ? "Available"
+                    : room.status === "OCCUPIED"
+                    ? "Occupied"
+                    : "Maintenance"}
+                </div>
+
+                <select
+                  className="w-full text-gray-900 rounded-md px-2 py-2 mt-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                  value={room.status}
+                  onChange={(e) =>
+                    handleStatusChange(room.id, e.target.value as RoomStatus)
+                  }
+                >
+                  <option value="AVAILABLE">Available</option>
+                  <option value="OCCUPIED">Occupied</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                </select>
               </div>
+            ))}
+          </div>
+        )}
 
-              <select
-                className="mt-2 text-black p-1 rounded"
-                value={room.status}
-                onChange={(e) =>
-                  handleStatusChange(room.id, e.target.value as RoomStatus)
-                }
-              >
-                <option value="AVAILABLE">ว่าง</option>
-                <option value="OCCUPIED">มีผู้เช่า</option>
-                <option value="MAINTENANCE">กำลังซ่อม</option>
-              </select>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {/* ===== Users Section ===== */}
-      <h2 className="text-2xl font-bold mb-4">รายชื่อผู้เช่าทั้งหมด</h2>
 
-      {loadingUsers ? (
-        <p>กำลังโหลดรายชื่อผู้เช่า...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border text-sm">
-            <thead>
-              <tr className="bg-gray-700 text-left text-white">
-                <th className="border p-2">ชื่อ</th>
-                <th className="border p-2">นามสกุล</th>
-                <th className="border p-2">อีเมล</th>
-                <th className="border p-2">เบอร์โทร</th>
-                <th className="border p-2">userID</th>
-                <th className="border p-2">ห้องพัก</th>
-                <th className="border p-2">วันที่สมัคร</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td className="border p-2">{u.firstName}</td>
-                  <td className="border p-2">{u.lastName}</td>
-                  <td className="border p-2">{u.email}</td>
-                  <td className="border p-2">{u.phone}</td>
-                  <td className="border p-2">{u.userId}</td>
-                  <td className="border p-2">{u.roomNumber || "-"}</td>
-                  <td className="border p-2">
-                    {new Date(u.createdAt).toLocaleDateString("th-TH")}
-                  </td>
+        {/* ===== Users Section ===== */}
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Tenant List</h2>
+
+        {loadingUsers ? (
+          <p>⏳ Loading tenant data..</p>
+         ) : (
+          <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg">
+            <table className="min-w-full table-auto text-sm text-left">
+              <thead className="border border-gray-200 bg-white  text-gray-600">
+                <tr>
+                  <th className="px-4 py-3">First Name</th>
+                  <th className="px-4 py-3">Last Name</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">User ID</th>
+                  <th className="px-4 py-3">Room </th>
+                  <th className="px-4 py-3">Sign Up Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-gray-200 bg-white text-gray-800 hover:bg-gray-200 transition"
+                  >
+                    <td className="px-4 py-3">{u.firstName}</td>
+                    <td className="px-4 py-3">{u.lastName}</td>
+                    <td className="px-4 py-3">{u.email}</td>
+                    <td className="px-4 py-3">{u.phone}</td>
+                    <td className="px-4 py-3">{u.userId}</td>
+                    <td className="px-4 py-3">
+                      {u.roomNumber ? u.roomNumber : "-"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {new Date(u.createdAt).toLocaleDateString("th-TH")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
