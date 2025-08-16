@@ -96,27 +96,53 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Features */}
-      <section className="bg-gray-100 py-16 px-8 text-center">
-        <h3 className="text-3xl font-bold text-blue-900 mb-8">ฟีเจอร์เด่นของระบบ</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="p-6 bg-white rounded-lg shadow hover:shadow-xl transition">
-            <i className="ri-home-smile-line text-4xl text-blue-600 mb-4"></i>
-            <h4 className="text-xl font-semibold mb-2">สมัครผู้ใช้</h4>
-            <p className="text-gray-600">ผู้เช่าสามารถดูห้องว่างและเลือกห้องได้ทันทีผ่านระบบ</p>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow hover:shadow-xl transition">
-            <i className="ri-tools-line text-4xl text-yellow-500 mb-4"></i>
-            <h4 className="text-xl font-semibold mb-2">แจ้งซ่อมออนไลน์</h4>
-            <p className="text-gray-600">แจ้งปัญหาพร้อมแนบรูปภาพได้ทุกที่ทุกเวลา</p>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow hover:shadow-xl transition">
-            <i className="ri-file-list-3-line text-4xl text-green-500 mb-4"></i>
-            <h4 className="text-xl font-semibold mb-2">ดูบิลและแนบสลิป</h4>
-            <p className="text-gray-600">ตรวจสอบค่าใช้จ่ายและชำระเงินผ่านระบบได้อย่างง่ายดาย</p>
-          </div>
+      <section className="bg-gray-100 py-16 px-4 text-center">
+      <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-12">ฟีเจอร์เด่นของระบบหอพัก</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {/* ฟีเจอร์ 1 */}
+        <div className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <i className="ri-home-smile-line text-4xl text-blue-700 mb-4"></i>
+          <h4 className="text-xl font-semibold mb-2">สมัครผู้ใช้</h4>
+          <p className="text-gray-600">ผู้เช่าสามารถดูห้องว่างและเลือกห้องได้ทันทีผ่านระบบ</p>
         </div>
-      </section>
+
+        {/* ฟีเจอร์ 2 */}
+        <div className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <i className="ri-tools-line text-4xl text-yellow-600 mb-4"></i>
+          <h4 className="text-xl font-semibold mb-2">แจ้งซ่อมออนไลน์</h4>
+          <p className="text-gray-600">แจ้งปัญหาพร้อมแนบรูปภาพได้ทุกที่ทุกเวลา</p>
+        </div>
+
+        {/* ฟีเจอร์ 3 */}
+        <div className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <i className="ri-file-list-3-line text-4xl text-green-600 mb-4"></i>
+          <h4 className="text-xl font-semibold mb-2">ดูบิลและแนบสลิป</h4>
+          <p className="text-gray-600">ตรวจสอบค่าใช้จ่ายและชำระเงินผ่านระบบได้อย่างง่ายดาย</p>
+        </div>
+
+        {/* ฟีเจอร์ 4 */}
+        <div className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <i className="ri-history-line text-4xl text-indigo-600 mb-4"></i>
+          <h4 className="text-xl font-semibold mb-2">ประวัติการชำระเงิน</h4>
+          <p className="text-gray-600">ดูรายการบิลที่เคยชำระย้อนหลังได้ทุกเมื่อ</p>
+        </div>
+
+        {/* ฟีเจอร์ 5 */}
+        <div className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <i className="ri-file-pdf-2-line text-4xl text-red-500 mb-4"></i>
+          <h4 className="text-xl font-semibold mb-2">ใบเสร็จ PDF</h4>
+          <p className="text-gray-600">ดาวน์โหลดใบเสร็จค่าเช่าเพื่อเก็บไว้ได้ในรูปแบบ PDF</p>
+        </div>
+
+        {/* ฟีเจอร์ 6 */}
+        <div className="bg-white rounded-2xl p-6 shadow hover:shadow-lg transition">
+          <i className="ri-notification-2-line text-4xl text-orange-500 mb-4"></i>
+          <h4 className="text-xl font-semibold mb-2">แจ้งเตือนอัตโนมัติ</h4>
+          <p className="text-gray-600">ไม่พลาดทุกการอัปเดต เช่น บิลใหม่ และสถานะแจ้งซ่อม</p>
+        </div>
+      </div>
+    </section>
 
       {/* Testimonials */}
       <section className="py-16 bg-white px-6 text-center">
