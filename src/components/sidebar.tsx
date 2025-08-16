@@ -10,6 +10,7 @@ type Role = "admin" | "user";
 const roleLinks: Record<Role, { href: string; label: string; icon: string }[]> = {
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: "ri-pie-chart-line" },
+    { href: "/admin/adminpanel", label: "Admin Panel", icon: "ri-layout-grid-line" },
     { href: "/admin/rooms", label: "Room Management", icon: "ri-home-9-line" },
     { href: "/admin/users", label: "Tenant Management", icon: "ri-team-line" },
     { href: "/admin/bills", label: "Bills Management", icon: "ri-refund-2-line" },

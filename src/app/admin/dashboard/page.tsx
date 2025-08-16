@@ -67,93 +67,99 @@ export default function AdminPanel() {
   if (loading || !summary) return <div className="p-6">Loading...</div>;
 
   return (
-    <div className="p-6 space-y-10">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">DASHBOARD</h1>
+    <div className="flex min-h-screen">
+      {/* ✅ Sidebar ทางซ้าย */}
+      <Sidebar role="admin" />
 
-      {/* ✅ Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        <Card title="อัตราการเข้าพัก" value={`${summary.occupancyRate ?? 0}%`} icon="ri-home-heart-fill" bg="bg-purple-200" />
-        <Card title="ห้องว่าง" value={`${summary.vacantRooms ?? 0} ห้อง`} icon="ri-building-line" bg="bg-yellow-200" />
-        <Card title="ห้องที่มีผู้เช่า" value={`${summary.occupiedRooms ?? 0} ห้อง`} icon="ri-user-line" bg="bg-green-200" />
-        <Card title="ค้างชำระ" value={`${summary.unpaidRooms ?? 0} ห้อง`} icon="ri-calendar-close-line" bg="bg-red-200" />
-      </div>
+      {/* ✅ เนื้อหา Dashboard */}
+      <div className="flex-1 p-6 space-y-10">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">DASHBOARD</h1>
 
-      {/* ✅ Pie + Bar Chart */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Pie Chart - Monthly Rent Status */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="font-semibold mb-4">สถานะการชำระค่าเช่า</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: "Paid", value: summary.totalPaid },
-                  { name: "Unpaid", value: summary.totalUnpaid },
-                ]}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={70}
-                label
-              >
-                <Cell fill="#10b981" />
-                <Cell fill="#facc15" />
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+        {/* ✅ Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <Card title="อัตราการเข้าพัก" value={`${summary.occupancyRate ?? 0}%`} icon="ri-home-heart-fill" bg="bg-purple-200" />
+          <Card title="ห้องว่าง" value={`${summary.vacantRooms ?? 0} ห้อง`} icon="ri-building-line" bg="bg-yellow-200" />
+          <Card title="ห้องที่มีผู้เช่า" value={`${summary.occupiedRooms ?? 0} ห้อง`} icon="ri-user-line" bg="bg-green-200" />
+          <Card title="ค้างชำระ" value={`${summary.unpaidRooms ?? 0} ห้อง`} icon="ri-calendar-close-line" bg="bg-red-200" />
         </div>
 
-        {/* Bar Chart - รายได้รวมรายเดือน */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="font-semibold mb-4">รายได้รวมต่อเดือน</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={summary.monthlyRevenue}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="revenue" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        {/* ✅ Pie + Bar Chart */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pie Chart */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-semibold mb-4">สถานะการชำระค่าเช่า</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Paid", value: summary.totalPaid },
+                    { name: "Unpaid", value: summary.totalUnpaid },
+                  ]}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  label
+                >
+                  <Cell fill="#10b981" />
+                  <Cell fill="#facc15" />
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-      {/* ✅ Line + Stacked Bar Chart */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Line Chart - แนวโน้มการแจ้งซ่อม */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="font-semibold mb-4">แนวโน้มการแจ้งซ่อม</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={summary.maintenanceTrend}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line dataKey="PENDING" stroke="#f59e0b" />
-              <Line dataKey="IN_PROGRESS" stroke="#3b82f6" />
-              <Line dataKey="COMPLETED" stroke="#10b981" />
-              <Line dataKey="CANCLE" stroke="#ef4444" />
-            </LineChart>
-          </ResponsiveContainer>
+          {/* Bar Chart */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-semibold mb-4">รายได้รวมต่อเดือน</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={summary.monthlyRevenue}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="revenue" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Stacked Bar Chart - รายได้ตามประเภท */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="font-semibold mb-4">รายได้แยกตามประเภท</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={summary.revenueByCategory} stackOffset="expand">
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="rent" stackId="a" fill="#3b82f6" />
-              <Bar dataKey="water" stackId="a" fill="#10b981" />
-              <Bar dataKey="electricity" stackId="a" fill="#f59e0b" />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* ✅ Line + Stacked Bar Chart */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Line Chart */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-semibold mb-4">แนวโน้มการแจ้งซ่อม</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={summary.maintenanceTrend}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line dataKey="PENDING" stroke="#f59e0b" />
+                <Line dataKey="IN_PROGRESS" stroke="#3b82f6" />
+                <Line dataKey="COMPLETED" stroke="#10b981" />
+                <Line dataKey="CANCLE" stroke="#ef4444" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Stacked Bar Chart */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-semibold mb-4">รายได้แยกตามประเภท</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={summary.revenueByCategory} stackOffset="expand">
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="rent" stackId="a" fill="#3b82f6" />
+                <Bar dataKey="water" stackId="a" fill="#10b981" />
+                <Bar dataKey="electricity" stackId="a" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
