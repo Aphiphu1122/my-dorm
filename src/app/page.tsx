@@ -12,46 +12,38 @@ export default function HomePage() {
   const [showContactModal, setShowContactModal] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white text-black pt-20 font-sans">
+       <div className="min-h-screen bg-white text-black pt-20 font-sans">
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full flex justify-between items-center bg-white/90 backdrop-blur px-12 py-4 shadow-md z-50">
+      <header className="fixed top-0 left-0 w-full flex justify-between items-center bg-white/90 backdrop-blur px-12 py-3 shadow-md z-50">
         <div className="flex items-center space-x-3">
           <i className="ri-home-heart-fill text-4xl text-blue-900"></i>
           <h1 className="text-2xl font-bold text-blue-900">Dorm</h1>
         </div>
-        <nav>
-          <ul className="flex space-x-8 text-gray-700 font-medium">
-            <li>
-              <button
-                onClick={() => {
-                  setShowAboutModal(true);
-                  setShowContactModal(false);
-                }}
-                className="hover:text-blue-800 transition duration-200"
-              >
-                About Us
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => {
-                  setShowContactModal(true);
-                  setShowAboutModal(false);
-                }}
-                className="hover:text-blue-800 transition duration-200"
-              >
-                Contact
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => router.push("/login")}
-                className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition"
-              >
-                เข้าสู่ระบบ
-              </button>
-            </li>
-          </ul>
+        <nav className="flex items-center space-x-6">
+          <button
+            onClick={() => {
+              setShowAboutModal(true);
+              setShowContactModal(false);
+            }}
+            className="text-gray-700 hover:text-blue-800 font-medium transition duration-200"
+          >
+            About Us
+          </button>
+          <button
+            onClick={() => {
+              setShowContactModal(true);
+              setShowAboutModal(false);
+            }}
+            className="text-gray-700 hover:text-blue-800 font-medium transition duration-200"
+          >
+            Contact
+          </button>
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-700 transition font-semibold"
+          >
+            เข้าสู่ระบบ
+          </button>
         </nav>
       </header>
 
@@ -151,16 +143,27 @@ export default function HomePage() {
         <div className="space-y-6">
           <div>
             <h4 className="font-semibold text-lg">Q: สมัครสมาชิกแล้วต้องรออนุมัติไหม?</h4>
-            <p className="text-gray-700">A: ไม่ต้องรอ! ระบบจะให้คุณเข้าใช้งานได้ทันที</p>
+            <p className="text-gray-700">A: ไม่ต้องรอ! คุณสามารถเข้าสู่ระบบและใช้งานได้ทันทีหลังจากสมัคร</p>
           </div>
           <div>
             <h4 className="font-semibold text-lg">Q: ชำระค่าเช่าผ่านช่องทางไหนได้บ้าง?</h4>
-            <p className="text-gray-700">A: โอนผ่านแอปธนาคาร และแนบสลิปในระบบได้เลย</p>
+            <p className="text-gray-700">A: คุณสามารถโอนเงินผ่านแอปธนาคาร และแนบสลิปการชำระเงินผ่านระบบได้เลย</p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-lg">Q: ข้อมูลของฉันปลอดภัยหรือไม่?</h4>
+            <p className="text-gray-700">A: ระบบของเราเข้ารหัสข้อมูลอย่างปลอดภัย และไม่มีการเปิดเผยข้อมูลให้บุคคลภายนอก</p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-lg">Q: สามารถดูบิลย้อนหลังได้ไหม?</h4>
+            <p className="text-gray-700">A: ได้แน่นอน! คุณสามารถเข้าดูประวัติการชำระเงินและใบเสร็จย้อนหลังได้ตลอดเวลา</p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-lg">Q: ถ้าต้องการย้ายออก ต้องแจ้งล่วงหน้ากี่วัน?</h4>
+            <p className="text-gray-700">A: โปรดแจ้งผู้ดูแลหอล่วงหน้าอย่างน้อย 30 วัน เพื่อดำเนินการตรวจสอบห้องและจัดการเรื่องมัดจำ</p>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-blue-950 text-white text-center py-6 mt-12">
         <p>&copy; {new Date().getFullYear()} Dorm Management System. All rights reserved.</p>
       </footer>
