@@ -5,6 +5,7 @@ import axios from 'axios'
 import dayjs from 'dayjs'
 import Image from 'next/image'
 import Sidebar from "@/components/sidebar";
+import toast from "react-hot-toast";
 
 interface MaintenanceRequest {
   id: string
@@ -48,13 +49,18 @@ export default function MaintenancePage() {
     fetchHistory()
   }, [])
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (!description.trim()) {
-      alert('Please enter a description')
-      return
+      toast.error("กรุณากรอกรายละเอียดปัญหา");
+      return;
     }
 
-    setLoading(true)
+    if (!category) {
+      toast.error("กรุณาเลือก Category");
+      return;
+    }
+
+    setLoading(true);
 
     const formData = new FormData()
     formData.append('description', description)
@@ -62,18 +68,20 @@ export default function MaintenancePage() {
     if (image) formData.append('image', image)
 
     try {
-      await axios.post('/api/maintenance', formData)
-      setDescription('')
-      setCategory('ELECTRICITY')
-      setImage(null)
-      location.reload()
-    } catch (err) {
-      console.error(err)
-      alert('Failed to submit')
-    } finally {
-      setLoading(false)
-    }
+    await axios.post("/api/maintenance", formData);
+    setDescription("");
+    setCategory("");
+    setImage(null);
+
+    toast.success("ส่งคำร้องสำเร็จ ✅");
+    location.reload();
+  } catch (err) {
+    console.error(err);
+    toast.error("ไม่สามารถส่งคำร้องได้ ❌");
+  } finally {
+    setLoading(false);
   }
+};
 
   return (
 
