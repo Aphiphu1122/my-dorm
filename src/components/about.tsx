@@ -58,17 +58,18 @@ export default function AboutUsPage() {
 
         {/* Text content */}
         <div className="w-full md:w-[40%] text-gray-800">
-          <h1 className="text-2xl font-bold text-blue-900 mb-4">About Us</h1>
+          <h1 className="text-2xl font-bold text-blue-900 mb-4">เกี่ยวกับเรา</h1>
           <p className="mb-4 text-lg leading-relaxed">
-            <span className="font-semibold text-blue-700">Dorm</span> is a platform designed to simplify dormitory management and room searching for both tenants and landlords. Fast, easy, and secure.
+            <span className="font-semibold text-blue-700">Dorm</span> คือระบบจัดการหอพักออนไลน์
+            ที่ออกแบบมาเพื่อให้ทั้งเจ้าของหอและผู้เช่าใช้งานได้ง่าย รวดเร็ว และปลอดภัย
           </p>
           <ul className="list-disc list-inside space-y-2 text-base">
-            <li>Instantly add, edit, and remove dormitory data</li>
-            <li>Search by location, price, and room type</li>
-            <li>Verified users and real reviews</li>
+            <li>เจ้าของหอสามารถเพิ่ม ลบ และจัดการข้อมูลห้องพักได้ทันที</li>
+            <li>ผู้เช่าดูสถานะห้องว่างและแจ้งซ่อมออนไลน์ได้สะดวก</li>
+            <li>ระบบแสดงบิล รายการชำระ และแนบสลิปในไม่กี่คลิก</li>
           </ul>
           <p className="mt-6 text-sm">
-            Contact us:{" "}
+            ติดต่อเรา:{" "}
             <a
               href="mailto:support@mydorm.com"
               className="text-blue-600 underline hover:text-blue-800"

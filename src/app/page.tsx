@@ -11,7 +11,7 @@ export default function HomePage() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
-  return (
+   return (
     <div className="min-h-screen bg-white text-black pt-20">
       {/* Header */}
       <header className="fixed top-0 left-0 w-full flex justify-between items-center bg-white px-12 py-4 shadow-md z-50">
@@ -23,7 +23,10 @@ export default function HomePage() {
           <ul className="flex space-x-8 text-gray-700 font-medium">
             <li>
               <button
-                onClick={() => setShowAboutModal(true)}
+                onClick={() => {
+                  setShowAboutModal(true);
+                  setShowContactModal(false);
+                }}
                 className="hover:text-blue-800 transition duration-200"
               >
                 About Us
@@ -31,7 +34,10 @@ export default function HomePage() {
             </li>
             <li>
               <button
-                onClick={() => setShowContactModal(true)}
+                onClick={() => {
+                  setShowContactModal(true);
+                  setShowAboutModal(false);
+                }}
                 className="hover:text-blue-800 transition duration-200"
               >
                 Contact
@@ -49,63 +55,125 @@ export default function HomePage() {
         </nav>
       </header>
 
-      {/* Hero Section */}
-      <main className="flex flex-col items-center justify-center min-h-[85vh] px-6 text-center">
-        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-blue-900">
-          ยินดีต้อนรับสู่ระบบจัดการหอพัก
-        </h2>
-        <p className="text-lg text-gray-600 max-w-2xl mb-8">
-          บริหารหอพักง่ายขึ้นสำหรับผู้ดูแล และสะดวกสบายสำหรับผู้เช่า ด้วยระบบครบวงจร
-        </p>
-        <button
-          onClick={() => router.push("/register")}
-          className="bg-green-500 text-white text-lg px-6 py-3 rounded-lg shadow hover:bg-green-600 transition"
-        >
-          สมัครสมาชิก
-        </button>
-      </main>
+    {/* Hero Section */}
+      <main className="px-6 text-center mt-12 mb-16">
+      <h2 className="text-4xl md:text-5xl font-bold mb-4 text-blue-900">
+        MY DORM
+        ยินดีต้อนรับสู่ระบบจัดการหอพัก
+      </h2>
+      <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+        บริหารหอพักง่ายขึ้นสำหรับผู้ดูแล และสะดวกสบายสำหรับผู้เช่า ด้วยระบบครบวงจร
+      </p>
+      <button
+        onClick={() => router.push("/register")}
+        className="bg-green-500 text-white text-lg px-6 py-3 rounded-lg shadow hover:bg-green-600 transition"
+      >
+        สมัครสมาชิก
+      </button>
+    </main>
 
-      {/* About Modal */}
+      {/* About Inline Section */}
       {showAboutModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-start pt-20 z-50"
-          onClick={() => setShowAboutModal(false)}
-        >
-          <div
-            className="bg-white rounded-xl p-6 max-w-3xl w-full mx-4 shadow-xl relative max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <section className="max-w-6xl mx-auto my-12 px-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-blue-900">เกี่ยวกับเรา</h2>
             <button
               onClick={() => setShowAboutModal(false)}
-              className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl font-bold"
+              className="text-gray-500 hover:text-black text-3xl font-bold w-10 h-10 rounded-full flex items-center justify-center transition"
             >
-              &times;
+              ×
             </button>
-            <AboutUsPage />
           </div>
-        </div>
+          <AboutUsPage />
+        </section>
       )}
 
-      {/* Contact Modal */}
+      {/* Contact Inline Section */}
       {showContactModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-start pt-20 z-50"
-          onClick={() => setShowContactModal(false)}
-        >
-          <div
-            className="bg-white rounded-xl p-6 max-w-3xl w-full mx-4 shadow-xl relative max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+        <section className="max-w-6xl mx-auto my-12 px-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-blue-900">ติดต่อเรา</h2>
+          <button
+            onClick={() => setShowContactModal(false)}
+            className="text-gray-500 hover:text-black text-3xl font-bold w-10 h-10 rounded-full flex items-center justify-center transition"
           >
-            <button
-              onClick={() => setShowContactModal(false)}
-              className="absolute top-4 right-4 text-gray-600 hover:text-black text-2xl font-bold"
-            >
-              &times;
-            </button>
-            <ContactPage />
+            ×
+          </button>
+        </div>
+        <ContactPage />
+      </section>
+      )}
+
+      {/* Features Section */}
+      <section className="bg-gray-100 py-16 px-8 text-center">
+        <h3 className="text-3xl font-bold text-blue-900 mb-8">ฟีเจอร์เด่นของระบบ</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="p-6 bg-white rounded-lg shadow">
+            <i className="ri-home-smile-line text-4xl text-blue-600 mb-4"></i>
+            <h4 className="text-xl font-semibold mb-2">สมัครผู้ใช้</h4>
+            <p className="text-gray-600">
+              ผู้เช่าสามารถดูห้องว่างและเลือกห้องได้ทันทีผ่านระบบ
+            </p>
+          </div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <i className="ri-tools-line text-4xl text-yellow-500 mb-4"></i>
+            <h4 className="text-xl font-semibold mb-2">แจ้งซ่อมออนไลน์</h4>
+            <p className="text-gray-600">
+              แจ้งปัญหาพร้อมแนบรูปภาพได้ทุกที่ทุกเวลา
+            </p>
+          </div>
+          <div className="p-6 bg-white rounded-lg shadow">
+            <i className="ri-file-list-3-line text-4xl text-green-500 mb-4"></i>
+            <h4 className="text-xl font-semibold mb-2">ดูบิลและแนบสลิป</h4>
+            <p className="text-gray-600">
+              ตรวจสอบค่าใช้จ่ายและชำระเงินผ่านระบบได้อย่างง่ายดาย
+            </p>
           </div>
         </div>
-      )}
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-16 bg-white px-6 text-center">
+        <h3 className="text-3xl font-bold text-blue-900 mb-10">เสียงจากผู้ใช้จริง</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <blockquote className="p-6 border-l-4 border-blue-500 bg-gray-50 rounded">
+            <p className="text-gray-700 italic">
+              ระบบนี้ช่วยให้ฉันจัดการห้องพักได้ง่ายขึ้นมาก
+            </p>
+            <span className="block mt-4 font-semibold text-blue-800">– คุณสมชาย, ผู้ดูแลหอ</span>
+          </blockquote>
+          <blockquote className="p-6 border-l-4 border-green-500 bg-gray-50 rounded">
+            <p className="text-gray-700 italic">
+              แจ้งซ่อมออนไลน์สะดวกสุดๆ ไม่ต้องเดินไปที่ออฟฟิศเลย
+            </p>
+            <span className="block mt-4 font-semibold text-green-800">– น.ส. สายไหม, ผู้เช่า</span>
+          </blockquote>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 bg-gray-100 px-6 text-left max-w-4xl mx-auto">
+        <h3 className="text-3xl font-bold text-blue-900 mb-8 text-center">คำถามที่พบบ่อย</h3>
+        <div className="space-y-6">
+          <div>
+            <h4 className="font-semibold text-lg">Q: สมัครสมาชิกแล้วต้องรออนุมัติไหม?</h4>
+            <p className="text-gray-700">
+              A: ไม่ต้องรอ! ระบบจะให้คุณเข้าใช้งานได้ทันที
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-lg">Q: ชำระค่าเช่าผ่านช่องทางไหนได้บ้าง?</h4>
+            <p className="text-gray-700">
+              A: โอนผ่านแอปธนาคาร และแนบสลิปในระบบได้เลย
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-blue-950 text-white text-center py-6 mt-12">
+        <p>&copy; {new Date().getFullYear()} Dorm Management System. All rights reserved.</p>
+      </footer>
     </div>
   );
 }
