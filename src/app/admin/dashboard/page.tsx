@@ -16,12 +16,12 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import Sidebar from "@/components/sidebar";
 
-// ✅ Interface สำหรับข้อมูลจาก API dashboard summary
 interface DashboardSummary {
   occupancyRate: number;
   vacantRooms: number;
-  occupiedRooms: number; // ✅ เพิ่มให้ตรงกับ API
+  occupiedRooms: number;
   unpaidRooms: number;
   totalPaid: number;
   totalUnpaid: number;
@@ -68,7 +68,7 @@ export default function AdminPanel() {
 
   return (
     <div className="p-6 space-y-10">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">ADMIN PANEL</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">DASHBOARD</h1>
 
       {/* ✅ Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -160,7 +160,6 @@ export default function AdminPanel() {
   );
 }
 
-// ✅ Component ย่อย: Card
 function Card({
   title,
   value,

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 import "remixicon/fonts/remixicon.css";
 
 type Role = "admin" | "user";
@@ -27,25 +28,36 @@ interface SidebarProps {
   role: Role;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role }) => {
+export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   const links = roleLinks[role];
   const headerTitle = role === "admin" ? "Admin Tools" : "Tenant Tools";
 
-  // ฟังก์ชัน logout ตัวอย่าง
-  const handleLogout = () => {
-    // ล้างข้อมูล session หรือ token ที่เก็บไว้ เช่น localStorage
-    localStorage.removeItem("token");  // ตัวอย่าง
-    // หรือถ้ามี cookie อาจต้องล้างด้วย
+  const handleLogout = async () => {
+  try {
+    const res = await fetch("/api/logout");
 
-    // เปลี่ยนเส้นทางไปหน้า login
-    router.push("/login");
-  };
+    if (res.ok) {
+      toast.success("ออกจากระบบเรียบร้อย");
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 1200);
+    } else {
+      toast.error("เกิดข้อผิดพลาดในการออกจากระบบ");
+    }
+  } catch (err) {
+    console.error("Logout failed:", err);
+    toast.error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์");
+  }
+};
 
   return (
-    <aside className="w-64 min-h-screen bg-white  px-4 py-6">
+  <>
+    <Toaster position="top-right" />
+    <aside className="w-64 min-h-screen bg-white px-4 py-6">
       <h2 className="text-2xl font-bold text-[#0F3659] mb-6 flex items-center gap-4">
         <span
           className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-[#0F3659] bg-[#0F3659]"
@@ -86,7 +98,5 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         <i className="ri-logout-circle-line text-lg"></i> Logout
       </button>
     </aside>
-  );
-};
-
-export default Sidebar;
+  </>
+);}

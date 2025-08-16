@@ -138,7 +138,6 @@ export default function AdminDashboardPage() {
     <div className="flex min-h-screen">
       <Sidebar role="admin" />
 
-      {/*  Dashboard  */}
       <div className="flex-1 p-8 max-w-5xl mx-auto">
         <Toaster position="top-right" />
 
