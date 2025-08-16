@@ -1,270 +1,184 @@
-// src/app/admin/dashboard/page.tsx
 "use client";
 
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import toast, { Toaster } from "react-hot-toast";
-import Sidebar from "@/components/sidebar";
+import { toast } from "react-hot-toast";
 
-type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
+// ✅ Interface สำหรับข้อมูลจาก API dashboard summary
+interface DashboardSummary {
+  occupancyRate: number;
+  vacantRooms: number;
+  occupiedRooms: number; // ✅ เพิ่มให้ตรงกับ API
+  unpaidRooms: number;
+  totalPaid: number;
+  totalUnpaid: number;
+  monthlyRevenue: { month: string; revenue: number }[];
+  maintenanceTrend: {
+    month: string;
+    PENDING: number;
+    IN_PROGRESS: number;
+    COMPLETED: number;
+    CANCLE: number;
+  }[];
+  revenueByCategory: {
+    month: string;
+    rent: number;
+    water: number;
+    electricity: number;
+  }[];
+}
 
-type Room = {
-  id: string;
-  roomNumber: string;
-  status: RoomStatus;
-  tenant?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-};
-
-type Profile = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  birthday: string;
-  address: string;
-  nationalId: string;
-  userId: string;
-  createdAt: string;
-  roomNumber: string;
-};
-
-export default function AdminDashboardPage() {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [newRoomNumber, setNewRoomNumber] = useState("");
+export default function AdminPanel() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchRooms();
-    fetchUsers();
+    fetchSummary();
   }, []);
 
-  const fetchRooms = async () => {
+  const fetchSummary = async () => {
     try {
-      setLoadingRooms(true);
-      const res = await fetch("/api/admin/rooms", { credentials: "include" });
-      const data = await res.json();
-      setRooms(Array.isArray(data.rooms) ? data.rooms : []);
-    } catch (err) {
-      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
-      toast.error("โหลดข้อมูลห้องล้มเหลว");
-      console.error("❌ โหลดข้อมูลห้องล้มเหลว:", err);
-    } finally {
-      setLoadingRooms(false);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      setLoadingUsers(true);
-      const res = await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/dashboard/summary", {
         credentials: "include",
       });
-      const data = await res.json();
-      if (res.ok) {
-        setUsers(data.users);
-      }
+      const data: DashboardSummary = await res.json();
+      setSummary(data);
     } catch (err) {
-      console.error("โหลดผู้ใช้ล้มเหลว", err);
+      console.error(err);
+      toast.error("โหลดข้อมูล dashboard ไม่สำเร็จ");
     } finally {
-      setLoadingUsers(false);
+      setLoading(false);
     }
   };
 
-  const handleAddRoom = async () => {
-    if (!newRoomNumber.trim()) {
-      toast.error("กรุณากรอกหมายเลขห้อง");
-      return;
-    }
-
-    const res = await fetch("/api/admin/rooms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ roomNumber: newRoomNumber }),
-    });
-
-    if (res.ok) {
-      setNewRoomNumber("");
-      toast.success("เพิ่มห้องสำเร็จ");
-      fetchRooms();
-    } else {
-      const data = await res.json();
-      toast.error(`ไม่สามารถเพิ่มห้องได้: ${data.error}`);
-    }
-  };
-
-  const handleDeleteRoom = async (e: unknown, roomId: string, roomNumber: string) => {
-    const confirmDelete = confirm(`คุณต้องการลบห้อง ${roomNumber} หรือไม่?`);
-    if (!confirmDelete) return;
-
-    const res = await fetch(`/api/admin/rooms/${roomId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    if (res.ok) {
-      toast.success(`ลบห้อง ${roomNumber} สำเร็จ`);
-      fetchRooms();
-    } else {
-      const data = await res.json();
-      toast.error(`ลบห้องไม่สำเร็จ: ${data.error}`);
-    }
-  };
-
-  const handleStatusChange = async (roomId: string, newStatus: RoomStatus) => {
-    const res = await fetch(`/api/admin/rooms/${roomId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ status: newStatus }),
-    });
-
-    if (res.ok) {
-      toast.success("อัปเดตสถานะเรียบร้อย");
-      fetchRooms();
-    } else {
-      const data = await res.json();
-      toast.error(`อัปเดตสถานะไม่สำเร็จ: ${data.error}`);
-    }
-  };
+  if (loading || !summary) return <div className="p-6">Loading...</div>;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role="admin" />
+    <div className="p-6 space-y-10">
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">ADMIN PANEL</h1>
 
-      {/*  Dashboard  */}
-      <div className="flex-1 p-8 max-w-5xl mx-auto">
-        <Toaster position="top-right" />
+      {/* ✅ Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <Card title="อัตราการเข้าพัก" value={`${summary.occupancyRate ?? 0}%`} icon="ri-home-heart-fill" bg="bg-purple-200" />
+        <Card title="ห้องว่าง" value={`${summary.vacantRooms ?? 0} ห้อง`} icon="ri-building-line" bg="bg-yellow-200" />
+        <Card title="ห้องที่มีผู้เช่า" value={`${summary.occupiedRooms ?? 0} ห้อง`} icon="ri-user-line" bg="bg-green-200" />
+        <Card title="ค้างชำระ" value={`${summary.unpaidRooms ?? 0} ห้อง`} icon="ri-calendar-close-line" bg="bg-red-200" />
+      </div>
 
-        {/* ===== Rooms Section ===== */}
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Rooms</h1>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
-              placeholder="Room number"
-              value={newRoomNumber}
-              onChange={(e) => setNewRoomNumber(e.target.value)}
-            />
-            <button
-              className="bg-[#0F3659] text-white px-6 py-2 rounded-md hover:scale-105 transition duration-200"
-              onClick={handleAddRoom}
-            >
-              + Add Room
-            </button>
-          </div>
+      {/* ✅ Pie + Bar Chart */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Pie Chart - Monthly Rent Status */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="font-semibold mb-4">สถานะการชำระค่าเช่า</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: "Paid", value: summary.totalPaid },
+                  { name: "Unpaid", value: summary.totalUnpaid },
+                ]}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={70}
+                label
+              >
+                <Cell fill="#10b981" />
+                <Cell fill="#facc15" />
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
 
-        {loadingRooms ? (
-          <p>⏳Loading rooms...</p>
-        ) : (
-          <div className="grid grid-cols-5 gap-4 mb-10">
-            {rooms.map((room) => (
-              <div
-                key={room.id}
-                className={`relative rounded-lg p-4 shadow-md transition-transform duration-300 cursor-pointer
-                  hover:scale-105 hover:shadow-lg
-                  ${
-                  room.status === "OCCUPIED"
-                      ? "bg-[#88D64C] text-white"
-                      : room.status === "MAINTENANCE"
-                      ? "bg-[#FFAE00] text-white"
-                      : "bg-gray-200 text-gray-900"
-                }`}
-              >
-                {/* Delete button */}
-                <button
-                  onClick={(e) => handleDeleteRoom(e, room.id, room.roomNumber)}
-                  className="absolute top-3 right-3 bg-gray-400 hover:bg-gray-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
-                  aria-label={`Delete room ${room.roomNumber}`}
-                >
-                  ×
-                </button>
-
-                <Link href={`/admin/rooms/${room.id}`}>
-                  <div className="font-bold text-lg cursor-pointer">
-                    {room.roomNumber}
-                  </div>
-                </Link>
-
-                <div className="text-sm mt-1">
-                  Status:{" "}
-                  {room.status === "AVAILABLE"
-                    ? "Available"
-                    : room.status === "OCCUPIED"
-                    ? "Occupied"
-                    : "Maintenance"}
-                </div>
-
-                <select
-                  className="w-full text-gray-900 rounded-md px-2 py-2 mt-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
-                  value={room.status}
-                  onChange={(e) =>
-                    handleStatusChange(room.id, e.target.value as RoomStatus)
-                  }
-                >
-                  <option value="AVAILABLE">Available</option>
-                  <option value="OCCUPIED">Occupied</option>
-                  <option value="MAINTENANCE">Maintenance</option>
-                </select>
-              </div>
-            ))}
-          </div>
-        )}
-
-
-
-        {/* ===== Users Section ===== */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Tenant List</h2>
-
-        {loadingUsers ? (
-          <p>⏳ Loading tenant data..</p>
-         ) : (
-          <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg">
-            <table className="min-w-full table-auto text-sm text-left">
-              <thead className="border border-gray-200 bg-white  text-gray-600">
-                <tr>
-                  <th className="px-4 py-3">First Name</th>
-                  <th className="px-4 py-3">Last Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">User ID</th>
-                  <th className="px-4 py-3">Room </th>
-                  <th className="px-4 py-3">Sign Up Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr
-                    key={u.id}
-                    className="border-gray-200 bg-white text-gray-800 hover:bg-gray-200 transition"
-                  >
-                    <td className="px-4 py-3">{u.firstName}</td>
-                    <td className="px-4 py-3">{u.lastName}</td>
-                    <td className="px-4 py-3">{u.email}</td>
-                    <td className="px-4 py-3">{u.phone}</td>
-                    <td className="px-4 py-3">{u.userId}</td>
-                    <td className="px-4 py-3">
-                      {u.roomNumber ? u.roomNumber : "-"}
-                    </td>
-                    <td className="px-4 py-3">
-                      {new Date(u.createdAt).toLocaleDateString("th-TH")}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* Bar Chart - รายได้รวมรายเดือน */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="font-semibold mb-4">รายได้รวมต่อเดือน</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={summary.monthlyRevenue}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="revenue" fill="#3b82f6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
+
+      {/* ✅ Line + Stacked Bar Chart */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Line Chart - แนวโน้มการแจ้งซ่อม */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="font-semibold mb-4">แนวโน้มการแจ้งซ่อม</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={summary.maintenanceTrend}>
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line dataKey="PENDING" stroke="#f59e0b" />
+              <Line dataKey="IN_PROGRESS" stroke="#3b82f6" />
+              <Line dataKey="COMPLETED" stroke="#10b981" />
+              <Line dataKey="CANCLE" stroke="#ef4444" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Stacked Bar Chart - รายได้ตามประเภท */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="font-semibold mb-4">รายได้แยกตามประเภท</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={summary.revenueByCategory} stackOffset="expand">
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="rent" stackId="a" fill="#3b82f6" />
+              <Bar dataKey="water" stackId="a" fill="#10b981" />
+              <Bar dataKey="electricity" stackId="a" fill="#f59e0b" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ Component ย่อย: Card
+function Card({
+  title,
+  value,
+  icon,
+  bg,
+}: {
+  title: string;
+  value: string;
+  icon: string;
+  bg: string;
+}) {
+  return (
+    <div className={`rounded-lg p-4 ${bg} shadow flex items-center justify-between`}>
+      <div>
+        <p className="text-sm text-gray-700">{title}</p>
+        <p className="text-xl font-bold text-black">{value}</p>
+      </div>
+      <i className={`${icon} text-3xl text-gray-600`} />
     </div>
   );
 }
