@@ -42,7 +42,45 @@ export default function RootLayout({
       </head>
       <body className="bg-white text-black antialiased min-h-screen">
         {children}
-        <Toaster position="top-center" reverseOrder={false} /> {/* ✅ เพิ่มตรงนี้ */}
+        <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // ค่ามาตรฐานของทุก toast
+          style: {
+            background: '#333',
+            color: '#fff',
+            fontSize: '14px',
+            borderRadius: '8px',
+            padding: '12px 16px',
+          },
+          duration: 4000,
+
+          // สำหรับ success โดยเฉพาะ
+          success: {
+            duration: 3000,
+            style: {
+              background: '#16a34a',
+            },
+            iconTheme: {
+              primary: 'white',
+              secondary: '#16a34a',
+            },
+          },
+
+          // สำหรับ error โดยเฉพาะ
+          error: {
+            duration: 5000,
+            style: {
+              background: '#dc2626',
+            },
+            iconTheme: {
+              primary: 'white',
+              secondary: '#dc2626',
+            },
+          },
+        }}
+      /> 
       </body>
     </html>
   );

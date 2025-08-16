@@ -56,7 +56,7 @@ export default function MaintenancePage() {
     }
 
     if (!category) {
-      toast.error("กรุณาเลือก Category");
+      toast.error("Please Select Category");
       return;
     }
 
