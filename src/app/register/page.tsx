@@ -7,6 +7,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { v4 as uuidv4 } from "uuid";
 import AboutUsPage from "@/components/about";
 import ContactPage from "@/components/contact"; 
+import toast, { Toaster } from "react-hot-toast";
+
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -24,12 +26,11 @@ export default function RegisterPage() {
   const [userId] = useState(uuidv4());
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [availableRooms, setAvailableRooms] = useState<{ id: string; roomNumber: string; status: string }[]>([]);
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -48,58 +49,60 @@ export default function RegisterPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const result = RegisterSchema.safeParse({ ...form, userId, roomId: selectedRoomId });
+  const result = RegisterSchema.safeParse({ ...form, userId, roomId: selectedRoomId });
 
-    if (!result.success) {
-      const msg = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
-      setError(msg);
-      return;
-    }
+  if (!result.success) {
+    const msg = result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
+    toast.error(msg);
+    return;
+  }
 
-    try {
-      const res = await fetch("/api/registeruser", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...form, userId, roomId: selectedRoomId }),
+  setLoading(true);
+  try {
+    const res = await fetch("/api/registeruser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...form, userId, roomId: selectedRoomId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.error || "เกิดข้อผิดพลาด");
+    } else {
+      toast.success(data.message || "สมัครสมาชิกสำเร็จ");
+      setForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        birthday: "",
+        address: "",
+        nationalId: "",
+        password: "",
+        confirmPassword: "",
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "เกิดข้อผิดพลาด");
-      } else {
-        setSuccess(data.message || "สมัครสมาชิกสำเร็จ");
-        setForm({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          birthday: "",
-          address: "",
-          nationalId: "",
-          password: "",
-          confirmPassword: "",
-        });
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("เกิดข้อผิดพลาดที่เซิร์ฟเวอร์");
-      }
+      setSelectedRoomId("");
     }
-  };
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      toast.error(err.message);
+    } else {
+      toast.error("เกิดข้อผิดพลาดที่เซิร์ฟเวอร์");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
+      <div className="min-h-screen bg-white">
+      <Toaster position="top-right" />
       <header className="w-full fixed top-0 left-0 right-0 flex justify-between items-center bg-white px-20 py-4 shadow-md z-50">
         <div className="flex items-center space-x-2">
           <i className="ri-home-heart-fill text-4xl text-blue-950"></i>
@@ -127,9 +130,8 @@ export default function RegisterPage() {
         </nav>
       </header>
 
-      {/* Content */}
       <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto mt-17 px-4 py-12 gap-10">
-        {/* Left Side */}
+
         <div className="md:w-1/2 md:sticky md:top-70 self-start text-center md:text-left space-y-6">
           <h1 className="text-4xl font-bold text-blue-950">Welcome to Dorm</h1>
           <p className="text-gray-600 text-lg">Easy-to-use dormitory management system for everyone</p>
@@ -269,10 +271,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {error && <p className="text-red-600 text-sm font-medium">{error}</p>}
-              {success && <p className="text-green-600 text-sm font-medium">{success}</p>}
-
-              {/* 🆕 เลือกห้อง */}
               <div>
                 <label className="block mb-1 font-medium text-gray-700">select room</label>
                 <select
@@ -289,20 +287,17 @@ export default function RegisterPage() {
                 </select>
               </div>
 
-              {error && <p className="text-red-600 text-sm font-medium">{error}</p>}
-              {success && <p className="text-green-600 text-sm font-medium">{success}</p>}
-
               <button
-                type="submit"
-                disabled={!Object.values(form).every((v) => v.trim() !== "")}
-                className={`w-full font-semibold py-2 rounded-lg transition duration-200 ${
-                  Object.values(form).every((v) => v.trim() !== "")
-                    ? "bg-blue-950 text-white hover:bg-blue-900"
-                    : "bg-gray-400 text-white cursor-not-allowed"
-                }`}
-              >
-                Sign Up
-              </button>
+              type="submit"
+              disabled={loading || !Object.values(form).every((v) => v.trim() !== "")}
+              className={`w-full font-semibold py-2 rounded-lg transition duration-200 ${
+                Object.values(form).every((v) => v.trim() !== "") && !loading
+                  ? "bg-blue-950 text-white hover:bg-blue-900"
+                  : "bg-gray-400 text-white cursor-not-allowed"
+              }`}
+            >
+              {loading ? "กำลังสมัคร..." : "Sign Up"}
+            </button>
             </form>
           </main>
         </div>

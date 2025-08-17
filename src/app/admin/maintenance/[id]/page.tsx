@@ -61,7 +61,7 @@ export default function MaintenanceDetailPage() {
         return { label: "In Progress", color: "text-blue-700 bg-blue-100" };
       case "COMPLETED":
         return { label: "Completed", color: "text-green-700 bg-green-100" };
-      case "CANCLE":
+      case "CANCEL":
         return { label: "Cancelled", color: "text-red-700 bg-red-100" };
       default:
         return { label: "Unknown", color: "text-gray-700 bg-gray-100" };
@@ -178,7 +178,7 @@ export default function MaintenanceDetailPage() {
                 <option value="PENDING">Pending</option>
                 <option value="IN_PROGRESS">In Progress</option>
                 <option value="COMPLETED">Completed</option>
-                <option value="CANCLE">Cancelled</option>
+                <option value="CANCEL">Cancelled</option>
               </select>
             </div>
           </div>

@@ -227,7 +227,7 @@ export default function BillDetailPage() {
                 onClick={handleUpload}
                 className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition"
               >
-                Upload
+                Upload Slip
               </button>
             </div>
           </section>

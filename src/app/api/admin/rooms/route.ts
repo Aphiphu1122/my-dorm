@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 const prisma = new PrismaClient();
 
 export async function getRoleFromCookie(): Promise<string | null> {
-  const cookieStore = await cookies(); // ✅ แก้ไขตรงนี้
+  const cookieStore = await cookies();
   return cookieStore.get("role")?.value || null;
 }
 

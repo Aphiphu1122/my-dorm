@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  user
+  admin
+}
+
 enum RoomStatus {
   AVAILABLE
   OCCUPIED
@@ -17,7 +22,7 @@ enum MaintenanceStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
-  CANCLE
+  CANCEL
 }
 
 enum MaintenanceCategory {
@@ -35,44 +40,50 @@ enum BillStatus {
   PAID             
 }
 
+enum MoveOutStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 model room {
   id                  String               @id @default(uuid())
   roomNumber          String               @unique
   status              RoomStatus           @default(AVAILABLE)
+
   tenantId            String?              @unique
+  tenant              profile?             @relation("UserRoom", fields: [tenantId], references: [id])
+
   maintenanceRequests maintenanceRequest[]
-  tenant              profile?             @relation("UserRoom")
+  bills               bill[]               @relation("RoomBills")
+  moveOutRequests     moveOutRequest[]
 
-  bills     bill[]    @relation("RoomBills")
-
-  createdAt  DateTime   @default(now())    
-  updatedAt  DateTime   @updatedAt      
-
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model profile {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  email      String   @unique
-  password   String
-  firstName  String
-  lastName   String
-  phone      String
-  birthday   DateTime
-  address    String
-  nationalId String   @unique
+  id                  String               @id @default(uuid())
+  userId              String               @unique
+  email               String               @unique
+  password            String
+  firstName           String
+  lastName            String
+  phone               String
+  birthday            DateTime
+  address             String
+  nationalId          String               @unique
 
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role                String               @default("user")
+  room                room?                @relation("UserRoom")
 
-  roomId              String?              @unique
-  room                room?                @relation("UserRoom", fields: [roomId], references: [id])
   maintenanceRequests maintenanceRequest[]
+  bills               bill[]               @relation("TenantBills")
+  notifications       notification[]
+  moveOutRequests     moveOutRequest[]
 
-  bills bill[] @relation("TenantBills")
-
-  notifications notification[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model maintenanceRequest {
@@ -80,46 +91,69 @@ model maintenanceRequest {
   description String
   imageUrl    String?
   status      MaintenanceStatus   @default(PENDING)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  category    MaintenanceCategory
+
+  // Relations
   roomId      String
   userId      String
-  category    MaintenanceCategory
   room        room                @relation(fields: [roomId], references: [id])
   user        profile             @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 }
 
 model bill {
-  id           String     @id @default(uuid())
-  tenantId     String
-  roomId       String
-  billingMonth DateTime
-  rentAmount   Float
-  waterUnit    Float
-  waterRate    Float
-  electricUnit Float
-  electricRate Float
-  totalAmount  Float
-  status       BillStatus @default(UNPAID)
+  id             String     @id @default(uuid())
+  tenantId       String
+  roomId         String
+
+  billingMonth   DateTime
+  rentAmount     Float
+  waterUnit      Float
+  waterRate      Float
+  electricUnit   Float
+  electricRate   Float
+  totalAmount    Float
+  status         BillStatus @default(UNPAID)
 
   paymentSlipUrl String?
   paymentDate    DateTime?
   transactionRef String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tenant         profile    @relation("TenantBills", fields: [tenantId], references: [id])
+  room           room       @relation("RoomBills", fields: [roomId], references: [id])
 
-  tenant profile @relation("TenantBills", fields: [tenantId], references: [id])
-  room   room    @relation("RoomBills", fields: [roomId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model notification {
   id        String   @id @default(uuid())
-  userId    String   
+  userId    String
   message   String
-  type      String   
+  type      String
   read      Boolean  @default(false)
-  createdAt DateTime @default(now())
 
-  user profile @relation(fields: [userId], references: [id])
+  user      profile  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model moveOutRequest {
+  id           String         @id @default(uuid())
+  userId       String
+  roomId       String
+  reason       String
+  note         String?
+  moveOutDate  DateTime
+  status       MoveOutStatus  @default(PENDING_APPROVAL)
+  imageUrl     String?
+
+  // Relations
+  user         profile        @relation(fields: [userId], references: [id])
+  room         room           @relation(fields: [roomId], references: [id])
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }

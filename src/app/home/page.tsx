@@ -22,11 +22,12 @@ type Notification = {
 interface UserProfile {
   firstName: string;
   lastName: string;
-  room: {
+  email: string;
+  rentAmount: number;
+  room?: {
     roomNumber: string;
     rentAmount?: number;
   };
-  rentAmount: number;
 }
 
 const bannerImages = [
@@ -58,17 +59,15 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, [isHover]);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
+    useEffect(() => {
+      const fetchProfile = async () => {
       const res = await fetch("/api/profile/me");
       if (!res.ok) return toast.error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
       const data = await res.json();
+
       setUser({
-        ...data.user,
-        rentAmount:
-          data.user?.room?.rentAmount ??
-          data.user?.rentAmount ??
-          3000, // fallback
+        ...data,
+        rentAmount: data?.room?.rentAmount ?? data?.rentAmount ?? 3000,
       });
     };
 

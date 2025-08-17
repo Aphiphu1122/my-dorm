@@ -50,7 +50,7 @@ export default function ReceiptPrintPage() {
 
   useEffect(() => {
     if (!loading && bill) {
-      setTimeout(() => window.print(), 300); // wait a bit for DOM
+      setTimeout(() => window.print(), 300);
     }
   }, [loading, bill]);
 

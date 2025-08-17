@@ -7,14 +7,12 @@ import { MaintenanceCategory } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
   try {
-    // ✅ ตรวจสอบสิทธิ์
     const userId = await getUserIdFromCookie()
     if (!userId) {
       console.log('❌ Unauthorized')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // ✅ รับค่าจาก formData
     const formData = await req.formData()
     const description = formData.get('description') as string
     const categoryRaw = formData.get('category') as string
@@ -24,7 +22,6 @@ export async function POST(req: NextRequest) {
     console.log('📂 category:', categoryRaw)
     console.log('🖼️ image:', image)
 
-    // ✅ ตรวจสอบ field
     if (!description || !categoryRaw) {
       console.log('❌ Missing fields')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -32,7 +29,6 @@ export async function POST(req: NextRequest) {
 
     const category = categoryRaw.toUpperCase() as MaintenanceCategory
 
-    // ✅ ตรวจสอบว่า category เป็น enum จริง
     const enumValues = Object.values(MaintenanceCategory)
     console.log('✅ Enum values:', enumValues)
 

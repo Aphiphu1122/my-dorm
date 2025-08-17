@@ -65,7 +65,7 @@ export default function MaintenanceListPage() {
       case "CANCEL":
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-red-700 bg-red-100 font-semibold text-sm">
-            🔴 Cancelled
+            🔴 Cancel
           </span>
         );
       default:
@@ -77,9 +77,8 @@ return (
   <div className="flex min-h-screen bg-white">
     <Sidebar role="admin" />
 
-    {/* ขวา: ให้เต็มจอ ชิดขอบ */}
     <main className="flex-1 w-full px-0 py-6">
-      {/* Header */}
+
       <div className="flex items-center justify-between mb-6 px-4 md:px-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Maintenance Requests</h1>
@@ -96,7 +95,7 @@ return (
           No maintenance requests found.
         </p>
       ) : (
-        // ตารางเต็มความกว้างหน้าจอ (ยังคง overflow-x-auto เผื่อจอเล็ก)
+
         <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 bg-white mx-4 md:mx-6">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-100">

@@ -46,7 +46,7 @@ export default function RootLayout({
         position="top-center"
         reverseOrder={false}
         toastOptions={{
-          // ค่ามาตรฐานของทุก toast
+
           style: {
             background: '#333',
             color: '#fff',
@@ -56,7 +56,6 @@ export default function RootLayout({
           },
           duration: 4000,
 
-          // สำหรับ success โดยเฉพาะ
           success: {
             duration: 3000,
             style: {
@@ -68,7 +67,6 @@ export default function RootLayout({
             },
           },
 
-          // สำหรับ error โดยเฉพาะ
           error: {
             duration: 5000,
             style: {

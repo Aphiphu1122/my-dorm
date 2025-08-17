@@ -1,8 +1,7 @@
+// src/app/api/profile/update/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/prisma"; // ✅ แนะนำให้ใช้ db จาก lib แทน new PrismaClient()
 import { cookies } from "next/headers";
-
-const prisma = new PrismaClient();
 
 export async function PUT(req: Request) {
   try {
@@ -15,25 +14,30 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const {
-      firstName,
-      lastName,
-      phone,
-      birthday,
-      address,
-    } = body;
+    const { firstName, lastName, phone, birthday, address } = body;
 
-    const updated = await prisma.profile.update({
-      where: { userId },
-      data: {
-        firstName,
-        lastName,
-        phone,
-        birthday,
-        address,
-        updatedAt: new Date(),
-      },
-    });
+    // ตรวจสอบว่าค่าที่รับมาครบและถูกต้อง
+    if (!firstName || !lastName || !phone || !birthday || !address) {
+      return NextResponse.json(
+        { error: "กรอกข้อมูลไม่ครบถ้วน" },
+        { status: 400 }
+      );
+    }
+
+      const updated = await db.profile.update({
+        where: { id: userId },
+        data: {
+          firstName,
+          lastName,
+          phone,
+          birthday: new Date(birthday),
+          address,
+          updatedAt: new Date(),
+        },
+        include: {
+          room: true,
+        },
+      });
 
     return NextResponse.json({ message: "อัปเดตสำเร็จ", user: updated });
   } catch (error) {
@@ -42,7 +46,5 @@ export async function PUT(req: Request) {
       { error: "เกิดข้อผิดพลาดภายในระบบ" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

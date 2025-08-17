@@ -7,10 +7,9 @@ const prisma = new PrismaClient();
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // ต้องใช้ Service Role Key เพื่อดึงข้อมูล user ได้
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ✅ กำหนดชนิดข้อมูลของ body ให้ชัดเจน
 type ProfileData = {
   email: string;
   firstName: string;
@@ -19,9 +18,9 @@ type ProfileData = {
   birthday: string;
   address: string;
   nationalId: string;
-  password: string; // ✅ เพิ่ม!
+  password: string;
   userId: string;
-  role?: "user" | "admin"; // optional ได้
+  role?: "user" | "admin"; 
 };
 
 export async function POST(req: Request) {
@@ -35,7 +34,7 @@ export async function POST(req: Request) {
     birthday,
     address,
     nationalId,
-    password, // ✅ destructure
+    password,
     userId,
     role = "user",
   } = body;
