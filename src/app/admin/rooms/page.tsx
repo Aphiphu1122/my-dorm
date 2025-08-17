@@ -5,7 +5,6 @@ import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
 
-
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
 type Room = {
@@ -63,9 +62,18 @@ export default function RoomManagementPage() {
     }
   };
 
+  // ✅ ตรวจสอบความถูกต้องของหมายเลขห้อง (ต้องเป็นตัวเลขล้วน)
+  const isValidRoomNumber = /^\d+$/.test(newRoomNumber);
+
   const handleAddRoom = async () => {
     if (!newRoomNumber.trim()) {
       toast.error("กรุณากรอกหมายเลขห้อง");
+      return;
+    }
+
+    // ✅ กันพลาดอีกชั้น ก่อนยิง API
+    if (!isValidRoomNumber) {
+      toast.error("หมายเลขห้องต้องเป็นตัวเลขเท่านั้น (0-9)");
       return;
     }
 
@@ -132,20 +140,18 @@ export default function RoomManagementPage() {
         {/* Sidebar ซ้าย */}
         <Sidebar role="admin" />
 
-        {/* คอลัมน์ขวา: เอา padding ด้านข้างออกให้เต็มจอ */}
+        {/* คอลัมน์ขวา */}
         <div className="flex-1 w-full px-0 py-6">
           <Toaster position="top-right" />
 
-          {/* ตัด max-w-5xl และ mx-auto ออก เพื่อให้กว้างเต็ม */}
           <div className="w-full">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6 px-4 md:px-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">All Rooms</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Room Management</h1>
                 <p className="text-gray-600">จัดการห้องพักและสถานะ</p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                {/* Filter */}
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="filter"
@@ -169,19 +175,30 @@ export default function RoomManagementPage() {
                 </div>
 
                 {/* Add Room */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-52 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
-                    placeholder="Room number"
-                    value={newRoomNumber}
-                    onChange={(e) => setNewRoomNumber(e.target.value)}
-                  />
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
+                  <div className="flex flex-col">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d*"
+                      maxLength={4} // ✅ กันตั้งแต่ attribute
+                      className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-52 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+                      placeholder="Room number"
+                      value={newRoomNumber}
+                      onChange={(e) => {
+                        // ✅ อนุญาตเฉพาะตัวเลข และตัดความยาวเกิน 4
+                        const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+                        setNewRoomNumber(value);
+                      }}
+                    />
+                  </div>
+
                   <button
-                    className="bg-[#0F3659] text-white px-5 py-2 rounded-md hover:scale-105 transition"
+                    className="bg-[#0F3659] text-white px-5 py-2 rounded-md hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleAddRoom}
+                    disabled={!newRoomNumber || !isValidRoomNumber}
                   >
-                    + Add
+                    + Add Room
                   </button>
                 </div>
               </div>
@@ -195,7 +212,6 @@ export default function RoomManagementPage() {
             ) : filteredRooms.length === 0 ? (
               <div className="py-16 text-center text-gray-600">ไม่มีห้องที่ตรงกับเงื่อนไข</div>
             ) : (
-
               <div className="px-4 md:px-6">
                 <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
                   {filteredRooms.map((room) => {
@@ -218,7 +234,7 @@ export default function RoomManagementPage() {
                             setSelectedRoom(room);
                             setShowDeleteModal(true);
                           }}
-                          className="absolute top-2 right-2 bg-black/20 hover:bg-black/40 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
+                          className="absolute top-2 right-2 bg-black/20 hover:bg黒/40 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
                           aria-label={`Delete room ${room.roomNumber}`}
                           title="Delete"
                         >
@@ -233,12 +249,13 @@ export default function RoomManagementPage() {
 
                         <div className="text-sm mt-1">
                           Status:{" "}
-                              {room.status === "AVAILABLE"
-                          ? "Available"
-                          : room.status === "OCCUPIED"
-                          ? "Occupied"
-                          : "Maintenance"}
-                      </div>
+                          {room.status === "AVAILABLE"
+                            ? "Available"
+                            : room.status === "OCCUPIED"
+                            ? "Occupied"
+                            : "Maintenance"}
+                        </div>
+
                         <select
                           className="mt-3 text-black bg-white/90 p-2 rounded-md w-full"
                           value={room.status}
