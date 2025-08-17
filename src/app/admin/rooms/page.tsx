@@ -131,13 +131,13 @@ export default function RoomManagementPage() {
         {/* Sidebar ซ้าย */}
         <Sidebar role="admin" />
 
-        {/* คอลัมน์ขวา (ทุกอย่างต้องอยู่ในนี้ เพื่อไม่ให้หล่นไป “ข้างล่าง”) */}
-        <div className="flex-1 p-8 w-full">
+        {/* คอลัมน์ขวา: เอา padding ด้านข้างออกให้เต็มจอ */}
+        <div className="flex-1 w-full px-0 py-6">
           <Toaster position="top-right" />
 
-          {/* Header + Controls */}
-          <div className="max-w-5xl mx-auto">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+          {/* ตัด max-w-5xl และ mx-auto ออก เพื่อให้กว้างเต็ม */}
+          <div className="w-full">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6 px-4 md:px-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">All Rooms</h1>
                 <p className="text-gray-600">จัดการห้องพักและสถานะ</p>
@@ -192,73 +192,71 @@ export default function RoomManagementPage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#0F3659] border-b-transparent border-solid" />
               </div>
             ) : filteredRooms.length === 0 ? (
-              <div className="py-16 text-center text-gray-600">
-                ไม่มีห้องที่ตรงกับเงื่อนไข
-              </div>
+              <div className="py-16 text-center text-gray-600">ไม่มีห้องที่ตรงกับเงื่อนไข</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {filteredRooms.map((room) => {
-                  const isOccupied = room.status === "OCCUPIED";
-                  const isMaint = room.status === "MAINTENANCE";
-                  const cardClass =
-                    isOccupied
-                      ? "bg-green-500 text-white"
-                      : isMaint
-                      ? "bg-yellow-400 text-gray-900"
-                      : "bg-gray-200 text-gray-900";
-                  return (
-                    <div
-                      key={room.id}
-                      className={`rounded-lg p-4 text-center relative shadow-sm ${cardClass}`}
-                    >
-                      {/* ปุ่มลบ */}
-                      <button
-                        onClick={() => {
-                          setSelectedRoom(room);
-                          setShowDeleteModal(true);
-                        }}
-                        className="absolute top-2 right-2 bg-black/20 hover:bg-black/40 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
-                        aria-label={`Delete room ${room.roomNumber}`}
-                        title="Delete"
+              // ใช้ auto-fit ให้การ์ดกินเต็มแถวตามพื้นที่
+              <div className="px-4 md:px-6">
+                <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
+                  {filteredRooms.map((room) => {
+                    const isOccupied = room.status === "OCCUPIED";
+                    const isMaint = room.status === "MAINTENANCE";
+                    const cardClass =
+                      isOccupied
+                        ? "bg-green-500 text-white"
+                        : isMaint
+                        ? "bg-yellow-400 text-gray-900"
+                        : "bg-gray-200 text-gray-900";
+                    return (
+                      <div
+                        key={room.id}
+                        className={`rounded-lg p-4 text-center relative shadow-sm ${cardClass}`}
                       >
-                        ×
-                      </button>
+                        {/* ปุ่มลบ */}
+                        <button
+                          onClick={() => {
+                            setSelectedRoom(room);
+                            setShowDeleteModal(true);
+                          }}
+                          className="absolute top-2 right-2 bg-black/20 hover:bg-black/40 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
+                          aria-label={`Delete room ${room.roomNumber}`}
+                          title="Delete"
+                        >
+                          ×
+                        </button>
 
-                      {/* เลขห้อง */}
-                      <Link href={`/admin/rooms/${room.id}`}>
-                        <div className="font-extrabold text-xl cursor-pointer">
-                          {room.roomNumber}
+                        {/* เลขห้อง */}
+                        <Link href={`/admin/rooms/${room.id}`}>
+                          <div className="font-extrabold text-xl cursor-pointer">
+                            {room.roomNumber}
+                          </div>
+                        </Link>
+
+                        {/* สถานะ */}
+                        <div className="text-sm mt-1">
+                          สถานะ:{" "}
+                          {room.status === "AVAILABLE"
+                            ? "ว่าง"
+                            : room.status === "OCCUPIED"
+                            ? "มีผู้เช่า"
+                            : "กำลังซ่อม"}
                         </div>
-                      </Link>
 
-                      {/* สถานะ */}
-                      <div className="text-sm mt-1">
-                        สถานะ:{" "}
-                        {room.status === "AVAILABLE"
-                          ? "ว่าง"
-                          : room.status === "OCCUPIED"
-                          ? "มีผู้เช่า"
-                          : "กำลังซ่อม"}
+                        {/* เปลี่ยนสถานะ */}
+                        <select
+                          className="mt-3 text-black bg-white/90 p-2 rounded-md w-full"
+                          value={room.status}
+                          onChange={(e) =>
+                            handleStatusChange(room.id, e.target.value as RoomStatus)
+                          }
+                        >
+                          <option value="AVAILABLE">ว่าง</option>
+                          <option value="OCCUPIED">มีผู้เช่า</option>
+                          <option value="MAINTENANCE">กำลังซ่อม</option>
+                        </select>
                       </div>
-
-                      {/* เปลี่ยนสถานะ */}
-                      <select
-                        className="mt-3 text-black bg-white/90 p-2 rounded-md w-full"
-                        value={room.status}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            room.id,
-                            e.target.value as RoomStatus
-                          )
-                        }
-                      >
-                        <option value="AVAILABLE">ว่าง</option>
-                        <option value="OCCUPIED">มีผู้เช่า</option>
-                        <option value="MAINTENANCE">กำลังซ่อม</option>
-                      </select>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

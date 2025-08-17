@@ -24,6 +24,7 @@ interface UserProfile {
   lastName: string;
   room: {
     roomNumber: string;
+    rentAmount?: number;
   };
   rentAmount: number;
 }
@@ -32,7 +33,6 @@ const bannerImages = [
   "https://i.ytimg.com/vi/N9mpV2Muv8k/maxresdefault.jpg",
   "https://s.isanook.com/wo/0/ud/42/210425/210425-20221223071830-5775dce.jpg?ip/resize/w728/q80/jpg",
   "https://bcdn.renthub.in.th/listing_picture/202401/20240119/W2E2K69JvJqgFauZ97By.jpg?class=doptimized",
-  
 ];
 
 export default function HomePage() {
@@ -40,14 +40,23 @@ export default function HomePage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [hasNewBill, setHasNewBill] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
+  // ===== Banner states =====
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHover, setIsHover] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const goPrev = () =>
+    setCurrentIndex((i) => (i === 0 ? bannerImages.length - 1 : i - 1));
+  const goNext = () =>
+    setCurrentIndex((i) => (i === bannerImages.length - 1 ? 0 : i + 1));
+
+  // Auto slide (หยุดเมื่อ hover)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % bannerImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isHover || bannerImages.length <= 1) return;
+    const id = setInterval(goNext, 4000);
+    return () => clearInterval(id);
+  }, [isHover]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -56,7 +65,10 @@ export default function HomePage() {
       const data = await res.json();
       setUser({
         ...data.user,
-        rentAmount: data.user?.room?.rentAmount ?? 3000,
+        rentAmount:
+          data.user?.room?.rentAmount ??
+          data.user?.rentAmount ??
+          3000, // fallback
       });
     };
 
@@ -64,29 +76,22 @@ export default function HomePage() {
       const res = await fetch("/api/bills");
       if (!res.ok) return toast.error("โหลดข้อมูลบิลไม่สำเร็จ");
       const data = await res.json();
-      setBills(data.bills);
+      setBills(Array.isArray(data.bills) ? data.bills : []);
     };
 
     const fetchNotifications = async () => {
       const res = await fetch("/api/notifications/me");
       if (!res.ok) return;
-
       const data = await res.json();
       const notiArray = Array.isArray(data) ? data : data.notifications;
-
-      if (!Array.isArray(notiArray)) {
-        console.error("Notification data is not an array:", data);
-        return;
-      }
+      if (!Array.isArray(notiArray)) return;
 
       setNotifications(notiArray);
-
       const currentMonth = new Date().getMonth();
       const newBillNoti = notiArray.some((n: Notification) => {
         const createdMonth = new Date(n.createdAt).getMonth();
         return createdMonth === currentMonth;
       });
-
       setHasNewBill(newBillNoti);
     };
 
@@ -97,9 +102,7 @@ export default function HomePage() {
 
   const handleClearNotifications = async () => {
     try {
-      await fetch("/api/notifications/me", {
-        method: "DELETE",
-      });
+      await fetch("/api/notifications/me", { method: "DELETE" });
       setNotifications([]);
       setHasNewBill(false);
       toast.success("ล้างการแจ้งเตือนเรียบร้อยแล้ว");
@@ -116,9 +119,10 @@ export default function HomePage() {
         <Sidebar role="user" />
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+      {/* Main content: เต็มจอ ไม่มีขอบข้าง */}
+      <main className="flex-1 w-full px-0 py-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6 px-4 md:px-6">
           <div>
             <h1 className="text-3xl font-bold">
               Hello , {user?.firstName} {user?.lastName}
@@ -132,40 +136,90 @@ export default function HomePage() {
           />
         </div>
 
-       {/* Banner แบบ fade transition */}
-          <div className="relative w-full h-52 rounded-xl overflow-hidden mb-8">
+        {/* ===== Banner (อัปเกรด) ===== */}
+        <div
+          className="px-4 md:px-6 mb-8"
+          onMouseEnter={() => setIsHover(true)}
+          onMouseLeave={() => setIsHover(false)}
+        >
+          <div
+            className="relative w-full rounded-2xl overflow-hidden shadow-sm
+                       aspect-[21/9] sm:aspect-[16/6] md:aspect-[16/5] lg:aspect-[16/4]"
+            onTouchStart={(e) => setTouchStartX(e.changedTouches[0].clientX)}
+            onTouchEnd={(e) => {
+              if (touchStartX === null) return;
+              const dx = e.changedTouches[0].clientX - touchStartX;
+              if (dx > 50) goPrev();
+              if (dx < -50) goNext();
+              setTouchStartX(null);
+            }}
+            aria-roledescription="carousel"
+          >
+            {/* Slides */}
             {bannerImages.map((src, index) => (
               <Image
-                key={index}
+                key={src + index}
                 src={src}
                 alt={`Banner ${index + 1}`}
                 fill
-                style={{ objectFit: "cover" }}
-                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-1000 ${
-                  currentIndex === index ? "opacity-100" : "opacity-0 pointer-events-none"
+                className={`absolute inset-0 object-cover transition-opacity duration-700 ${
+                  currentIndex === index ? "opacity-100" : "opacity-0"
                 }`}
                 unoptimized={src.startsWith("http")}
-                priority={currentIndex === index} // โหลดรูปปัจจุบันก่อน
+                sizes="100vw"
+                priority={currentIndex === index}
               />
             ))}
 
-            {/* Dots */}
-            <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-3 rounded-full px-3 py-1 ">
-              {bannerImages.map((_, index) => (
+            {/* Gradient ล่างเพื่อความชัด */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
+
+            {/* Controls */}
+            {bannerImages.length > 1 && (
+              <>
                 <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    currentIndex === index ? "bg-[#0F3659]" : "bg-gray-300"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
+                  type="button"
+                  aria-label="Previous slide"
+                  onClick={goPrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white
+                             backdrop-blur px-3 py-2 shadow-md"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next slide"
+                  onClick={goNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white
+                             backdrop-blur px-3 py-2 shadow-md"
+                >
+                  ›
+                </button>
+              </>
+            )}
+
+            {/* Dots */}
+            {bannerImages.length > 1 && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                {bannerImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentIndex(i)}
+                    aria-label={`Go to slide ${i + 1}`}
+                    className={`h-2.5 w-2.5 rounded-full border transition ${
+                      currentIndex === i
+                        ? "bg-white border-white"
+                        : "border-white/70 bg-white/40"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
+        </div>
 
-
-        <div className="mb-8">
+        {/* Tenant Info */}
+        <div className="mb-8 px-4 md:px-6">
           <h2 className="text-xl font-semibold mb-2">Tenant Info</h2>
           <div className="flex items-center gap-2 text-lg">
             <span>🏠</span>
@@ -177,16 +231,19 @@ export default function HomePage() {
             <span className="font-medium text-[#0F3659]">
               Rent Amount : {user?.rentAmount?.toLocaleString()} Bath
             </span>
-            <span className="text-sm text-gray-500">Due on the 5th of each month</span>
+            <span className="text-sm text-gray-500">
+              Due on the 5th of each month
+            </span>
           </div>
         </div>
 
-        <div>
+        {/* Payment History */}
+        <div className="px-4 md:px-6">
           <h2 className="text-xl font-semibold mb-3">Payment History</h2>
           <div className="overflow-x-auto border border-gray-200 rounded-md">
             <table className="min-w-full table-auto text-sm">
               <thead>
-                <tr className="bg-gray-100 text-gray-600  text-left">
+                <tr className="bg-gray-100 text-gray-600 text-left">
                   <th className="p-3">Date</th>
                   <th className="p-3">Amount</th>
                   <th className="p-3">Status</th>
@@ -205,20 +262,25 @@ export default function HomePage() {
                         month: "long",
                       })}
                     </td>
-                    <td className="p-3">{bill.totalAmount.toLocaleString()} Bath</td>
+                    <td className="p-3">
+                      {bill.totalAmount.toLocaleString()} Bath
+                    </td>
                     <td className="p-3">
                       {bill.status === "PAID" ? (
                         <span className="inline-flex bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs items-center gap-1">
-                        <i className="ri-checkbox-circle-fill text-green-600"></i> Paid
-                      </span>
+                          <i className="ri-checkbox-circle-fill text-green-600"></i>{" "}
+                          Paid
+                        </span>
                       ) : bill.status === "PENDING_APPROVAL" ? (
                         <span className="inline-flex bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs items-center gap-1">
-                        <i className="ri-indeterminate-circle-fill text-yellow-600"></i> Pending
-                      </span>
+                          <i className="ri-indeterminate-circle-fill text-yellow-600"></i>{" "}
+                          Pending
+                        </span>
                       ) : (
                         <span className="inline-flex bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs items-center gap-1">
-                        <i className="ri-close-circle-fill text-red-600"></i> Unpaid
-                      </span>
+                          <i className="ri-close-circle-fill text-red-600"></i>{" "}
+                          Unpaid
+                        </span>
                       )}
                     </td>
                     <td className="p-3">
@@ -239,7 +301,6 @@ export default function HomePage() {
                   </tr>
                 )}
               </tbody>
-
             </table>
           </div>
         </div>
