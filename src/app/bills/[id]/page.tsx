@@ -113,14 +113,11 @@ export default function BillDetailPage() {
         <Sidebar role="user" />
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 max-w-4xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-1 text-gray-900">bills & Payments</h1>
+        <h1 className="text-3xl font-bold mb-1 text-black">Bills & Payments</h1>
         <p className="text-gray-500 mb-8">Manage your bills and rent</p>
 
-        
 
-        {/* Billing Month & Status */}
           <h2 className="text-lg font-semibold text-[#0F3659] mb-1">
             Rent bill{" "}
             {new Date(bill.billingMonth).toLocaleDateString("en-GB", {

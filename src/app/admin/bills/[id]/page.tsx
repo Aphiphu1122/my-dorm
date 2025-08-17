@@ -116,8 +116,8 @@ export default function AdminBillDetailPage() {
 
       {/* Content */}
        <main className="flex-1 max-w-4xl mx-auto p-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          bills & Payments
+        <h1 className="text-3xl font-bold text-black dark:text-gray-900 mb-2">
+          Bills & Payments
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8">
           Manage your bills and rent
