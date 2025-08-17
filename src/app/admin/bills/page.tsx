@@ -1,13 +1,13 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
-
+ 
 type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
-
+ 
 type Bill = {
   id: string;
   billingMonth: string;
@@ -19,23 +19,19 @@ type Bill = {
   totalAmount: number;
   status: BillStatus;
   createdAt: string;
-  room: {
-    roomNumber: string;
-  };
-  tenant: {
-    firstName: string;
-    lastName: string;
-  };
+  room: { roomNumber: string };
+  tenant: { firstName: string; lastName: string };
 };
-
+ 
 export default function AdminBillListPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [searchTerm, setSearchTerm] = useState("");
+ 
   useEffect(() => {
     fetchBills();
   }, []);
-
+ 
   const fetchBills = async () => {
     try {
       const res = await fetch("/api/admin/bills");
@@ -50,118 +46,138 @@ export default function AdminBillListPage() {
       setLoading(false);
     }
   };
-
+ 
+  const filteredBills = bills.filter((bill) => {
+    const tenantName = `${bill.tenant?.firstName} ${bill.tenant?.lastName}`.toLowerCase();
+    return tenantName.includes(searchTerm.toLowerCase());
+  });
+ 
   const getStatusLabel = (status: BillStatus) => {
-    switch (status) {
-      case "PAID":
-        return <span className="text-green-600 font-semibold">✅ ชำระแล้ว</span>;
-      case "PENDING_APPROVAL":
-        return <span className="text-yellow-600 font-semibold">🕒 รอตรวจสอบ</span>;
-      case "UNPAID":
-      default:
-        return <span className="text-red-600 font-semibold">❌ ยังไม่ชำระ</span>;
-    }
-  };
-
+  switch (status) {
+    case "PAID":
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+          <i className="ri-checkbox-circle-fill"></i> Paid
+        </span>
+      );
+    case "PENDING_APPROVAL":
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-500 font-semibold text-sm">
+          <i className="ri-indeterminate-circle-fill"></i> Pending
+        </span>
+      );
+    case "UNPAID":
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+          <i className="ri-close-circle-fill"></i> Unpaid
+        </span>
+      );
+  }
+};
+ 
+ 
   return (
-    <div className="flex min-h-screen bg-white text-black">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
-        <Sidebar role="admin" />
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 p-8 max-w-6xl mx-auto">
-        {/* Header Row */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="flex min-h-screen bg-white">
+      <Sidebar role="admin" />
+ 
+      <div className="flex-1 p-8 max-w-6xl mx-auto">
+        <Toaster position="top-right" />
+ 
+        {/* Header + Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#0F3659]">รายการบิลทั้งหมด</h1>
-            <p className="text-gray-600 mt-1">จัดการบิลของผู้เช่าทั้งหมดในระบบ</p>
+            <h1 className="text-3xl font-bold text-gray-900">All Bills</h1>
+            <p className="text-gray-600">Manage all your bills</p>
           </div>
-          <Link href="/admin/bills/create">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition shadow">
-              + สร้างบิลใหม่
-            </button>
-          </Link>
+ 
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center border border-gray-300 rounded w-full sm:w-auto overflow-hidden">
+              <span className="flex items-center px-2 text-gray-500">
+                <i className="ri-search-line text-xl"></i>
+              </span>
+              <input
+                type="text"
+                placeholder="Search tenant name"
+                className="flex-1 px-2 py-2 outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+ 
+            <Link href="/admin/bills/create">
+              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                + New Bill
+              </button>
+            </Link>
+          </div>
         </div>
-
-        {/* Table / States */}
-        {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 w-full bg-gray-100 rounded animate-pulse" />
-            ))}
-          </div>
-        ) : bills.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
-            ยังไม่มีรายการบิล
-          </div>
-        ) : (
-          <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-            <table className="min-w-full text-sm text-left">
-              <thead className="bg-gray-100 text-gray-700">
+ 
+        {/* Table */}
+        <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg mt-8 ">
+          <table className="w-full border text-sm border-gray-200">
+            <thead className="border border-gray-200 bg-white text-left text-s font-semibold text-gray-600">
+              <tr>
+                <th className="px-4 py-3 border-b border-gray-200">Month</th>
+                <th className="px-4 py-3 border-b border-gray-200">Room</th>
+                <th className="px-4 py-3 border-b border-gray-200">Tenant</th>
+                <th className="px-4 py-3 border-b border-gray-200">Total</th>
+                <th className="px-4 py-3 border-b border-gray-200">Status</th>
+                <th className="px-4 py-3 border-b border-gray-200 text-center">Manage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th className="py-3 px-4">เดือน</th>
-                  <th className="py-3 px-4">ห้อง</th>
-                  <th className="py-3 px-4">ผู้เช่า</th>
-                  <th className="py-3 px-4">รวมยอด</th>
-                  <th className="py-3 px-4">สถานะ</th>
-                  <th className="py-3 px-4 text-center">จัดการ</th>
+                  <td colSpan={6} className="text-center py-4 ">Loading...</td>
                 </tr>
-              </thead>
-              <tbody>
-                {bills.map((bill) => (
-                  <tr key={bill.id} className="border-t hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      {format(new Date(bill.billingMonth), "MMMM yyyy")}
-                    </td>
-                    <td className="py-3 px-4">{bill.room?.roomNumber || "-"}</td>
-                    <td className="py-3 px-4">
-                      {bill.tenant?.firstName} {bill.tenant?.lastName}
-                    </td>
-                    <td className="py-3 px-4">{bill.totalAmount.toFixed(2)} บาท</td>
-                    <td className="py-3 px-4">{getStatusLabel(bill.status)}</td>
-                    <td className="py-3 px-4 text-center space-x-3">
-                      <Link href={`/admin/bills/${bill.id}`}>
-                        <button className="text-blue-600 hover:underline">
-                          ดูรายละเอียด
-                        </button>
-                      </Link>
-
-                      {/* ลบได้เฉพาะที่ยังไม่ชำระ */}
+              ) : filteredBills.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-4">No bills found.</td>
+                </tr>
+              ) : (
+                filteredBills.map((bill) => (
+                  <tr
+                    key={bill.id}
+                    className="border-b bg-white border-gray-200  hover:bg-gray-200  transition cursor-pointer"
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).tagName === "BUTTON") return;
+                      window.location.href = `/admin/bills/${bill.id}`;
+                    }}
+                  >
+                    <td className="px-4 py-3">{format(new Date(bill.billingMonth), "MMMM yyyy")}</td>
+                    <td className="px-4 py-3">{bill.room?.roomNumber || "-"}</td>
+                    <td className="px-4 py-3">{bill.tenant?.firstName} {bill.tenant?.lastName}</td>
+                    <td className="px-4 py-3 font-semibold ">{bill.totalAmount.toFixed(2)} Bath</td>
+                    <td className="px-4 py-3">{getStatusLabel(bill.status)}</td>
+                    <td className="px-4 py-3 text-center space-x-2">
                       {bill.status !== "PAID" && (
                         <button
-                          onClick={async () => {
-                            const confirmed = window.confirm(
-                              "คุณแน่ใจหรือไม่ว่าต้องการลบบิลนี้?"
-                            );
-                            if (!confirmed) return;
-
+                          onClick={async (e) => {
+                            e.stopPropagation(); // ป้องกันไม่ให้ tr คลิกไปหน้าอื่น
+                            if (!window.confirm("Are you sure you want to delete this bill??")) return;
                             try {
-                              const res = await fetch(`/api/admin/bills/${bill.id}`, {
-                                method: "DELETE",
-                              });
-                              if (!res.ok) throw new Error("ลบบิลไม่สำเร็จ");
-                              toast.success("ลบบิลสำเร็จ");
+                              const res = await fetch(`/api/admin/bills/${bill.id}`, { method: "DELETE" });
+                              if (!res.ok) throw new Error("Failed to delete bill");
+                              toast.success("Bill deleted successfully");
                               fetchBills();
-                            } catch (err) {
-                              toast.error("เกิดข้อผิดพลาดในการลบ");
-                              console.error(err);
+                            } catch {
+                              toast.error("An error occurred while deleting.");
                             }
                           }}
-                          className="text-red-600 hover:underline"
+                          className="text-red-500 hover:underline"
                         >
-                          ลบบิล
+                          Delete
                         </button>
                       )}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

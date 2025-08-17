@@ -59,7 +59,7 @@ export default function BillsPage() {
       </aside>
 
       <main className="flex-1 max-w-4xl mx-auto p-8">
-        <h1 className="text-2xl font-bold mb-1">bills & Payments</h1>
+        <h1 className="text-2xl font-bold mb-1">Bills & Payments</h1>
         <p className="text-gray-500 mb-6">Manage your bills and rent</p>
 
         {loading ? (
