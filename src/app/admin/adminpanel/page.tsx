@@ -190,9 +190,9 @@ export default function AdminDashboardPage() {
                   </button>
 
                   <Link href={`/admin/rooms/${room.id}`}>
-                    <div className="font-bold text-lg cursor-pointer">
-                      {room.roomNumber}
-                    </div>
+                          <div className="font-extrabold text-xl cursor-pointer">
+                            {room.roomNumber}
+                          </div>
                   </Link>
 
                   <div className="text-sm mt-1">

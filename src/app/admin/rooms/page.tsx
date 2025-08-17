@@ -195,7 +195,7 @@ export default function RoomManagementPage() {
             ) : filteredRooms.length === 0 ? (
               <div className="py-16 text-center text-gray-600">ไม่มีห้องที่ตรงกับเงื่อนไข</div>
             ) : (
-              // ใช้ auto-fit ให้การ์ดกินเต็มแถวตามพื้นที่
+
               <div className="px-4 md:px-6">
                 <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
                   {filteredRooms.map((room) => {
@@ -203,9 +203,9 @@ export default function RoomManagementPage() {
                     const isMaint = room.status === "MAINTENANCE";
                     const cardClass =
                       isOccupied
-                        ? "bg-green-500 text-white"
+                        ? "bg-[#88D64C] text-white"
                         : isMaint
-                        ? "bg-yellow-400 text-gray-900"
+                        ? "bg-[#FFAE00] text-white"
                         : "bg-gray-200 text-gray-900";
                     return (
                       <div
@@ -225,24 +225,20 @@ export default function RoomManagementPage() {
                           ×
                         </button>
 
-                        {/* เลขห้อง */}
                         <Link href={`/admin/rooms/${room.id}`}>
                           <div className="font-extrabold text-xl cursor-pointer">
                             {room.roomNumber}
                           </div>
                         </Link>
 
-                        {/* สถานะ */}
                         <div className="text-sm mt-1">
-                          สถานะ:{" "}
-                          {room.status === "AVAILABLE"
-                            ? "ว่าง"
-                            : room.status === "OCCUPIED"
-                            ? "มีผู้เช่า"
-                            : "กำลังซ่อม"}
-                        </div>
-
-                        {/* เปลี่ยนสถานะ */}
+                          Status:{" "}
+                              {room.status === "AVAILABLE"
+                          ? "Available"
+                          : room.status === "OCCUPIED"
+                          ? "Occupied"
+                          : "Maintenance"}
+                      </div>
                         <select
                           className="mt-3 text-black bg-white/90 p-2 rounded-md w-full"
                           value={room.status}
@@ -250,9 +246,9 @@ export default function RoomManagementPage() {
                             handleStatusChange(room.id, e.target.value as RoomStatus)
                           }
                         >
-                          <option value="AVAILABLE">ว่าง</option>
-                          <option value="OCCUPIED">มีผู้เช่า</option>
-                          <option value="MAINTENANCE">กำลังซ่อม</option>
+                          <option value="AVAILABLE">Available</option>
+                          <option value="OCCUPIED">Occupied</option>
+                          <option value="MAINTENANCE">Maintenance</option>
                         </select>
                       </div>
                     );
