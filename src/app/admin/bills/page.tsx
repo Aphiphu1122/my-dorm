@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
+import Sidebar from "@/components/sidebar";
 
 type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
 
@@ -38,9 +39,7 @@ export default function AdminBillListPage() {
   const fetchBills = async () => {
     try {
       const res = await fetch("/api/admin/bills");
-      if (!res.ok) {
-        throw new Error("โหลดข้อมูลบิลไม่สำเร็จ");
-      }
+      if (!res.ok) throw new Error("โหลดข้อมูลบิลไม่สำเร็จ");
       const data = await res.json();
       setBills(data);
     } catch (error: unknown) {
@@ -64,90 +63,105 @@ export default function AdminBillListPage() {
     }
   };
 
-    return (
-  <div className="p-6">
-    <div className="flex items-center justify-between mb-4">
-      <h1 className="text-2xl font-bold">รายการบิลทั้งหมด</h1>
-      <Link href="/admin/bills/create">
-        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          + สร้างบิลใหม่
-        </button>
-      </Link>
-    </div>
+  return (
+    <div className="flex min-h-screen bg-white text-black">
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+        <Sidebar role="admin" />
+      </aside>
 
-    {loading ? (
-      <p>กำลังโหลด...</p>
-    ) : bills.length === 0 ? (
-      <p>ยังไม่มีรายการบิล</p>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="py-2 px-4 border-b">เดือน</th>
-              <th className="py-2 px-4 border-b">ห้อง</th>
-              <th className="py-2 px-4 border-b">ผู้เช่า</th>
-              <th className="py-2 px-4 border-b">รวมยอด</th>
-              <th className="py-2 px-4 border-b">สถานะ</th>
-              <th className="py-2 px-4 border-b text-center">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bills.map((bill) => (
-              <tr key={bill.id}>
-                <td className="py-2 px-4 border-b">
-                  {format(new Date(bill.billingMonth), "MMMM yyyy")}
-                </td>
-                <td className="py-2 px-4 border-b">{bill.room?.roomNumber || "-"}</td>
-                <td className="py-2 px-4 border-b">
-                  {bill.tenant?.firstName} {bill.tenant?.lastName}
-                </td>
-                <td className="py-2 px-4 border-b">
-                  {bill.totalAmount.toFixed(2)} บาท
-                </td>
-                <td className="py-2 px-4 border-b">{getStatusLabel(bill.status)}</td>
-                <td className="py-2 px-4 border-b text-center space-x-2">
-                  <Link href={`/admin/bills/${bill.id}`}>
-                    <button className="text-blue-500 hover:underline">ดูรายละเอียด</button>
-                  </Link>
+      {/* Main */}
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
+        {/* Header Row */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-[#0F3659]">รายการบิลทั้งหมด</h1>
+            <p className="text-gray-600 mt-1">จัดการบิลของผู้เช่าทั้งหมดในระบบ</p>
+          </div>
+          <Link href="/admin/bills/create">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition shadow">
+              + สร้างบิลใหม่
+            </button>
+          </Link>
+        </div>
 
-                  {/* ✅ แสดงปุ่มลบเฉพาะเมื่อสถานะไม่ใช่ PAID */}
-                  {bill.status !== "PAID" && (
-                    <button
-                      onClick={async () => {
-                        const confirmed = window.confirm(
-                          "คุณแน่ใจหรือไม่ว่าต้องการลบบิลนี้?"
-                        );
-                        if (!confirmed) return;
-
-                        try {
-                          const res = await fetch(`/api/admin/bills/${bill.id}`, {
-                            method: "DELETE",
-                          });
-
-                          if (!res.ok) {
-                            throw new Error("ลบบิลไม่สำเร็จ");
-                          }
-
-                          toast.success("ลบบิลสำเร็จ");
-                          fetchBills(); // reload list
-                        } catch (err) {
-                          toast.error("เกิดข้อผิดพลาดในการลบ");
-                          console.error(err);
-                        }
-                      }}
-                      className="text-red-500 hover:underline"
-                    >
-                      ลบบิล
-                    </button>
-                  )}
-                </td>
-              </tr>
+        {/* Table / States */}
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-12 w-full bg-gray-100 rounded animate-pulse" />
             ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
+          </div>
+        ) : bills.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
+            ยังไม่มีรายการบิล
+          </div>
+        ) : (
+          <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-100 text-gray-700">
+                <tr>
+                  <th className="py-3 px-4">เดือน</th>
+                  <th className="py-3 px-4">ห้อง</th>
+                  <th className="py-3 px-4">ผู้เช่า</th>
+                  <th className="py-3 px-4">รวมยอด</th>
+                  <th className="py-3 px-4">สถานะ</th>
+                  <th className="py-3 px-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bills.map((bill) => (
+                  <tr key={bill.id} className="border-t hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      {format(new Date(bill.billingMonth), "MMMM yyyy")}
+                    </td>
+                    <td className="py-3 px-4">{bill.room?.roomNumber || "-"}</td>
+                    <td className="py-3 px-4">
+                      {bill.tenant?.firstName} {bill.tenant?.lastName}
+                    </td>
+                    <td className="py-3 px-4">{bill.totalAmount.toFixed(2)} บาท</td>
+                    <td className="py-3 px-4">{getStatusLabel(bill.status)}</td>
+                    <td className="py-3 px-4 text-center space-x-3">
+                      <Link href={`/admin/bills/${bill.id}`}>
+                        <button className="text-blue-600 hover:underline">
+                          ดูรายละเอียด
+                        </button>
+                      </Link>
+
+                      {/* ลบได้เฉพาะที่ยังไม่ชำระ */}
+                      {bill.status !== "PAID" && (
+                        <button
+                          onClick={async () => {
+                            const confirmed = window.confirm(
+                              "คุณแน่ใจหรือไม่ว่าต้องการลบบิลนี้?"
+                            );
+                            if (!confirmed) return;
+
+                            try {
+                              const res = await fetch(`/api/admin/bills/${bill.id}`, {
+                                method: "DELETE",
+                              });
+                              if (!res.ok) throw new Error("ลบบิลไม่สำเร็จ");
+                              toast.success("ลบบิลสำเร็จ");
+                              fetchBills();
+                            } catch (err) {
+                              toast.error("เกิดข้อผิดพลาดในการลบ");
+                              console.error(err);
+                            }
+                          }}
+                          className="text-red-600 hover:underline"
+                        >
+                          ลบบิล
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

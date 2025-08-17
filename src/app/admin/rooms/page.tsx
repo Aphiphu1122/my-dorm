@@ -5,6 +5,7 @@ import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
 
+
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 
 type Room = {
