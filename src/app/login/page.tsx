@@ -53,12 +53,12 @@ export default function LoginPage() {
           <i className="ri-home-heart-fill text-4xl text-blue-950"></i>
           <h4 className="text-xl text-black font-semibold">Dorm</h4>
         </div>
-        <nav>
+        <nav className="flex items-center space-x-8">
           <ul className="flex space-x-8 text-gray-700 font-semibold">
             <li>
               <button
                 onClick={() => setShowAboutModal(true)}
-                className="hover:text-blue-950 transition"
+                className="relative font-medium text-gray-700 hover:text-blue-800 transition after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all"
               >
                 About Us
               </button>
@@ -66,7 +66,7 @@ export default function LoginPage() {
             <li>
               <button
                 onClick={() => setShowContactModal(true)}
-                className="hover:text-blue-950 transition"
+                className="relative font-medium text-gray-700 hover:text-blue-800 transition after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all"
               >
                 Contact
               </button>
@@ -145,7 +145,7 @@ export default function LoginPage() {
             disabled={!(email && password)}
             className={`w-full py-2 rounded-md transition ${
               email && password
-                ? "bg-blue-950 text-white hover:bg-blue-900 cursor-pointer"
+                ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-md hover:scale-105 hover:shadow-lg transition-all"
                 : "bg-gray-400 text-white cursor-not-allowed"
             }`}
           >

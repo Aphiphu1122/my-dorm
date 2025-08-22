@@ -112,12 +112,12 @@ export default function BillDetailPage() {
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
       </aside>
-
+ 
       <main className="flex-1 max-w-4xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-1 text-black">Bills & Payments</h1>
+        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Bills & Payments</h1>
         <p className="text-gray-500 mb-8">Manage your bills and rent</p>
-
-
+ 
+ 
           <h2 className="text-lg font-semibold text-[#0F3659] mb-1">
             Rent bill{" "}
             {new Date(bill.billingMonth).toLocaleDateString("en-GB", {
@@ -126,7 +126,7 @@ export default function BillDetailPage() {
             })}
           </h2>
           <section className="mb-6 bg-white shadow-md rounded-lg p-2 flex justify-between items-center">
-      
+     
             <span className="text-gray-700 font-medium p-2 ">Bill Status</span>
             <span
               className={`${statusDisplay[bill.status].color} font-semibold flex items-center gap-1`}
@@ -135,7 +135,7 @@ export default function BillDetailPage() {
             </span>
          
         </section>
-
+ 
         {/* Bill Items */}
           <h3 className="text-md font-semibold text-[#0F3659] mb-1">Bill item</h3>
             <section className="bg-white shadow-md rounded-lg p-2">
@@ -158,7 +158,7 @@ export default function BillDetailPage() {
                 </div>
               </div>
             </section>
-
+ 
         {/* Payment slip & upload */}
         {bill.status === "PENDING_APPROVAL" && bill.paymentSlipUrl && (
           <div className="mt-6 p-6 bg-yellow-50 rounded-lg shadow-sm text-yellow-700 font-semibold">
@@ -175,7 +175,7 @@ export default function BillDetailPage() {
             </div>
           </div>
         )}
-
+ 
         {bill.status === "PAID" && (
           <div className="mt-6 p-6 bg-green-50 rounded-lg shadow-sm text-green-700 font-semibold">
             {statusDisplay.PAID.icon} Payment completed
@@ -200,7 +200,7 @@ export default function BillDetailPage() {
             )}
           </div>
         )}
-
+ 
         {bill.status === "UNPAID" && (
           <section className="bg-white shadow-md rounded-lg p-3 mt-8">
             <label className="block font-medium mb-2 text-blue-800">
@@ -213,7 +213,7 @@ export default function BillDetailPage() {
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g. 0123456789"
             />
-
+ 
             <label className="block font-medium mt-6 mb-2 text-blue-800">
               Upload payment slip
             </label>
@@ -225,9 +225,9 @@ export default function BillDetailPage() {
               />
               <button
                 onClick={handleUpload}
-                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition"
+                className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
               >
-                Upload Slip
+                Upload
               </button>
             </div>
           </section>
@@ -235,7 +235,7 @@ export default function BillDetailPage() {
         <div className="flex justify-end">
            <a
               href="http://localhost:3000/bills"
-              className="inline-block mt-5 px-4 py-2 bg-gray-300 text-white rounded hover:bg-gray-400 transition duration-200 transform hover:scale-105"
+              className="inline-block mt-5 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-400 transition duration-200 transform hover:scale-105"
               >Back to All Bills
             </a>
          </div>

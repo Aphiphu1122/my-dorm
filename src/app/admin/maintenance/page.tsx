@@ -1,12 +1,12 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
-
+ 
 type RequestStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCEL";
-
+ 
 type Request = {
   id: string;
   description: string;
@@ -14,15 +14,15 @@ type Request = {
   createdAt: string;
   room: { roomNumber: string };
 };
-
+ 
 export default function MaintenanceListPage() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     fetchRequests();
   }, []);
-
+ 
   const fetchRequests = async () => {
     try {
       const res = await fetch("/api/admin/maintenance");
@@ -41,7 +41,7 @@ export default function MaintenanceListPage() {
       setLoading(false);
     }
   };
-
+ 
   const getStatusLabel = (status: RequestStatus) => {
     switch (status) {
       case "PENDING":
@@ -65,27 +65,28 @@ export default function MaintenanceListPage() {
       case "CANCEL":
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-red-700 bg-red-100 font-semibold text-sm">
-            🔴 Cancel
+            🔴 Cancelled
           </span>
         );
       default:
         return null;
     }
   };
-
+ 
 return (
   <div className="flex min-h-screen bg-white">
     <Sidebar role="admin" />
-
-    <main className="flex-1 w-full px-0 py-6">
-
+ 
+    {/* ขวา*/}
+    <main className="flex-1 p-4 max-w-5xl mx-auto mt-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6 px-4 md:px-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Maintenance Requests</h1>
+          <h1 className="text-3xl font-bold text-[#0F3659]">Maintenance Requests</h1>
           <h2 className="text-gray-400 mt-2">Manage your maintenance requests</h2>
         </div>
       </div>
-
+ 
       {loading ? (
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 border-solid border-b-transparent"></div>
@@ -95,7 +96,7 @@ return (
           No maintenance requests found.
         </p>
       ) : (
-
+        // ตารางเต็มความกว้างหน้าจอ (ยังคง overflow-x-auto เผื่อจอเล็ก)
         <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 bg-white mx-4 md:mx-6">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-100">
@@ -110,7 +111,7 @@ return (
                 ))}
               </tr>
             </thead>
-
+ 
             <tbody className="divide-y divide-gray-100">
               {requests.map((req) => (
                 <tr

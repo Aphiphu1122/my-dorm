@@ -78,17 +78,17 @@ export default function AdminBillListPage() {
  
  
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen">
       <Sidebar role="admin" />
  
-      <div className="flex-1 p-8 max-w-6xl mx-auto">
+      <div className="flex-1 p-4 max-w-5xl mx-auto mt-5">
         <Toaster position="top-right" />
  
         {/* Header + Search */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">All Bills</h1>
-            <p className="text-gray-600">Manage all your bills</p>
+            <h1 className="text-3xl font-bold text-[#0F3659]">Bills Management</h1>
+            <p className="text-gray-600">Here are all your bills, they can be managed.</p>
           </div>
  
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">

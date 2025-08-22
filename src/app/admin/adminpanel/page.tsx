@@ -1,12 +1,12 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
-
+ 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
-
+ 
 type Room = {
   id: string;
   roomNumber: string;
@@ -17,7 +17,7 @@ type Room = {
     email: string;
   };
 };
-
+ 
 type Profile = {
   id: string;
   firstName: string;
@@ -31,19 +31,19 @@ type Profile = {
   createdAt: string;
   roomNumber: string;
 };
-
+ 
 export default function AdminDashboardPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [newRoomNumber, setNewRoomNumber] = useState("");
-
+ 
   useEffect(() => {
     fetchRooms();
     fetchUsers();
   }, []);
-
+ 
   const fetchRooms = async () => {
     try {
       setLoadingRooms(true);
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
       setLoadingRooms(false);
     }
   };
-
+ 
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
@@ -75,20 +75,20 @@ export default function AdminDashboardPage() {
       setLoadingUsers(false);
     }
   };
-
+ 
   const handleAddRoom = async () => {
     if (!newRoomNumber.trim()) {
       toast.error("กรุณากรอกหมายเลขห้อง");
       return;
     }
-
+ 
     const res = await fetch("/api/admin/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ roomNumber: newRoomNumber }),
     });
-
+ 
     if (res.ok) {
       setNewRoomNumber("");
       toast.success("เพิ่มห้องสำเร็จ");
@@ -98,16 +98,16 @@ export default function AdminDashboardPage() {
       toast.error(`ไม่สามารถเพิ่มห้องได้: ${data.error}`);
     }
   };
-
+ 
   const handleDeleteRoom = async (e: unknown, roomId: string, roomNumber: string) => {
     const confirmDelete = confirm(`คุณต้องการลบห้อง ${roomNumber} หรือไม่?`);
     if (!confirmDelete) return;
-
+ 
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
       method: "DELETE",
       credentials: "include",
     });
-
+ 
     if (res.ok) {
       toast.success(`ลบห้อง ${roomNumber} สำเร็จ`);
       fetchRooms();
@@ -116,7 +116,7 @@ export default function AdminDashboardPage() {
       toast.error(`ลบห้องไม่สำเร็จ: ${data.error}`);
     }
   };
-
+ 
   const handleStatusChange = async (roomId: string, newStatus: RoomStatus) => {
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
       method: "PATCH",
@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
       credentials: "include",
       body: JSON.stringify({ status: newStatus }),
     });
-
+ 
     if (res.ok) {
       toast.success("อัปเดตสถานะเรียบร้อย");
       fetchRooms();
@@ -133,18 +133,21 @@ export default function AdminDashboardPage() {
       toast.error(`อัปเดตสถานะไม่สำเร็จ: ${data.error}`);
     }
   };
-
+ 
    return (
-    <div className="flex min-h-screen">
+    <div className="bg-white min-h-screen flex">
       <Sidebar role="admin" />
-
+ 
       {/* ขวา: เอา max-w-5xl/mx-auto ออก ให้เต็มจอ */}
-      <div className="flex-1 w-full px-0 py-6">
+      <div className="flex-1 p-4 max-w-5xl mx-auto mt-5">
         <Toaster position="top-right" />
-
+ 
         {/* ===== Rooms Section ===== */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-4 md:px-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Rooms</h1>
+          <div>
+                <h1 className="text-3xl font-bold text-[#0F3659]">Room Management</h1>
+                <p className="text-gray-600">Manage rooms and status</p>
+              </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <input
               type="text"
@@ -161,7 +164,7 @@ export default function AdminDashboardPage() {
             </button>
           </div>
         </div>
-
+ 
         {loadingRooms ? (
           <p className="px-6">⏳ Loading rooms...</p>
         ) : (
@@ -183,18 +186,18 @@ export default function AdminDashboardPage() {
                   {/* Delete button */}
                   <button
                     onClick={(e) => handleDeleteRoom(e, room.id, room.roomNumber)}
-                    className="absolute top-3 right-3 bg-gray-400 hover:bg-gray-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
+                    className="absolute top-2 right-2 bg-black/20 hover: text-white rounded-full w-7 h-7 flex items-center justify-center text-lg font-bold transition"
                     aria-label={`Delete room ${room.roomNumber}`}
                   >
                     ×
                   </button>
-
+ 
                   <Link href={`/admin/rooms/${room.id}`}>
                           <div className="font-extrabold text-xl cursor-pointer">
                             {room.roomNumber}
                           </div>
                   </Link>
-
+ 
                   <div className="text-sm mt-1">
                     Status:{" "}
                     {room.status === "AVAILABLE"
@@ -203,7 +206,7 @@ export default function AdminDashboardPage() {
                       ? "Occupied"
                       : "Maintenance"}
                   </div>
-
+ 
                   <select
                     className="w-full text-gray-900 rounded-md px-2 py-2 mt-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
                     value={room.status}
@@ -220,10 +223,10 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
-
+ 
         {/* ===== Users Section ===== */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 px-6">Tenant List</h2>
-
+        <h2 className="text-3xl font-bold text-[#0F3659] mb-4 px-6">Tenant List</h2>
+ 
         {loadingUsers ? (
           <p className="px-6">⏳ Loading tenant data..</p>
         ) : (

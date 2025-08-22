@@ -76,7 +76,7 @@ export default function AdminPanel() {
       <div className="flex-1 p-4 max-w-5xl mx-auto">
         <Toaster position="top-right" />
         <div className="p-6 space-y-10">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">DASHBOARD</h1>
+          <h1 className="text-3xl font-bold text-[#0F3659]">DASHBOARD</h1>
  
           {loading ? (
             <div className="space-y-4">
@@ -225,4 +225,3 @@ function Card({
     </div>
   );
 }
- 

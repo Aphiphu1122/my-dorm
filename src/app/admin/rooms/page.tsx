@@ -1,12 +1,12 @@
 "use client";
-
+ 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
-
+ 
 type RoomStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
-
+ 
 type Room = {
   id: string;
   roomNumber: string;
@@ -17,31 +17,31 @@ type Room = {
     email: string;
   };
 };
-
+ 
 export default function RoomManagementPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [newRoomNumber, setNewRoomNumber] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | RoomStatus>("ALL");
-
+ 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [deleting, setDeleting] = useState(false);
-
+ 
   useEffect(() => {
     fetchRooms();
   }, []);
-
+ 
   const fetchRooms = async () => {
     try {
       setLoading(true);
-
+ 
       const res = await fetch("/api/admin/rooms", {
         credentials: "include",
       });
-
+ 
       const data = await res.json();
-
+ 
       if (
         res.ok &&
         typeof data === "object" &&
@@ -61,29 +61,29 @@ export default function RoomManagementPage() {
       setLoading(false);
     }
   };
-
+ 
   // ✅ ตรวจสอบความถูกต้องของหมายเลขห้อง (ต้องเป็นตัวเลขล้วน)
   const isValidRoomNumber = /^\d+$/.test(newRoomNumber);
-
+ 
   const handleAddRoom = async () => {
     if (!newRoomNumber.trim()) {
       toast.error("กรุณากรอกหมายเลขห้อง");
       return;
     }
-
+ 
     // ✅ กันพลาดอีกชั้น ก่อนยิง API
     if (!isValidRoomNumber) {
       toast.error("หมายเลขห้องต้องเป็นตัวเลขเท่านั้น (0-9)");
       return;
     }
-
+ 
     const res = await fetch("/api/admin/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ roomNumber: newRoomNumber }),
     });
-
+ 
     if (res.ok) {
       setNewRoomNumber("");
       toast.success("เพิ่มห้องสำเร็จ");
@@ -93,7 +93,7 @@ export default function RoomManagementPage() {
       toast.error(`ไม่สามารถเพิ่มห้องได้: ${data.error}`);
     }
   };
-
+ 
   const handleDeleteRoom = async (roomId: string, roomNumber: string) => {
     setDeleting(true);
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
@@ -102,7 +102,7 @@ export default function RoomManagementPage() {
     });
     setDeleting(false);
     setShowDeleteModal(false);
-
+ 
     if (res.ok) {
       toast.success(`ลบห้อง ${roomNumber} สำเร็จ`);
       fetchRooms();
@@ -111,7 +111,7 @@ export default function RoomManagementPage() {
       toast.error(`ลบห้องไม่สำเร็จ: ${data.error}`);
     }
   };
-
+ 
   const handleStatusChange = async (roomId: string, newStatus: RoomStatus) => {
     const res = await fetch(`/api/admin/rooms/${roomId}`, {
       method: "PATCH",
@@ -119,7 +119,7 @@ export default function RoomManagementPage() {
       credentials: "include",
       body: JSON.stringify({ status: newStatus }),
     });
-
+ 
     if (res.ok) {
       toast.success("อัปเดตสถานะเรียบร้อย");
       fetchRooms();
@@ -128,36 +128,36 @@ export default function RoomManagementPage() {
       toast.error(`อัปเดตสถานะไม่สำเร็จ: ${data.error}`);
     }
   };
-
+ 
   const filteredRooms = useMemo(() => {
     if (filterStatus === "ALL") return rooms;
     return rooms.filter((room) => room.status === filterStatus);
   }, [rooms, filterStatus]);
-
+ 
   return (
     <>
       <div className="flex min-h-screen">
         {/* Sidebar ซ้าย */}
         <Sidebar role="admin" />
-
+ 
         {/* คอลัมน์ขวา */}
-        <div className="flex-1 w-full px-0 py-6">
+        <div className="flex-1 p-4 max-w-5xl mx-auto mt-5">
           <Toaster position="top-right" />
-
+ 
           <div className="w-full">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6 px-4 md:px-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Room Management</h1>
-                <p className="text-gray-600">จัดการห้องพักและสถานะ</p>
+                <h1 className="text-3xl font-bold text-[#0F3659]">Room Management</h1>
+                <p className="text-gray-600">Manage rooms and status</p>
               </div>
-
+ 
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex items-center gap-2">
                   <label
                     htmlFor="filter"
                     className="font-medium text-gray-700 whitespace-nowrap"
                   >
-                    กรองสถานะ:
+                    Status:
                   </label>
                   <select
                     id="filter"
@@ -167,13 +167,13 @@ export default function RoomManagementPage() {
                       setFilterStatus(e.target.value as "ALL" | RoomStatus)
                     }
                   >
-                    <option value="ALL">ทั้งหมด</option>
-                    <option value="AVAILABLE">ว่าง</option>
-                    <option value="OCCUPIED">มีผู้เช่า</option>
-                    <option value="MAINTENANCE">กำลังซ่อม</option>
+                    <option value="ALL">All</option>
+                    <option value="AVAILABLE">Available</option>
+                    <option value="OCCUPIED">Occupied</option>
+                    <option value="MAINTENANCE">Maintenance</option>
                   </select>
                 </div>
-
+ 
                 {/* Add Room */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:items-start">
                   <div className="flex flex-col">
@@ -192,7 +192,7 @@ export default function RoomManagementPage() {
                       }}
                     />
                   </div>
-
+ 
                   <button
                     className="bg-[#0F3659] text-white px-5 py-2 rounded-md hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleAddRoom}
@@ -203,7 +203,7 @@ export default function RoomManagementPage() {
                 </div>
               </div>
             </div>
-
+ 
             {/* เนื้อหา: Loading / Empty / Grid */}
             {loading ? (
               <div className="flex justify-center items-center py-16">
@@ -213,7 +213,8 @@ export default function RoomManagementPage() {
               <div className="py-16 text-center text-gray-600">ไม่มีห้องที่ตรงกับเงื่อนไข</div>
             ) : (
               <div className="px-4 md:px-6">
-                <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
+                <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4 ">
+                 
                   {filteredRooms.map((room) => {
                     const isOccupied = room.status === "OCCUPIED";
                     const isMaint = room.status === "MAINTENANCE";
@@ -226,7 +227,8 @@ export default function RoomManagementPage() {
                     return (
                       <div
                         key={room.id}
-                        className={`rounded-lg p-4 text-center relative shadow-sm ${cardClass}`}
+                        className={`relative rounded-lg p-4 shadow-md transition-transform duration-300 cursor-pointer
+                    hover:scale-105 hover:shadow-lg ${cardClass}`}
                       >
                         {/* ปุ่มลบ */}
                         <button
@@ -240,13 +242,13 @@ export default function RoomManagementPage() {
                         >
                           ×
                         </button>
-
+ 
                         <Link href={`/admin/rooms/${room.id}`}>
                           <div className="font-extrabold text-xl cursor-pointer">
                             {room.roomNumber}
                           </div>
                         </Link>
-
+ 
                         <div className="text-sm mt-1">
                           Status:{" "}
                           {room.status === "AVAILABLE"
@@ -255,7 +257,7 @@ export default function RoomManagementPage() {
                             ? "Occupied"
                             : "Maintenance"}
                         </div>
-
+ 
                         <select
                           className="mt-3 text-black bg-white/90 p-2 rounded-md w-full"
                           value={room.status}
@@ -276,7 +278,7 @@ export default function RoomManagementPage() {
           </div>
         </div>
       </div>
-
+ 
       {/* Modal ยืนยันการลบ */}
       {showDeleteModal && selectedRoom && (
         <div
@@ -292,7 +294,7 @@ export default function RoomManagementPage() {
             </h2>
             <div className="flex justify-center gap-3">
               <button
-                className={`bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 ${
+                className={`bg-[#0F3659] text-white px-4 py-2 rounded hover:transition duration-200 transform hover:scale-105  ${
                   deleting ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 onClick={() =>
@@ -300,13 +302,13 @@ export default function RoomManagementPage() {
                 }
                 disabled={deleting}
               >
-                {deleting ? "⏳ กำลังลบ..." : "✅ ยืนยัน"}
+                {deleting ? "⏳ กำลังลบ..." : "Confirm"}
               </button>
               <button
-                className="bg-gray-200 text-gray-900 px-4 py-2 rounded"
+                className="bg-gray-200 text-gray-900 px-4 py-2 rounded hover:transition duration-200 transform hover:scale-105"
                 onClick={() => setShowDeleteModal(false)}
               >
-                ❌ ยกเลิก
+                Cancel
               </button>
             </div>
           </div>

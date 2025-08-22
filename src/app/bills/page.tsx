@@ -1,22 +1,22 @@
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
-
+ 
 type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
-
+ 
 type Bill = {
   id: string;
   billingMonth: string;
   totalAmount: number;
   status: BillStatus;
 };
-
+ 
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     const fetchBills = async () => {
       const res = await fetch("/api/bills");
@@ -24,10 +24,10 @@ export default function BillsPage() {
       setBills(data.bills);
       setLoading(false);
     };
-
+ 
     fetchBills();
   }, []);
-
+ 
   const renderStatus = (status: BillStatus) => {
     switch (status) {
       case "PAID":
@@ -46,22 +46,22 @@ export default function BillsPage() {
       default:
         return (
           <span className=" items-center gap-1 text-red-600 bg-red-100 font-medium inline-flex  px-2 rounded-full text-xs  gap-1font-medium">
-            <i className="ri-close-circle-fill text-lg"></i> Overdue
+            <i className="ri-close-circle-fill text-lg"></i> Unpaid
           </span>
         );
     }
   };
-
+ 
   return (
     <div className="flex min-h-screen bg-white text-black">
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
       </aside>
-
+ 
       <main className="flex-1 max-w-4xl mx-auto p-8">
-        <h1 className="text-2xl font-bold mb-1">Bills & Payments</h1>
+        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Bills & Payments</h1>
         <p className="text-gray-500 mb-6">Manage your bills and rent</p>
-
+ 
         {loading ? (
           <p className="text-center text-gray-500">Loading...</p>
         ) : bills.length === 0 ? (
@@ -80,10 +80,10 @@ export default function BillsPage() {
                 <span className="text-gray-900 font-medium">
                   Rent bill {new Date(bill.billingMonth).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
                 </span>
-
+ 
                 <span className="flex items-center gap-3">
                   {renderStatus(bill.status)}
-
+ 
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5 text-gray-400"
@@ -96,7 +96,7 @@ export default function BillsPage() {
                   </svg>
                 </span>
               </Link>
-
+ 
             ))}
           </div>
         )}
