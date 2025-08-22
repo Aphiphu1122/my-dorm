@@ -113,8 +113,8 @@ export default function BillDetailPage() {
         <Sidebar role="user" />
       </aside>
  
-      <main className="flex-1 max-w-4xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Bills & Payments</h1>
+      <main className="flex-1 max-w-5xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Bills </h1>
         <p className="text-gray-500 mb-8">Manage your bills and rent</p>
  
  
@@ -235,7 +235,7 @@ export default function BillDetailPage() {
         <div className="flex justify-end">
            <a
               href="http://localhost:3000/bills"
-              className="inline-block mt-5 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-400 transition duration-200 transform hover:scale-105"
+              className="inline-block mt-5 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
               >Back to All Bills
             </a>
          </div>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
+import Sidebar from "@/components/sidebar";
 
 type MoveOutStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
 
@@ -63,80 +64,157 @@ export default function AdminMoveOutDetailPage() {
 
       if (!res.ok) throw new Error("ไม่สามารถอัปเดตสถานะได้");
 
-      setRequest((prev) => prev ? { ...prev, status } : prev);
+      setRequest((prev) => (prev ? { ...prev, status } : prev));
       toast.success(`อัปเดตสถานะสำเร็จ`);
       router.push("/admin/moveout");
     } catch (err) {
-    console.error(err);
+      console.error(err);
       toast.error("เกิดข้อผิดพลาด");
     }
   };
 
-  if (loading) return <p className="p-6">กำลังโหลด...</p>;
-  if (!request) return <p className="p-6 text-red-500">ไม่พบข้อมูลคำร้อง</p>;
-
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold text-blue-900">รายละเอียดคำร้องย้ายออก</h1>
+    <div className="flex min-h-screen bg-gray-50 text-gray-900">
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+        <Sidebar role="admin" />
+      </aside>
 
-      <div className="bg-white shadow p-6 rounded-lg space-y-3 border">
-        <p><strong>ชื่อผู้เช่า:</strong> {request.user.firstName} {request.user.lastName}</p>
-        <p><strong>อีเมล:</strong> {request.user.email}</p>
-        <p><strong>ห้อง:</strong> {request.room.roomNumber}</p>
-        <p><strong>วันที่ยื่นคำร้อง:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
-        <p><strong>วันที่ต้องการย้ายออก:</strong> {new Date(request.moveOutDate).toLocaleDateString()}</p>
-        <p><strong>เหตุผล:</strong> {request.reason}</p>
-        {request.note && <p><strong>หมายเหตุ:</strong> {request.note}</p>}
-
-        {request.imageUrl && (
-          <div>
-            <p><strong>รูปประกอบ:</strong></p>
-            <Image
-              src={request.imageUrl}
-              alt="รูปภาพแนบ"
-              width={400}
-              height={300}
-              className="rounded-lg border"
-            />
+      {/* Main content */}
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
+        {loading ? (
+          <div className="bg-white rounded-xl shadow p-8 text-center text-gray-600">
+            Loading...
           </div>
-        )}
+        ) : !request ? (
+          <div className="bg-white rounded-xl shadow p-8 text-center text-red-500">
+            Request information not found
+          </div>
+        ) : (
+          <div className="bg-white  p-6 ">
+            <h1 className="text-3xl font-bold text-blue-900 mb-4">
+              Detail request to move out
+            </h1>
+          
+          
+        <div className="rounded-lg shadow border border-gray-200">
+        
+              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                  <p className="text-gray-700 font-semibold">Name</p>
+                  <p className="text-gray-900 text-end">
+                    {request.user.firstName} {request.user.lastName}
+                  </p>
+              </div>
 
-        <div className="mt-4">
-          <p className="text-lg">
-            <strong>สถานะ:</strong>{" "}
+               <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <p className="text-gray-700 font-semibold">Email</p>
+                <p className="text-gray-900 text-end">{request.user.email}</p>
+              </div>
+
+              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <p className="text-gray-700 font-semibold">Room number</p>
+                <p className="text-gray-900 text-end">{request.room.roomNumber}</p>
+              </div>
+
+               <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <p className="text-gray-700 font-semibold">Date request</p>
+                <p className="text-gray-900 text-end">
+                  {new Date(request.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+
+               <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <p className="text-gray-700 font-semibold">Date wish to move out</p>
+                <p className="text-gray-900 text-end">
+                  {new Date(request.moveOutDate).toLocaleDateString()}
+                </p>
+              </div>
+
+             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <p className="text-gray-700 font-semibold">Reason</p>
+              <p className="text-gray-900 text-end">{request.reason}</p>
+            </div>
+
+            {request.note && (
+              <div className="flex justify-between px-6 py-4 border-b border-gray-200">
+                <p className="text-gray-700 font-semibold">Note</p>
+                <p className="text-gray-900 text-right">{request.note}</p>
+              </div>
+            )}
+
+
+            {request.imageUrl && (
+              <div>
+                <p className="text-gray-700 font-semibold mb-2">Img</p>
+                <div className="border rounded-lg overflow-hidden w-full max-w-md">
+                  <Image
+                    src={request.imageUrl}
+                    alt="รูปภาพแนบ"
+                    width={400}
+                    height={300}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+              <p className="text-gray-700 font-semibold mb-1">Status</p>
+              <div className="flex items-center justify-end gap-2">
+                {request.status === "PENDING_APPROVAL" && (
+                  <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-medium text-sm">
+                    Pending
+                    <i className="ri-indeterminate-circle-fill text-yellow-600 text-lg"></i>
+                  </span>
+                )}
+                {request.status === "APPROVED" && (
+                  <span className="flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium text-sm">
+                    Approved
+                    <i className="ri-checkbox-circle-fill text-green-600 text-lg"></i>
+                  </span>
+                )}
+                {request.status === "REJECTED" && (
+                  <span className="flex items-center gap-1 bg-red-100 text-red-800 px-3 py-1 rounded-full font-medium text-sm">
+                    Rejected
+                    <i className="ri-close-circle-fill text-red-600 text-lg"></i>
+                  </span>
+                )}
+              </div>
+            </div>
+
+
+          </div>
+
             {request.status === "PENDING_APPROVAL" && (
-              <span className="text-yellow-600 font-semibold">⏳ รอดำเนินการ</span>
+              <div className="mt-4 flex gap-4">
+                <button
+                  onClick={() => handleUpdateStatus("APPROVED")}
+                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow"
+                >
+                  Approved
+                </button>
+                <button
+                  onClick={() => handleUpdateStatus("REJECTED")}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold shadow"
+                >
+                  Rejected
+                </button>
+              </div>
             )}
-            {request.status === "APPROVED" && (
-              <span className="text-green-600 font-semibold">✅ อนุมัติแล้ว</span>
-            )}
-            {request.status === "REJECTED" && (
-              <span className="text-red-600 font-semibold">❌ ปฏิเสธแล้ว</span>
-            )}
-          </p>
-        </div>
+            
 
-        {request.status === "PENDING_APPROVAL" && (
-          <div className="mt-4 flex gap-4">
-            <button
-              onClick={() => handleUpdateStatus("APPROVED")}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-            >
-              ✅ อนุมัติ
-            </button>
-            <button
-              onClick={() => handleUpdateStatus("REJECTED")}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-            >
-              ❌ ปฏิเสธ
-            </button>
+            {/* ปุ่ม Back */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => router.push("/admin/moveout")}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md font-medium shadow"
+                >
+                  ← Back
+                </button>
+              </div>
           </div>
         )}
-
-        <Link href="/admin/moveout" className="text-blue-600 mt-4 block hover:underline">
-          ← กลับไปยังรายการคำร้อง
-        </Link>
-      </div>
+      </main>
     </div>
   );
 }

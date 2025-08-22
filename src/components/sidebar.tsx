@@ -21,8 +21,7 @@ const roleLinks: Record<Role, { href: string; label: string; icon: string }[]> =
   user: [
     { href: "/home", label: "Home", icon: "ri-home-4-line" },
     { href: "/profile", label: "Change Profile", icon: "ri-user-settings-line" },
-    { href: "/bills", label: "Bills", icon: "ri-refund-2-line" },
-    { href: "/paymentbank", label: "Payments", icon: "ri-bank-card-line" },
+    { href: "/bills", label: "Bills & Payments", icon: "ri-refund-2-line" },
     { href: "/maintenance", label: "Repair Requests", icon: "ri-tools-line" },
     { href: "/rules", label: "Rules & Contract", icon: "ri-file-text-line" },
     { href: "/moveout", label: "Move out", icon: "ri-door-open-line" },

@@ -89,7 +89,7 @@ export default function AdminReportPage() {
       </aside>
  
       {/* Main content */}
-      <main className="flex-1 p-4 max-w-5xl mx-auto mt-5">
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
             <div>
               <h1 className="text-3xl font-bold text-[#0F3659]">Report</h1>
               <p className="text-gray-600 mt-1">

@@ -136,10 +136,12 @@ export default function AdminDashboardPage() {
  
    return (
     <div className="bg-white min-h-screen flex">
-      <Sidebar role="admin" />
+      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+          <Sidebar role="admin" />
+       </aside>
  
       {/* ขวา: เอา max-w-5xl/mx-auto ออก ให้เต็มจอ */}
-      <div className="flex-1 p-4 max-w-5xl mx-auto mt-5">
+      <div className="flex-1 p-8 max-w-5xl mx-auto">
         <Toaster position="top-right" />
  
         {/* ===== Rooms Section ===== */}
@@ -168,7 +170,7 @@ export default function AdminDashboardPage() {
         {loadingRooms ? (
           <p className="px-6">⏳ Loading rooms...</p>
         ) : (
-          <div className="px-4 md:px-6 mb-10">
+          <div className="px-4 md:px-2 mb-10">
             <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
               {rooms.map((room) => (
                 <div

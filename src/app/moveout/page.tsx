@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import "remixicon/fonts/remixicon.css";
+import Sidebar from "@/components/sidebar";
 
 type Room = {
   id: string;
@@ -105,92 +106,102 @@ export default function MoveOutRequestPage() {
     }
   };
 
-  if (initialLoading) {
-    return <div className="text-center py-20 text-gray-500">กำลังโหลดข้อมูล...</div>;
-  }
-
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow-md rounded mt-10">
+    <div className="flex min-h-screen bg-white">
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+        <Sidebar role="user" />
+      </aside>
 
-      <button
-        onClick={() => router.back()}
-        className="flex items-center text-blue-600 hover:underline mb-4"
-      >
-        <i className="ri-arrow-left-line mr-2" /> ย้อนกลับ
-      </button>
-      <h1 className="text-2xl font-bold mb-6 text-center">แจ้งย้ายออก</h1>
+      <main className="flex-1 max-w-5xl mx-auto p-6">
+        {initialLoading ? (
+          <div className="text-center py-20 text-gray-500">กำลังโหลดข้อมูล...</div>
+        ) : (
+          <>
+            <div>
+              <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Move-out Request</h1>
+              <p className="text-gray-500 mb-6">Manage your move here</p>
+            </div>
 
-      {userInfo && room && (
-        <div className="mb-6 text-sm text-gray-700 bg-gray-100 p-4 rounded shadow-sm">
-          <p>👤 <strong>ชื่อผู้เช่า:</strong> {userInfo.firstName} {userInfo.lastName}</p>
-          <p>📧 <strong>อีเมล:</strong> {userInfo.email}</p>
-          <p>🏠 <strong>ห้องพัก:</strong> {room.roomNumber}</p>
-          <p>📅 <strong>วันที่เข้าพัก:</strong>{" "}
-            {new Date(userInfo.roomStartDate).toLocaleDateString("th-TH", {
-              year: "numeric", month: "long", day: "numeric",
-            })}
-          </p>
-        </div>
-      )}
+            {userInfo && room && (
+              <div className="mb-6 text-sm text-gray-700 bg-gray-100">
+                <h2 className="text-lg font-semibold text-[#0F3659] mb-1">Personal Information</h2>
+                <section className="bg-white shadow-md rounded-lg p-2">
+                  <div className="divide-y divide-gray-200">
+                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Name</strong> {userInfo.firstName} {userInfo.lastName}</p>
+                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Email</strong> {userInfo.email}</p>
+                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Room number</strong> {room.roomNumber}</p>
+                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Check-in date</strong>{" "}
+                      {new Date(userInfo.roomStartDate).toLocaleDateString("th-TH", {
+                        year: "numeric", month: "long", day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </section>
+              </div>
+            )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block font-medium">เหตุผลในการย้ายออก</label>
-          <textarea
-            className="w-full border p-2 rounded"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            placeholder="กรุณาระบุเหตุผลของคุณที่นี่"
-          />
-        </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block font-medium">Reasons for moving out</label>
+                <textarea
+                  className="w-full border p-2 rounded"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                  placeholder="Please state your reason."
+                />
+              </div>
 
-        <div>
-          <label className="block font-medium">วันที่ต้องการย้ายออก</label>
-          <input
-            type="date"
-            className="w-full border p-2 rounded"
-            value={moveOutDate}
-            onChange={(e) => setMoveOutDate(e.target.value)}
-            min={today}
-          />
-        </div>
+              <div>
+                <label className="block font-medium">Date you wish to move out</label>
+                <input
+                  type="date"
+                  className="w-full border p-2 rounded"
+                  value={moveOutDate}
+                  onChange={(e) => setMoveOutDate(e.target.value)}
+                  min={today}
+                />
+              </div>
 
-        <div>
-          <label className="block font-medium">รหัสผ่านเพื่อยืนยันตัวตน</label>
-          <input
-            type="password"
-            className="w-full border p-2 rounded"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="กรอกรหัสผ่านของคุณ"
-          />
-        </div>
+              <div>
+                <label className="block font-medium">Password for verification</label>
+                <input
+                  type="password"
+                  className="w-full border p-2 rounded"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                />
+              </div>
 
-        <div className="flex items-start space-x-2">
-          <input
-            type="checkbox"
-            checked={agreePolicy}
-            onChange={(e) => setAgreePolicy(e.target.checked)}
-            className="mt-1"
-          />
-          <span className="text-sm text-gray-700">
-            ข้าพเจ้าเข้าใจและยอมรับว่า{" "}
-            <span className="font-semibold underline">
-              ต้องยื่นคำร้องล่วงหน้าอย่างน้อย 30 วันก่อนวันย้ายออก
-            </span>{" "}
-            เพื่อขอรับเงินประกันคืน ตามระเบียบของหอพัก
-          </span>
-        </div>
+              <div className="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  checked={agreePolicy}
+                  onChange={(e) => setAgreePolicy(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-sm text-gray-700">
+                  I understand and accept that{" "}
+                  <span className="font-semibold underline">
+                    Applications must be submitted at least 30 days prior to the move-out date.
+                  </span>{" "}
+                  To request a refund of the security deposit according to the dormitory regulations.
+                </span>
+              </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 px-4 text-white rounded ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
-        >
-          {loading ? "กำลังส่ง..." : "ส่งคำร้อง"}
-        </button>
-      </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-2 px-4 text-white rounded ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+              >
+                {loading ? "กำลังส่ง..." : "Submit"}
+              </button>
+            </form>
+          </>
+        )}
+      </main>
     </div>
   );
 }

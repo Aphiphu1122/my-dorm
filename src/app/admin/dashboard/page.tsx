@@ -73,7 +73,7 @@ export default function AdminPanel() {
       </aside>
  
       {/* Main Content */}
-      <div className="flex-1 p-4 max-w-5xl mx-auto">
+      <div className="flex-1 p-8 max-w-5xl mx-auto">
         <Toaster position="top-right" />
         <div className="p-6 space-y-10">
           <h1 className="text-3xl font-bold text-[#0F3659]">DASHBOARD</h1>
