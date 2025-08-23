@@ -75,6 +75,7 @@ model profile {
   nationalId          String               @unique
 
   role                String               @default("user")
+  roomId              String?
   room                room?                @relation("UserRoom")
 
   maintenanceRequests maintenanceRequest[]
@@ -150,7 +151,6 @@ model moveOutRequest {
   status       MoveOutStatus  @default(PENDING_APPROVAL)
   imageUrl     String?
 
-  // Relations
   user         profile        @relation(fields: [userId], references: [id])
   room         room           @relation(fields: [roomId], references: [id])
 

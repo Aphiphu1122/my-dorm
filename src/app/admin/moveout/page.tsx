@@ -47,7 +47,21 @@ export default function AdminMoveOutListPage() {
     }
   };
 
-  const handleAction = async (id: string, action: "APPROVED" | "REJECTED") => {
+  const handleAction = async (
+    id: string,
+    action: "APPROVED" | "REJECTED"
+  ) => {
+    const target = requests.find((r) => r.id === id);
+    if (!target) {
+      toast.error("ไม่พบคำร้อง");
+      return;
+    }
+
+    if (target.status !== "PENDING_APPROVAL") {
+      toast.error("สามารถดำเนินการได้เฉพาะคำร้องที่รอดำเนินการเท่านั้น");
+      return;
+    }
+
     setActionLoadingId(id);
     try {
       const res = await fetch(`/api/admin/moveout/${id}`, {
@@ -62,7 +76,7 @@ export default function AdminMoveOutListPage() {
       toast.success(
         `อัปเดตคำร้องเป็น "${action === "APPROVED" ? "อนุมัติ" : "ปฏิเสธ"}" แล้ว`
       );
-      fetchRequests(); // รีเฟรชข้อมูล
+      fetchRequests();
     } catch (err) {
       console.error(err);
       toast.error("เกิดข้อผิดพลาด");

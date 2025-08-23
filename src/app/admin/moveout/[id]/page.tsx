@@ -14,7 +14,6 @@ type MoveOutRequest = {
   moveOutDate: string;
   createdAt: string;
   status: MoveOutStatus;
-  note?: string;
   imageUrl?: string;
   user: {
     firstName: string;
@@ -32,6 +31,10 @@ export default function AdminMoveOutDetailPage() {
   const id = params.id as string;
   const [request, setRequest] = useState<MoveOutRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<MoveOutStatus | null>(null);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -52,7 +55,14 @@ export default function AdminMoveOutDetailPage() {
     fetchDetail();
   }, [id]);
 
+  const handleConfirm = (status: MoveOutStatus) => {
+    setConfirmAction(status);
+    setShowConfirm(true);
+  };
+
   const handleUpdateStatus = async (status: MoveOutStatus) => {
+    setIsProcessing(true);
+
     try {
       const res = await fetch(`/api/admin/moveout/${id}`, {
         method: "PATCH",
@@ -64,11 +74,14 @@ export default function AdminMoveOutDetailPage() {
       if (!res.ok) throw new Error("ไม่สามารถอัปเดตสถานะได้");
 
       setRequest((prev) => prev ? { ...prev, status } : prev);
-      toast.success(`อัปเดตสถานะสำเร็จ`);
+      toast.success(`อัปเดตสถานะเป็น ${status === "APPROVED" ? "อนุมัติแล้ว" : "ปฏิเสธแล้ว"}`);
       router.push("/admin/moveout");
     } catch (err) {
-    console.error(err);
+      console.error(err);
       toast.error("เกิดข้อผิดพลาด");
+    } finally {
+      setIsProcessing(false);
+      setShowConfirm(false);
     }
   };
 
@@ -86,7 +99,6 @@ export default function AdminMoveOutDetailPage() {
         <p><strong>วันที่ยื่นคำร้อง:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
         <p><strong>วันที่ต้องการย้ายออก:</strong> {new Date(request.moveOutDate).toLocaleDateString()}</p>
         <p><strong>เหตุผล:</strong> {request.reason}</p>
-        {request.note && <p><strong>หมายเหตุ:</strong> {request.note}</p>}
 
         {request.imageUrl && (
           <div>
@@ -119,14 +131,16 @@ export default function AdminMoveOutDetailPage() {
         {request.status === "PENDING_APPROVAL" && (
           <div className="mt-4 flex gap-4">
             <button
-              onClick={() => handleUpdateStatus("APPROVED")}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              onClick={() => handleConfirm("APPROVED")}
+              disabled={isProcessing}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
             >
               ✅ อนุมัติ
             </button>
             <button
-              onClick={() => handleUpdateStatus("REJECTED")}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+              onClick={() => handleConfirm("REJECTED")}
+              disabled={isProcessing}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-50"
             >
               ❌ ปฏิเสธ
             </button>
@@ -137,6 +151,62 @@ export default function AdminMoveOutDetailPage() {
           ← กลับไปยังรายการคำร้อง
         </Link>
       </div>
+
+      {/* ✅ Confirm Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md space-y-4">
+            <h2 className="text-xl font-bold text-center text-gray-800">ยืนยันการดำเนินการ</h2>
+            <p className="text-center text-gray-600">
+              คุณแน่ใจหรือไม่ว่าต้องการ{" "}
+              <span className={confirmAction === "APPROVED" ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                {confirmAction === "APPROVED" ? "อนุมัติ" : "ปฏิเสธ"}
+              </span> คำร้องนี้?
+            </p>
+            <div className="flex justify-center gap-4 pt-2">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => confirmAction && handleUpdateStatus(confirmAction)}
+                className={`px-4 py-2 rounded text-white flex items-center gap-2 ${
+                  confirmAction === "APPROVED"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+                disabled={isProcessing}
+              >
+                {isProcessing && (
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                )}
+                ยืนยัน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
