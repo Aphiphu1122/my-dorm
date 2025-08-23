@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
 
@@ -24,6 +24,7 @@ type MoveOutRequest = {
 };
 
 export default function AdminMoveOutListPage() {
+  const router = useRouter();
   const [requests, setRequests] = useState<MoveOutRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -85,7 +86,17 @@ export default function AdminMoveOutListPage() {
     }
   };
 
-  if (loading) return <p className="p-4">กำลังโหลด...</p>;
+  if (loading)
+    return (
+      <div className="flex min-h-screen">
+        <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+          <Sidebar role="admin" />
+        </aside>
+        <main className="flex-1 p-8 max-w-5xl mx-auto">
+          <p>Loading...</p>
+        </main>
+      </div>
+    );
 
   return (
     <div className="flex min-h-screen bg-white text-black">
@@ -95,16 +106,18 @@ export default function AdminMoveOutListPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-8 max-w-6xl mx-auto">
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#0F3659]">คำร้องขอย้ายออก</h1>
+            <h1 className="text-3xl font-bold text-[#0F3659]">
+              Request to move out
+            </h1>
             <p className="text-gray-600 mt-1">
-              จัดการคำร้องขอย้ายออกจากผู้เช่าทั้งหมดในระบบ
+              Manage all tenant move-out requests in the system.
             </p>
           </div>
           <div className="text-sm text-gray-600">
-            ทั้งหมด:{" "}
+            All:{" "}
             <span className="font-semibold">
               {requests.length.toLocaleString()}
             </span>
@@ -120,17 +133,21 @@ export default function AdminMoveOutListPage() {
             <table className="min-w-full table-auto text-sm text-left">
               <thead>
                 <tr className="bg-gray-100 text-gray-700">
-                  <th className="px-4 py-3">ชื่อผู้ใช้</th>
-                  <th className="px-4 py-3">ห้อง</th>
-                  <th className="px-4 py-3">เหตุผล</th>
-                  <th className="px-4 py-3">วันที่ย้าย</th>
-                  <th className="px-4 py-3">สถานะ</th>
-                  <th className="px-4 py-3">การจัดการ</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Room number</th>
+                  <th className="px-4 py-3">Reason</th>
+                  <th className="px-4 py-3">Moving date</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Management</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((req) => (
-                  <tr key={req.id} className="border-t hover:bg-gray-50">
+                  <tr
+                    key={req.id}
+                    className="border-t border-gray-200 hover:bg-gray-200 cursor-pointer"
+                    onClick={() => router.push(`/admin/moveout/${req.id}`)}
+                  >
                     <td className="px-4 py-3">
                       {req.user.firstName} {req.user.lastName}
                     </td>
@@ -139,43 +156,52 @@ export default function AdminMoveOutListPage() {
                     <td className="px-4 py-3">
                       {new Date(req.moveOutDate).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-4 py-3 font-medium flex items-center gap-2">
                       {req.status === "PENDING_APPROVAL" && (
-                        <span className="text-yellow-600">⏳ รอดำเนินการ</span>
+                        <>
+                          <i className="ri-indeterminate-circle-fill text-yellow-600 text-lg"></i>
+                          <span className="text-yellow-600">Pending</span>
+                        </>
                       )}
                       {req.status === "APPROVED" && (
-                        <span className="text-green-600">✅ อนุมัติแล้ว</span>
+                        <>
+                          <i className="ri-checkbox-circle-fill text-green-600 text-lg"></i>
+                          <span className="text-green-600">Approved</span>
+                        </>
                       )}
                       {req.status === "REJECTED" && (
-                        <span className="text-red-600">❌ ถูกปฏิเสธ</span>
+                        <>
+                          <i className="ri-close-circle-fill text-red-600 text-lg"></i>
+                          <span className="text-red-600">Rejected</span>
+                        </>
                       )}
                     </td>
                     <td className="px-4 py-3 space-x-2">
-                      <Link
-                        href={`/admin/moveout/${req.id}`}
-                        className="text-blue-600 underline"
-                      >
-                        ดูรายละเอียด
-                      </Link>
                       {req.status === "PENDING_APPROVAL" && (
                         <>
                           <button
                             className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                            onClick={() => handleAction(req.id, "APPROVED")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction(req.id, "APPROVED");
+                            }}
                             disabled={actionLoadingId === req.id}
                           >
                             {actionLoadingId === req.id
                               ? "กำลังอนุมัติ..."
-                              : "อนุมัติ"}
+                              : "Approve"}
                           </button>
                           <button
                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                            onClick={() => handleAction(req.id, "REJECTED")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction(req.id, "REJECTED");
+                            }}
                             disabled={actionLoadingId === req.id}
                           >
                             {actionLoadingId === req.id
                               ? "กำลังปฏิเสธ..."
-                              : "ปฏิเสธ"}
+                              : "Refuse"}
                           </button>
                         </>
                       )}

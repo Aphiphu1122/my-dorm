@@ -85,13 +85,13 @@ export default function MaintenancePage() {
 
   return (
 
-    <div className="flex min-h-screen  bg-white text-black"> 
+    <div className="flex min-h-screen  bg-white"> 
       {/* Sidebar */}
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
       </aside>
 
-     <main className="flex-1 max-w-4xl mx-auto p-6">
+     <main className="flex-1 max-w-5xl mx-auto p-6">
 
   {/* Heading */}
   <h1 className="text-3xl font-bold text-[#0F3659] mb-1">Maintenance & Repair</h1>

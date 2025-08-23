@@ -31,27 +31,24 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<"personal" | "password">("personal"); 
+
   useEffect(() => {
     const fetchProfile = async () => {
-    try {
-      const res = await fetch("/api/profile/me", {
-        credentials: "include",
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
-        return;
-      }
-
-          setProfile(data);
-          setFormData(data);
-        } catch (err) {
-          console.error(err);
-          toast.error("ไม่สามารถโหลดข้อมูลได้");
+      try {
+        const res = await fetch("/api/profile/me", { credentials: "include" });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+          return;
         }
-      };
-
+        setProfile(data);
+        setFormData(data);
+      } catch (err) {
+        console.error(err);
+        toast.error("ไม่สามารถโหลดข้อมูลได้");
+      }
+    };
     fetchProfile();
   }, []);
 
@@ -78,7 +75,6 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setError("");
     setSuccess("");
-
     if (!validate()) return;
 
     try {
@@ -94,14 +90,11 @@ export default function ProfilePage() {
           address: formData.address,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         toast.error(data.error || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
         return;
       }
-
       setProfile(data.user);
       setEditing(false);
       toast.success("อัปเดตข้อมูลสำเร็จแล้ว");
@@ -116,12 +109,10 @@ export default function ProfilePage() {
       toast.error("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
-
     if (newPassword.length < 6) {
       toast.error("รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร");
       return;
     }
-
     if (newPassword !== confirmPassword) {
       toast.error("รหัสผ่านใหม่ไม่ตรงกัน");
       return;
@@ -134,209 +125,233 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
       });
-
       const data = await res.json();
-
       if (res.ok) {
         toast.success("เปลี่ยนรหัสผ่านสำเร็จ");
         setOldPassword("");
         setNewPassword("");
         setConfirmPassword("");
-        setTimeout(() => router.push("/home"), 1000);
       } else {
-        if (data.error?.oldPassword) toast.error(data.error.oldPassword[0]);
-        else if (data.error?.confirmPassword)
-          toast.error(data.error.confirmPassword[0]);
-        else toast.error(data.error || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+        toast.error(data.error || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
       }
     } catch (err) {
-      console.error("Change password error:", err);
+      console.error(err);
       toast.error("เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน");
     } finally {
       setChangingPassword(false);
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (error)
-    return <p className="text-red-600 text-center mt-4 font-medium">{error}</p>;
+  if (error) return <p className="text-red-600 text-center mt-4 font-medium">{error}</p>;
   if (!profile) return <p className="text-center mt-4">กำลังโหลดข้อมูล...</p>;
 
-  const formattedBirthday = new Date(profile.birthday).toLocaleDateString(
-    "th-TH",
-    { day: "2-digit", month: "long", year: "numeric" }
-  );
+  const formattedBirthday = new Date(profile.birthday).toLocaleDateString("th-TH", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <div className="flex min-h-screen bg-white text-black">
-      {/* Sidebar ซ้าย */}
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
-        {/* ผู้ใช้ธรรมดาใช้ role="user" ถ้าหน้านี้อยู่ฝั่งผู้ใช้ */}
         <Sidebar role="user" />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <h2 className="text-2xl font-bold border-b pb-2">ข้อมูลส่วนตัว</h2>
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
+        <div>
+          <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">Change Profile</h3>
+          <p className="text-gray-500 mb-8">You can manage your personal information and passwords here.</p>
+        </div>
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 mb-6">
+          
+          <button
+            onClick={() => setActiveTab("personal")}
+            className={`px-6 py-2 font-semibold ${
+              activeTab === "personal"
+                ? "border-b-4 border-[#0F3659] text-[#0F3659]"
+                : "text-gray-500 hover:text-gray-600"
+            } transition`}
+          >
+            Personal Information
+          </button>
+          <button
+            onClick={() => setActiveTab("password")}
+            className={`px-6 py-2 font-semibold ${
+              activeTab === "password"
+                ? "border-b-4 border-[#0F3659] text-[#0F3659]"
+                : "text-gray-500 hover:text-gray-600"
+            } transition`}
+          >
+            Change Password
+          </button>
+        </div>
 
-          {success && <p className="text-green-600 font-medium">{success}</p>}
+        {/* Tab Content */}
+        {activeTab === "personal" && (
+          <div className="space-y-3 ">
+            {success && <p className="text-green-600 font-medium">{success}</p>}
 
-          <div className="space-y-3">
-            <div>
-              <label className="font-semibold">ชื่อ:</label>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">First Name</label>
               {editing ? (
                 <input
                   name="firstName"
                   value={formData.firstName || ""}
                   onChange={handleChange}
-                  className="w-full border p-2 rounded"
+                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               ) : (
-                <span className="ml-2">{profile.firstName}</span>
+                <span>{profile.firstName}</span>
               )}
             </div>
 
-            <div>
-              <label className="font-semibold">นามสกุล:</label>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">Last Name</label>
               {editing ? (
                 <input
                   name="lastName"
                   value={formData.lastName || ""}
                   onChange={handleChange}
-                  className="w-full border p-2 rounded"
+                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               ) : (
-                <span className="ml-2">{profile.lastName}</span>
+                <span>{profile.lastName}</span>
               )}
             </div>
 
-            <div>
-              <label className="font-semibold">อีเมล:</label>
-              <span className="ml-2">{profile.email}</span>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">Email</label>
+              <span>{profile.email}</span>
             </div>
 
-            <div>
-              <label className="font-semibold">เบอร์โทร:</label>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">Phone Number</label>
               {editing ? (
                 <input
                   name="phone"
                   value={formData.phone || ""}
                   onChange={handleChange}
-                  className="w-full border p-2 rounded"
+                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               ) : (
-                <span className="ml-2">{profile.phone}</span>
+                <span>{profile.phone}</span>
               )}
             </div>
 
-            <div>
-              <label className="font-semibold">วันเกิด:</label>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">Birthdate</label>
               {editing ? (
                 <input
                   name="birthday"
                   type="date"
                   value={formData.birthday?.substring(0, 10) || ""}
                   onChange={handleChange}
-                  className="w-full border p-2 rounded"
+                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               ) : (
-                <span className="ml-2">{formattedBirthday}</span>
+                <span>{formattedBirthday}</span>
               )}
             </div>
 
-            <div>
-              <label className="font-semibold">ที่อยู่:</label>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">Address</label>
               {editing ? (
                 <textarea
                   name="address"
                   value={formData.address || ""}
                   onChange={handleChange}
-                  className="w-full border p-2 rounded"
+                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               ) : (
-                <span className="ml-2">{profile.address}</span>
+                <span>{profile.address}</span>
               )}
             </div>
 
-            <div>
-              <label className="font-semibold">รหัสบัตรประชาชน:</label>
-              <span className="ml-2">{profile.nationalId}</span>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">National ID</label>
+              <span>{profile.nationalId}</span>
             </div>
 
-            <div>
-              <label className="font-semibold">ห้องพัก:</label>
-              <span className="ml-2">{profile.room?.roomNumber || "-"}</span>
+            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
+              <label className="font-semibold">Room Number</label>
+              <span>{profile.room?.roomNumber || "-"}</span>
             </div>
+            
+            <div className="flex justify-end mt-4 gap-4">
+              {editing ? (
+                <>
+                  <button
+                    onClick={handleSave}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded transition"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="bg-gray-400 hover:bg-gray-500 text-white px-8 py-2 rounded transition"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-8 py-2 rounded transition"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
           </div>
+        )}
 
-          <div className="pt-4">
-            {editing ? (
-              <>
-                <button
-                  onClick={handleSave}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2"
-                >
-                  บันทึก
-                </button>
-                <button
-                  onClick={() => setEditing(false)}
-                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
-                >
-                  ยกเลิก
-                </button>
-              </>
-            ) : (
+        {activeTab === "password" && (
+          <div className="mt-4 bg-white rounded-xl shadow-md border border-gray-200 p-6">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-[#0F3659]">Change Password</h3>
+              <p className="text-gray-500 mt-1">Manage your passwords securely here.</p>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="password"
+                placeholder="Old password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+              <input
+                type="password"
+                placeholder="New password (at least 6 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
               <button
-                onClick={() => setEditing(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                onClick={handleChangePassword}
+                disabled={changingPassword}
+                className="w-full bg-gray-400 hover:bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                แก้ไขข้อมูล
+                {changingPassword ? "Saving..." : "Save New Password"}
               </button>
-            )}
+            </div>
           </div>
-        </div>
-
-        {/* Change Password */}
-        <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-xl font-semibold mb-4">เปลี่ยนรหัสผ่าน</h3>
-          <div className="space-y-3">
-            <input
-              type="password"
-              placeholder="รหัสผ่านเดิม"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
-            <input
-              type="password"
-              placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
-            <input
-              type="password"
-              placeholder="ยืนยันรหัสผ่านใหม่"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
-            <button
-              onClick={handleChangePassword}
-              disabled={changingPassword}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded disabled:opacity-60"
-            >
-              {changingPassword ? "กำลังบันทึก..." : "บันทึกรหัสผ่านใหม่"}
-            </button>
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );

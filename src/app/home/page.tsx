@@ -119,11 +119,11 @@ export default function HomePage() {
       </aside>
 
       {/* Main content: เต็มจอ ไม่มีขอบข้าง */}
-      <main className="flex-1 w-full px-0 py-6">
+      <main className="flex-1 max-w-5xl mx-auto p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 px-4 md:px-6">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">
               Hello , {user?.firstName} {user?.lastName}
             </h1>
             <p className="text-gray-600">Welcome to the dormitory website</p>

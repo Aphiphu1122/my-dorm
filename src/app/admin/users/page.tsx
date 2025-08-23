@@ -65,7 +65,7 @@ export default function AdminUsersPage() {
       </aside>
  
       {/* Main content*/}
-      <main className="flex-1 p-4 max-w-5xl mx-auto mt-5">
+      <main className="flex-1 p-8 max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-[#0F3659]">Tenant Management</h1>
@@ -122,7 +122,7 @@ export default function AdminUsersPage() {
             <tbody>
               {loading
                 ? Array.from({ length: 6 }).map((_, i) => (
-                    <tr key={i} className="border-t">
+                    <tr key={i} className="border-t ">
                       <td className="px-4 py-3">
                         <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
                       </td>
@@ -148,8 +148,8 @@ export default function AdminUsersPage() {
                   ))
                 : filteredUsers.length > 0
                 ? filteredUsers.map((u) => (
-                    <tr key={u.id} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3">{u.firstName}</td>
+                    <tr key={u.id} className="border-t border-gray-200 hover:bg-gray-200 transition-colors">
+                      <td className="px-4 py-3  ">{u.firstName}</td>
                       <td className="px-4 py-3">{u.lastName}</td>
                       <td className="px-4 py-3">{u.email}</td>
                       <td className="px-4 py-3">{u.phone}</td>

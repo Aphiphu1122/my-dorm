@@ -73,7 +73,7 @@ export default function AdminMoveOutDetailPage() {
 
       if (!res.ok) throw new Error("ไม่สามารถอัปเดตสถานะได้");
 
-      setRequest((prev) => prev ? { ...prev, status } : prev);
+      setRequest((prev) => (prev ? { ...prev, status } : prev));
       toast.success(`อัปเดตสถานะเป็น ${status === "APPROVED" ? "อนุมัติแล้ว" : "ปฏิเสธแล้ว"}`);
       router.push("/admin/moveout");
     } catch (err) {
@@ -85,8 +85,13 @@ export default function AdminMoveOutDetailPage() {
     }
   };
 
-  if (loading) return <p className="p-6">กำลังโหลด...</p>;
-  if (!request) return <p className="p-6 text-red-500">ไม่พบข้อมูลคำร้อง</p>;
+  if (loading) {
+    return <p className="text-center mt-10 text-gray-600">กำลังโหลดข้อมูล...</p>;
+  }
+
+  if (!request) {
+    return <p className="text-center mt-10 text-red-600">ไม่พบข้อมูลคำร้อง</p>;
+  }
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-4">
@@ -147,12 +152,14 @@ export default function AdminMoveOutDetailPage() {
           </div>
         )}
 
-        <Link href="/admin/moveout" className="text-blue-600 mt-4 block hover:underline">
-          ← กลับไปยังรายการคำร้อง
+        <Link
+          href="/admin/moveout"
+          className="mt-6 inline-block text-blue-600 hover:underline"
+        >
+          ← ย้อนกลับไปหน้ารายการคำร้อง
         </Link>
       </div>
 
-      {/* ✅ Confirm Modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md space-y-4">
@@ -161,7 +168,8 @@ export default function AdminMoveOutDetailPage() {
               คุณแน่ใจหรือไม่ว่าต้องการ{" "}
               <span className={confirmAction === "APPROVED" ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
                 {confirmAction === "APPROVED" ? "อนุมัติ" : "ปฏิเสธ"}
-              </span> คำร้องนี้?
+              </span>{" "}
+              คำร้องนี้?
             </p>
             <div className="flex justify-center gap-4 pt-2">
               <button

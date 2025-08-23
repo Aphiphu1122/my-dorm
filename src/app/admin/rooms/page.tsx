@@ -141,7 +141,7 @@ export default function RoomManagementPage() {
         <Sidebar role="admin" />
  
         {/* คอลัมน์ขวา */}
-        <div className="flex-1 p-4 max-w-5xl mx-auto mt-5">
+        <div className="flex-1 p-8 max-w-5xl mx-auto">
           <Toaster position="top-right" />
  
           <div className="w-full">
@@ -212,7 +212,7 @@ export default function RoomManagementPage() {
             ) : filteredRooms.length === 0 ? (
               <div className="py-16 text-center text-gray-600">ไม่มีห้องที่ตรงกับเงื่อนไข</div>
             ) : (
-              <div className="px-4 md:px-6">
+              <div className="px-4 md:px-2">
                 <div className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4 ">
                  
                   {filteredRooms.map((room) => {
