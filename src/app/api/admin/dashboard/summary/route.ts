@@ -3,26 +3,44 @@ import { db } from "@/lib/prisma";
 import { getRoleFromCookie } from "@/lib/auth";
 import dayjs from "dayjs";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const role = await getRoleFromCookie();
     if (!role || role !== "admin") {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const [totalRooms, occupiedRooms, unpaidRooms] = await Promise.all([
+    const url = new URL(request.url);
+    const yearParam = url.searchParams.get("year");
+    const year = yearParam ? parseInt(yearParam, 10) : dayjs().year();
+
+    const startOfYear = dayjs(`${year}-01-01`).startOf("year");
+    const endOfYear = startOfYear.endOf("year");
+
+    // ห้องพัก
+    const [totalRooms, occupiedRooms, vacantRooms] = await Promise.all([
       db.room.count(),
       db.room.count({ where: { status: "OCCUPIED" } }),
-      db.room.count({
-        where: {
-          status: "OCCUPIED",
-          bills: { some: { status: "UNPAID" } },
-        },
-      }),
+      db.room.count({ where: { status: "AVAILABLE" } }),
     ]);
-    const occupancyRate = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
 
+    const unpaidRooms = await db.bill.count({
+      where: {
+        status: "UNPAID",
+      },
+    });
+
+    const occupancyRate =
+      totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
+
+    // บิลในปีนั้น
     const bills = await db.bill.findMany({
+      where: {
+        paymentDate: {
+          gte: startOfYear.toDate(),
+          lte: endOfYear.toDate(),
+        },
+      },
       select: {
         status: true,
         totalAmount: true,
@@ -43,11 +61,12 @@ export async function GET() {
       .filter((b) => b.status === "UNPAID")
       .reduce((sum, b) => sum + b.totalAmount, 0);
 
-    const past6Months = Array.from({ length: 6 }, (_, i) =>
-      dayjs().subtract(5 - i, "month").startOf("month")
+    // เดือนในปีที่เลือก
+    const months = Array.from({ length: 12 }, (_, i) =>
+      startOfYear.add(i, "month")
     );
 
-    const monthlyRevenue = past6Months.map((month) => {
+    const monthlyRevenue = months.map((month) => {
       const label = month.format("MMM");
       const revenue = bills
         .filter(
@@ -57,10 +76,11 @@ export async function GET() {
             dayjs(b.paymentDate).isSame(month, "month")
         )
         .reduce((sum, b) => sum + b.totalAmount, 0);
+
       return { month: label, revenue };
     });
 
-    const revenueByCategory = past6Months.map((month) => {
+    const revenueByCategory = months.map((month) => {
       const label = month.format("MMM");
       const relevantBills = bills.filter(
         (b) =>
@@ -82,10 +102,12 @@ export async function GET() {
       return { month: label, rent, water, electricity };
     });
 
+    // แจ้งซ่อมในปีนั้น
     const maintenanceRequests = await db.maintenanceRequest.findMany({
       where: {
         createdAt: {
-          gte: dayjs().subtract(5, "month").startOf("month").toDate(),
+          gte: startOfYear.toDate(),
+          lte: endOfYear.toDate(),
         },
       },
       select: {
@@ -94,7 +116,7 @@ export async function GET() {
       },
     });
 
-    const maintenanceTrend = past6Months.map((month) => {
+    const maintenanceTrend = months.map((month) => {
       const label = month.format("MMM");
       const filtered = maintenanceRequests.filter((req) =>
         dayjs(req.createdAt).isSame(month, "month")
@@ -120,7 +142,7 @@ export async function GET() {
 
     return NextResponse.json({
       occupancyRate: parseFloat(occupancyRate.toFixed(2)),
-      vacantRooms: totalRooms - occupiedRooms,
+      vacantRooms,
       occupiedRooms,
       unpaidRooms,
       totalPaid,
