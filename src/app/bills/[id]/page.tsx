@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
 
+
 type BillStatus = "PAID" | "UNPAID" | "PENDING_APPROVAL";
 
 type Bill = {
@@ -32,6 +33,12 @@ export default function BillDetailPage() {
   const [loading, setLoading] = useState(true);
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [transactionRef, setTransactionRef] = useState("");
+  const now = new Date();
+  const defaultDateTime = now.toISOString().slice(0, 16);
+
+  const [paymentDate, setPaymentDate] = useState(defaultDateTime);
+
+
 
   useEffect(() => {
     if (!billId) return;
@@ -60,6 +67,7 @@ export default function BillDetailPage() {
 
     const formData = new FormData();
     formData.append("file", slipFile);
+    formData.append("paymentDate", paymentDate);
     formData.append("transactionRef", transactionRef);
 
     try {
@@ -212,6 +220,17 @@ export default function BillDetailPage() {
               onChange={(e) => setTransactionRef(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g. 0123456789"
+            />
+
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Payment Date & Time
+            </label>
+            <input
+              type="datetime-local"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              required
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
  
             <label className="block font-medium mt-6 mb-2 text-blue-800">

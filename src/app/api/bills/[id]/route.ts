@@ -4,17 +4,16 @@ import { getUserIdFromCookie } from "@/lib/auth";
 import { z } from "zod";
 import { BillStatus } from "@prisma/client";
 
-// ✅ PATCH: schema สำหรับแนบสลิป
+//  PATCH: schema สำหรับแนบสลิป
 const patchSchema = z.object({
   paymentSlipUrl: z.string().url().optional(),
   paymentDate: z.string().datetime().optional(),
   transactionRef: z.string().optional(),
 });
 
-// ✅ GET: ดึงบิลของผู้ใช้ตาม ID
 export async function GET(
   _req: NextRequest,
-  context: { params: Promise<{ id: string }> } // ⬅️ ต้องใช้ Promise และ await
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: billId } = await context.params;
@@ -43,10 +42,10 @@ export async function GET(
   }
 }
 
-// ✅ PATCH: แนบสลิป / เพิ่มข้อมูลการชำระ
+//  PATCH: แนบสลิป / เพิ่มข้อมูลการชำระ
 export async function PATCH(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> } // ⬅️ เช่นกัน ต้อง await
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: billId } = await context.params;
@@ -84,7 +83,7 @@ export async function PATCH(
         paymentSlipUrl: paymentSlipUrl ?? current.paymentSlipUrl,
         paymentDate: paymentDate ? new Date(paymentDate) : current.paymentDate,
         transactionRef: transactionRef ?? current.transactionRef,
-        status: BillStatus.PENDING_APPROVAL, // ✅ อัปเดตสถานะใหม่
+        status: BillStatus.PENDING_APPROVAL,
       },
     });
 

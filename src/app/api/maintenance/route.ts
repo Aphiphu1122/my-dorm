@@ -16,11 +16,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const description = formData.get('description') as string
     const categoryRaw = formData.get('category') as string
-    const image = formData.get('image') as File | null
-
-    console.log('💬 description:', description)
-    console.log('📂 category:', categoryRaw)
-    console.log('🖼️ image:', image)
+    const images = formData.getAll('images') as File[]
 
     if (!description || !categoryRaw) {
       console.log('❌ Missing fields')
@@ -37,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 
-    // ✅ ตรวจสอบว่าผู้ใช้มีห้อง
+    //  ตรวจสอบว่าผู้ใช้มีห้อง
     const profile = await db.profile.findUnique({
       where: { id: userId },
       include: { room: true },
@@ -48,24 +44,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User has no room assigned' }, { status: 400 })
     }
 
-    // ✅ อัปโหลดรูปถ้ามี
-    let imageUrl: string | null = null
-    if (image && image.size > 0) {
-      try {
-        imageUrl = await uploadImageToStorage(image, `maintenance/${uuidv4()}.jpg`)
-        console.log('✅ Uploaded image:', imageUrl)
-      } catch (uploadErr) {
-        console.error('❌ Upload failed:', uploadErr)
-        return NextResponse.json({ error: 'Upload failed' }, { status: 400 })
+    // ✅ อัปโหลดหลายรูป
+    const uploadedUrls: string[] = []
+
+    for (const image of images) {
+      if (image.size > 0) {
+        try {
+          const url = await uploadImageToStorage(image, `maintenance/${uuidv4()}.jpg`)
+          uploadedUrls.push(url)
+          console.log('✅ Uploaded image:', url)
+        } catch (uploadErr) {
+          console.error('❌ Upload failed:', uploadErr)
+          return NextResponse.json({ error: 'Upload failed' }, { status: 400 })
+        }
       }
     }
 
-    // ✅ บันทึกคำร้อง
     await db.maintenanceRequest.create({
       data: {
         description,
         category,
-        imageUrl,
+        imageUrls: uploadedUrls,
         userId,
         roomId: profile.room.id,
       },

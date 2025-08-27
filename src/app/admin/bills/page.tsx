@@ -38,15 +38,15 @@ export default function AdminBillListPage() {
   // form state
   const [tenantRooms, setTenantRooms] = useState<RoomWithTenant[]>([]);
   const [form, setForm] = useState({
-    tenantId: "",
-    roomId: "",
-    billingMonth: "",
-    rentAmount: 0,
-    waterUnit: 0,
-    waterRate: 0,
-    electricUnit: 0,
-    electricRate: 0,
-  });
+  tenantId: "",
+  roomId: "",
+  billingMonth: "",
+  rentAmount: 3000,
+  waterUnit: 0,
+  waterRate: 8,
+  electricUnit: 0,
+  electricRate: 10,
+});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -61,7 +61,8 @@ export default function AdminBillListPage() {
       const data = await res.json();
       setBills(data);
     } catch (error) {
-      toast.error("เกิดข้อผิดพลาดในการโหลดบิล");
+    toast.error("เกิดข้อผิดพลาดในการโหลดบิล");
+    console.error(error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export default function AdminBillListPage() {
     setTenantRooms(data);
   };
 
-  // ✅ handle input
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -262,7 +263,6 @@ export default function AdminBillListPage() {
 {showModal && (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-8 relative animate-fade-in">
-      {/* ปุ่มปิด */}
       <button
         onClick={() => setShowModal(false)}
         className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -325,7 +325,7 @@ export default function AdminBillListPage() {
               name="waterUnit"
               value={form.waterUnit || ""}
               onChange={handleChange}
-              placeholder="Ex:30"
+              placeholder="Put Water Unit"
               className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             />
           </div>
@@ -334,7 +334,7 @@ export default function AdminBillListPage() {
             <input
               type="number"
               name="waterRate"
-              placeholder="Ex:10"
+              placeholder="10"
               value={form.waterRate || ""}
               onChange={handleChange}
               className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
@@ -349,7 +349,7 @@ export default function AdminBillListPage() {
             <input
               type="number"
               name="electricUnit"
-              placeholder="Ex:40"
+              placeholder="Put Electric Unit"
               value={form.electricUnit || ""}
               onChange={handleChange}
               className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
@@ -360,7 +360,7 @@ export default function AdminBillListPage() {
             <input
               type="number"
               name="electricRate"
-              placeholder="Ex:8"
+              placeholder="8"
               value={form.electricRate || ""}
               onChange={handleChange}
               className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"

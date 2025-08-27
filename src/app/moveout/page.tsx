@@ -30,7 +30,10 @@ export default function MoveOutRequestPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date();
+  const minMoveOutDate = new Date(today);
+  minMoveOutDate.setDate(today.getDate() + 30);
+  const minDateStr = minMoveOutDate.toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -160,7 +163,7 @@ export default function MoveOutRequestPage() {
                   className="w-full border p-2 rounded"
                   value={moveOutDate}
                   onChange={(e) => setMoveOutDate(e.target.value)}
-                  min={today}
+                  min={minDateStr}
                 />
               </div>
 

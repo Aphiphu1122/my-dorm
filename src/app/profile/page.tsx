@@ -98,6 +98,7 @@ export default function ProfilePage() {
       setProfile(data.user);
       setEditing(false);
       toast.success("อัปเดตข้อมูลสำเร็จแล้ว");
+      router.push("/home");
     } catch (err) {
       console.error(err);
       toast.error("เกิดข้อผิดพลาดในการบันทึก");
@@ -158,18 +159,15 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 p-8 max-w-5xl mx-auto">
         <div>
           <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">Change Profile</h3>
           <p className="text-gray-500 mb-8">You can manage your personal information and passwords here.</p>
         </div>
-        {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-6">
           
           <button
@@ -194,7 +192,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Tab Content */}
         {activeTab === "personal" && (
           <div className="space-y-3 ">
             {success && <p className="text-green-600 font-medium">{success}</p>}

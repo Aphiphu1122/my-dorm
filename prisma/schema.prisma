@@ -90,11 +90,11 @@ model profile {
 model maintenanceRequest {
   id          String              @id @default(uuid())
   description String
-  imageUrl    String?
+  imageUrl    String?             
+  imageUrls   String[]          
   status      MaintenanceStatus   @default(PENDING)
   category    MaintenanceCategory
-
-  // Relations
+  
   roomId      String
   userId      String
   room        room                @relation(fields: [roomId], references: [id])

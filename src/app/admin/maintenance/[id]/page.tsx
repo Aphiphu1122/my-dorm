@@ -12,7 +12,7 @@ interface MaintenanceRequest {
   description: string;
   status: string;
   category: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   createdAt: string;
   room: {
     roomNumber: string;
@@ -141,19 +141,26 @@ export default function MaintenanceDetailPage() {
               <p className="text-gray-700 mb-1 font-medium">Description</p>
               <p className="text-right text-gray-900">{request.description}</p>
             </div>
-            {request.imageUrl && (
-              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-                <p className="text-gray-700 mb-1 font-medium">Image</p>
-                <Image
-                  src={request.imageUrl}
-                  alt="Maintenance Image"
-                  width={400}
-                  height={300}
-                  className="rounded border justify-self-end"
-                  unoptimized
-                />
+
+            {request.imageUrls && request.imageUrls.length > 0 && (
+              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200 gap-4">
+                <p className="text-gray-700 font-medium">Images</p>
+                <div className="flex flex-wrap justify-end gap-4">
+                  {request.imageUrls.map((url, index) => (
+                    <Image
+                      key={index}
+                      src={url}
+                      alt={`Maintenance Image ${index + 1}`}
+                      width={200}
+                      height={150}
+                      className="rounded border"
+                      unoptimized
+                    />
+                  ))}
+                </div>
               </div>
             )}
+            
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
               <span className="text-gray-700">Room</span>
               <span className="text-right text-gray-900">{request.room.roomNumber}</span>
