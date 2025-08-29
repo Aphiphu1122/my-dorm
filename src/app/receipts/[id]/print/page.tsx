@@ -176,14 +176,14 @@ export default function ReceiptPrintPage() {
           </tr>
           <tr>
             <td className="border border-gray-300 p-2 w-12 text-center border-b-white">2</td>
-            <td className="border border-gray-300 p-2 border-b-white">ค่าน้ำ {billingMonth} (หน่วยเก่า - หน่วยใหม่)</td>
+            <td className="border border-gray-300 p-2 border-b-white">ค่าน้ำ {billingMonth}</td>
             <td className="border border-gray-300 p-2 text-center border-b-white">{bill.waterUnit}</td>
             <td className="border border-gray-300 p-2 text-center border-b-white">{bill.waterRate.toFixed(2)}</td>
             <td className="border border-gray-300 p-2 text-right border-b-white">{waterTotal.toFixed(2)}</td>
           </tr>
           <tr>
             <td className="border border-gray-300 p-2 w-12 text-center">3</td>
-            <td className="border border-gray-300 p-2">ค่าไฟฟ้า {billingMonth} (หน่วยเก่า - หน่วยใหม่)</td>
+            <td className="border border-gray-300 p-2">ค่าไฟฟ้า {billingMonth}</td>
             <td className="border border-gray-300 p-2 text-center">{bill.electricUnit}</td>
             <td className="border border-gray-300 p-2 text-center">{bill.electricRate.toFixed(2)}</td>
             <td className="border border-gray-300 p-2 text-right">{electricTotal.toFixed(2)}</td>
