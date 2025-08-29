@@ -231,26 +231,27 @@ export default function AdminBillListPage() {
                       </td>
                       <td className="px-4 py-3">{getStatusLabel(bill.status)}</td>
                       <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!window.confirm("Delete this bill?")) return;
-                            try {
-                              const res = await fetch(`/api/admin/bills/${bill.id}`, {
-                                method: "DELETE",
-                              });
-                              if (!res.ok) throw new Error();
-                              toast.success("Bill deleted");
-                              fetchBills();
-                            } catch {
-                              toast.error("Delete failed");
-                            }
-                          }}
-                          className="text-red-500 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!window.confirm("Delete this bill?")) return;
+                          try {
+                            const res = await fetch(`/api/admin/bills/${bill.id}`, {
+                              method: "DELETE",
+                            });
+                            if (!res.ok) throw new Error();
+                            toast.success("Bill deleted");
+                            fetchBills();
+                          } catch {
+                            toast.error("Delete failed");
+                          }
+                        }}
+                        className="text-gray-400 bg-gray-200 rounded-full p-2 w-10 h-10  items-center justify-center hover:text-red-700 hover:scale-125 transition-transform duration-200"
+                        title="Delete Bill"
+                      >
+                        <i className="ri-delete-bin-fill text-lg "></i>
+                      </button>
+                    </td>
                     </tr>
                   ))
               )}
