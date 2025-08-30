@@ -248,12 +248,12 @@ export default function AdminBillDetailPage() {
                   </a>
 
                   <a
-                    href={`/receipts/${bill.id}/print`}
+                    href={`/bills/${bill.id}/print`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 transform hover:scale-105"
                   >
-                    Print Receipt
+                    View Receipt
                   </a>
             </div>
 
