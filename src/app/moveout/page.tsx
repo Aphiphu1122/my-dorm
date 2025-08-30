@@ -127,7 +127,7 @@ export default function MoveOutRequestPage() {
             </div>
 
             {userInfo && room && (
-              <div className="mb-6 text-sm text-gray-700 bg-gray-100">
+              <div className="mb-6 text-sm text-gray-700 ">
                 <h2 className="text-lg font-semibold text-[#0F3659] mb-1">Personal Information</h2>
                 <section className="bg-white shadow-md rounded-lg p-2">
                   <div className="divide-y divide-gray-200">
