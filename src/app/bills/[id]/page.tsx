@@ -197,13 +197,6 @@ export default function BillDetailPage() {
                   className="rounded-md border mb-2"
                   unoptimized
                 />
-                <Link
-                  href={`/bills/${bill.id}/print`}
-                  target="_blank"
-                  className="text-[#0F3659] underline"
-                >
-                  View receipt
-                </Link>
               </div>
             )}
           </div>
@@ -251,13 +244,29 @@ export default function BillDetailPage() {
             </div>
           </section>
         )}
-        <div className="flex justify-end">
-           <a
-              href="http://localhost:3000/bills"
-              className="inline-block mt-5 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
-              >Back to All Bills
-            </a>
-         </div>
+        <div className="justify-between flex">
+            <div className="flex justify-start">
+              <a
+                href="http://localhost:3000/bills"
+                className="inline-block mt-5 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
+              >
+                Back to All Bills
+              </a>
+            </div>
+
+            {bill.status === "PAID" && (
+              <div className="justify-end">
+                <Link
+                  href={`/bills/${bill.id}/print`}
+                  target="_blank"
+                  className="inline-block mt-5 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200 transform hover:scale-105"
+                >
+                  View receipt
+                </Link>
+              </div>
+            )}
+          </div>
+
       </main>
     </div>
   );
