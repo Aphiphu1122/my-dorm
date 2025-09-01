@@ -171,7 +171,7 @@ export default function AdminBillDetailPage() {
             </span>
           </div>
 
-          {/* ✅ Water Meter */}
+          {/*  Water Meter */}
           <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
             <span className="text-gray-700">
               Water (Prev {bill.waterPrev} → Curr {bill.waterCurr})
@@ -182,7 +182,7 @@ export default function AdminBillDetailPage() {
             </span>
           </div>
 
-          {/* ✅ Electric Meter */}
+          {/*  Electric Meter */}
           <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
             <span className="text-gray-700">
               Electric (Prev {bill.electricPrev} → Curr {bill.electricCurr})
@@ -239,7 +239,6 @@ export default function AdminBillDetailPage() {
               </span>
             </div>
 
-<<<<<<< HEAD
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
               <span className="font-medium text-gray-700">Date</span>
               <span className="text-right text-gray-900">
@@ -247,28 +246,6 @@ export default function AdminBillDetailPage() {
                   ? new Date(bill.paymentDate).toLocaleString("th-TH")
                   : "-"}
               </span>
-=======
-            <div className="mt-4 flex justify-between flex-wrap gap-4">
-              <a
-                href="http://localhost:3000/admin/bills"
-                className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
-              >
-                Back to All Bills
-              </a>
-
-              
-
-              {bill.status === "PAID" && (
-                <a
-                  href={`/bills/${bill.id}/print`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 transform hover:scale-105"
-                >
-                  View Receipt
-                </a>
-              )}
->>>>>>> 39c666d7a63ce03f09602a938d4cced41042c70c
             </div>
 
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
