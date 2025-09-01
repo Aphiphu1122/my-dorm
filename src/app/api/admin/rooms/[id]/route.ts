@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getRoleFromCookie } from "@/lib/auth";
 
 // 📌 GET room by ID
@@ -19,6 +20,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
           lastName: true,
           email: true,
           phone: true,
+          roomStartDate: true,   // ✅ เพิ่มให้เห็นวันเข้าพักจริง
         },
       },
       maintenanceRequests: true,
@@ -36,6 +38,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       status: room.status,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
+      assignedAt: room.assignedAt, // ✅ เพิ่ม
       maintenanceCount: room.maintenanceRequests.length,
       tenant: room.tenant,
     },
@@ -51,14 +54,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     const body = await req.json();
-    const { roomNumber, status } = body;
+    const { roomNumber, status, tenantId } = body;
+
+    const dataToUpdate: Partial<Prisma.roomUncheckedUpdateInput> = {};
+
+    if (roomNumber) dataToUpdate.roomNumber = roomNumber;
+    if (status) dataToUpdate.status = status;
+
+    // ✅ ถ้ามีการ assign tenant ใหม่
+    if (tenantId) {
+      dataToUpdate.tenantId = tenantId;
+      dataToUpdate.assignedAt = new Date();
+
+      await db.profile.update({
+        where: { id: tenantId },
+        data: { roomStartDate: new Date(), roomId: params.id },
+      });
+    }
 
     const updatedRoom = await db.room.update({
       where: { id: params.id },
-      data: {
-        ...(roomNumber && { roomNumber }),
-        ...(status && { status }),
-      },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({ room: updatedRoom });
@@ -98,10 +114,11 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
       );
     }
 
+    // ✅ ถ้ามี tenant → clear roomId และ roomStartDate ใน profile
     if (room.tenantId) {
       await db.profile.update({
         where: { id: room.tenantId },
-        data: { roomId: null },
+        data: { roomId: null, roomStartDate: null },
       });
     }
 

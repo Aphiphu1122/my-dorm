@@ -34,6 +34,7 @@ export async function GET() {
             nationalId: true,
             userId: true,
             createdAt: true,
+            roomStartDate: true,
           },
         },
       },
@@ -48,6 +49,7 @@ export async function GET() {
       .map((room) => ({
         ...room.tenant!,
         roomNumber: room.roomNumber,
+        assignedAt: room.assignedAt,
       }));
 
     return NextResponse.json({ users }, { status: 200 });

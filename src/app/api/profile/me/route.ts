@@ -23,6 +23,7 @@ export async function GET() {
         birthday: true,
         address: true,
         nationalId: true,
+        roomStartDate: true,
         room: {
           select: {
             id: true,

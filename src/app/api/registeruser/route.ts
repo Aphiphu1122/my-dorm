@@ -95,6 +95,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         userId,
         role,
+        roomStartDate: new Date(),
         room: {
           connect: { id: roomId },
         },

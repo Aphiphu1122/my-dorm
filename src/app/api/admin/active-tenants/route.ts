@@ -1,5 +1,3 @@
-// 📁 /app/api/admin/active-tenants/route.ts
-
 import { db } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getRoleFromCookie } from "@/lib/auth";
@@ -15,10 +13,7 @@ export async function GET() {
       tenantId: { not: null },
       status: "OCCUPIED",
     },
-    select: {
-      id: true,
-      roomNumber: true,
-      tenantId: true,
+    include: {
       tenant: {
         select: {
           id: true,
@@ -26,8 +21,26 @@ export async function GET() {
           lastName: true,
         },
       },
+      bills: {
+        orderBy: { billingMonth: "desc" },
+        take: 1, // ✅ ดึงบิลล่าสุด
+        select: {
+          waterCurr: true,
+          electricCurr: true,
+        },
+      },
     },
   });
 
-  return NextResponse.json(rooms);
+  // ✅ reshape response
+  const result = rooms.map((room) => ({
+    id: room.id,
+    roomNumber: room.roomNumber,
+    tenantId: room.tenantId!,
+    tenant: room.tenant,
+    lastWater: room.bills[0]?.waterCurr || 0,
+    lastElectric: room.bills[0]?.electricCurr || 0,
+  }));
+
+  return NextResponse.json(result);
 }

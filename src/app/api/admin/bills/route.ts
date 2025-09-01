@@ -3,7 +3,6 @@ import { db } from "@/lib/prisma";
 import { z } from "zod";
 import { getRoleFromCookie } from "@/lib/auth";
 
-// ✅ Zod Validation
 const billSchema = z.object({
   tenantId: z.string().uuid(),
   roomId: z.string().uuid(),
@@ -11,9 +10,13 @@ const billSchema = z.object({
     message: "Invalid date format",
   }),
   rentAmount: z.number().min(0),
-  waterUnit: z.number().min(0),
+
+  waterPrev: z.number().min(0),
+  waterCurr: z.number().min(0),
   waterRate: z.number().min(0),
-  electricUnit: z.number().min(0),
+
+  electricPrev: z.number().min(0),
+  electricCurr: z.number().min(0),
   electricRate: z.number().min(0),
 });
 
@@ -32,17 +35,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const {
+     const {
       tenantId,
       roomId,
       billingMonth,
       rentAmount,
-      waterUnit,
+      waterPrev,
+      waterCurr,
       waterRate,
-      electricUnit,
+      electricPrev,
+      electricCurr,
       electricRate,
     } = parsed.data;
 
+    // ✅ คำนวณยูนิต
+    const waterUnit = waterCurr - waterPrev;
+    const electricUnit = electricCurr - electricPrev;
+
+    if (waterUnit < 0 || electricUnit < 0) {
+      return NextResponse.json(
+        { error: "ค่า meter ใหม่ต้องมากกว่าหรือเท่ากับค่าเก่า" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ คำนวณยอดรวม
     const totalAmount =
       rentAmount + waterUnit * waterRate + electricUnit * electricRate;
 
@@ -52,20 +69,29 @@ export async function POST(req: Request) {
         roomId,
         billingMonth: new Date(billingMonth),
         rentAmount,
-        waterUnit,
+
+        waterPrev,
+        waterCurr,
         waterRate,
-        electricUnit,
+        waterUnit,
+
+        electricPrev,
+        electricCurr,
         electricRate,
+        electricUnit,
+
         totalAmount,
         status: "UNPAID",
       },
     });
 
-        // แจ้งเตือนผู้เช่า
+ // ✅ แจ้งเตือนผู้เช่า
     await db.notification.create({
       data: {
         userId: tenantId,
-        message: `📢 มีบิลใหม่ของเดือน ${new Date(billingMonth).toLocaleDateString("th-TH", {
+        message: `📢 มีบิลใหม่ของเดือน ${new Date(
+          billingMonth
+        ).toLocaleDateString("th-TH", {
           year: "numeric",
           month: "long",
         })}`,

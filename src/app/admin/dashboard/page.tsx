@@ -100,9 +100,11 @@ export default function AdminDashboardPage() {
       <main className="flex-1 p-8 max-w-6xl mx-auto">
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-[#0F3659]">DASHBOARD</h1>
-          <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
-        </div>
+        <h1 className="text-3xl font-bold text-[#0F3659]">
+          DASHBOARD {selectedYear}
+        </h1>
+        <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+      </div>
 
         {loading ? (
           <div className="space-y-4 animate-pulse">

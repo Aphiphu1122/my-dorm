@@ -55,7 +55,8 @@ export default function MoveOutRequestPage() {
           firstName: data.firstName || "-",
           lastName: data.lastName || "-",
           email: data.email || "-",
-          roomStartDate: data.roomStartDate || data.joinDate || new Date().toISOString(),
+          roomStartDate:
+            data.roomStartDate || data.joinDate || new Date().toISOString(),
         });
       } catch (err) {
         console.error(err);
@@ -75,7 +76,18 @@ export default function MoveOutRequestPage() {
     if (!moveOutDate) return toast.error("กรุณาเลือกวันที่ย้ายออก");
     if (!password.trim()) return toast.error("กรุณากรอกรหัสผ่านเพื่อยืนยันตัวตน");
     if (!room?.id) return toast.error("ไม่พบข้อมูลห้องพัก");
-    if (!agreePolicy) return toast.error("กรุณายอมรับเงื่อนไขการคืนเงินประกัน");
+    if (!agreePolicy)
+      return toast.error("กรุณายอมรับเงื่อนไขการยื่นคำร้องอย่างน้อย 30 วัน");
+
+    // ✅ ตรวจสอบว่าเป็นเดือนถัดไป
+    const selectedDate = new Date(moveOutDate);
+    const isSameMonth =
+      selectedDate.getMonth() === today.getMonth() &&
+      selectedDate.getFullYear() === today.getFullYear();
+
+    if (isSameMonth) {
+      return toast.error("ไม่สามารถยื่นคำร้องในเดือนปัจจุบันได้");
+    }
 
     setLoading(true);
     try {
@@ -87,6 +99,7 @@ export default function MoveOutRequestPage() {
           reason,
           moveOutDate,
           password,
+          acceptTerms: agreePolicy, // ✅ ส่งค่าไปให้ API
         }),
       });
 
@@ -118,88 +131,138 @@ export default function MoveOutRequestPage() {
 
       <main className="flex-1 max-w-5xl mx-auto p-6">
         {initialLoading ? (
-          <div className="text-center py-20 text-gray-500">กำลังโหลดข้อมูล...</div>
+          <div className="text-center py-24 text-gray-400 text-lg font-medium animate-pulse">
+            กำลังโหลดข้อมูล...
+          </div>
         ) : (
           <>
+            {/* Header */}
             <div>
-              <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Move-out Request</h1>
+              <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">
+                Move-out Request
+              </h1>
               <p className="text-gray-500 mb-6">Manage your move here</p>
             </div>
 
+            {/* Personal Info Panel */}
             {userInfo && room && (
-              <div className="mb-6 text-sm text-gray-700 ">
-                <h2 className="text-lg font-semibold text-[#0F3659] mb-1">Personal Information</h2>
-                <section className="bg-white shadow-md rounded-lg p-2">
-                  <div className="divide-y divide-gray-200">
-                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Name</strong> {userInfo.firstName} {userInfo.lastName}</p>
-                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Email</strong> {userInfo.email}</p>
-                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Room number</strong> {room.roomNumber}</p>
-                    <p className="flex justify-between py-3 p-2 text-gray-700"><strong>Check-in date</strong>{" "}
-                      {new Date(userInfo.roomStartDate).toLocaleDateString("th-TH", {
-                        year: "numeric", month: "long", day: "numeric",
-                      })}
+              <div className="bg-gradient-to-r from-blue-50 to-white p-6 rounded-2xl shadow-xl mb-10 border border-blue-100">
+                <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+                  <i className="ri-user-line text-2xl text-blue-700"></i>{" "}
+                  Personal Information
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
+                    <p className="text-gray-500 text-sm">Name</p>
+                    <p className="font-semibold text-gray-900">
+                      {userInfo.firstName} {userInfo.lastName}
                     </p>
                   </div>
-                </section>
+                  <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
+                    <p className="text-gray-500 text-sm">Email</p>
+                    <p className="font-semibold text-gray-900">
+                      {userInfo.email}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
+                    <p className="text-gray-500 text-sm">Room Number</p>
+                    <p className="font-semibold text-gray-900">
+                      {room.roomNumber}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
+                    <p className="text-gray-500 text-sm">Check-in Date</p>
+                    <p className="font-semibold text-gray-900">
+                      {new Date(userInfo.roomStartDate).toLocaleDateString(
+                        "th-TH",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block font-medium">Reasons for moving out</label>
+            {/* Move-out Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Reason */}
+              <div className="bg-gradient-to-r from-blue-50 to-white  mb-10 border border-blue-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
+                <label className=" text-lg font-semibold text-black mb-2 flex items-center gap-2">
+                  <i className="ri-file-text-line text-2xl text-blue-500"></i>{" "}
+                  Reasons for moving out
+                </label>
                 <textarea
-                  className="w-full border p-2 rounded"
+                  className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  rows={3}
+                  rows={4}
                   placeholder="Please state your reason."
                 />
               </div>
 
-              <div>
-                <label className="block font-medium">Date you wish to move out</label>
-                <input
-                  type="date"
-                  className="w-full border p-2 rounded"
-                  value={moveOutDate}
-                  onChange={(e) => setMoveOutDate(e.target.value)}
-                  min={minDateStr}
-                />
+              {/* Date & Password */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
+                  <label className=" font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <i className="ri-calendar-line text-green-500"></i> Move-out
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                    value={moveOutDate}
+                    onChange={(e) => setMoveOutDate(e.target.value)}
+                    min={minDateStr}
+                  />
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
+                  <label className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <i className="ri-lock-line text-red-500"></i> Password
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block font-medium">Password for verification</label>
-                <input
-                  type="password"
-                  className="w-full border p-2 rounded"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                />
-              </div>
-
-              <div className="flex items-start space-x-2">
+              {/* Policy Agreement */}
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
                   checked={agreePolicy}
                   onChange={(e) => setAgreePolicy(e.target.checked)}
-                  className="mt-1"
+                  className="mt-1 w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-400"
                 />
-                <span className="text-sm text-gray-700">
+                <p className="text-gray-700 text-sm">
                   I understand and accept that{" "}
                   <span className="font-semibold underline">
-                    Applications must be submitted at least 30 days prior to the move-out date.
+                    applications must be submitted at least 30 days prior to
+                    move-out
                   </span>{" "}
-                  To request a refund of the security deposit according to the dormitory regulations.
-                </span>
+                  to request a refund of the security deposit.
+                </p>
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-2 px-4 text-white rounded ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+                className={`w-full py-3 rounded-2xl font-bold text-white transition-all ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 shadow-lg hover:shadow-xl"
+                }`}
               >
-                {loading ? "กำลังส่ง..." : "Submit"}
+                {loading ? "Submitting..." : "Submit Move-out Request"}
               </button>
             </form>
           </>

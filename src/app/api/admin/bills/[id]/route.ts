@@ -19,10 +19,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         id: true,
         billingMonth: true,
         rentAmount: true,
+
+        waterPrev: true,
+        waterCurr: true,
         waterUnit: true,
         waterRate: true,
+
+        electricPrev: true,
+        electricCurr: true,
         electricUnit: true,
         electricRate: true,
+
         totalAmount: true,
         status: true,
         paymentSlipUrl: true,
@@ -34,13 +41,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
 
     if (!bill) {
-      return NextResponse.json({ error: 'ไม่พบข้อมูลบิล' }, { status: 404 });
+      return NextResponse.json({ error: "ไม่พบข้อมูลบิล" }, { status: 404 });
     }
 
     return NextResponse.json({ bill }, { status: 200 });
   } catch (err) {
-    console.error('❌ Error fetching bill:', err);
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาด' }, { status: 500 });
+    console.error("❌ Error fetching bill:", err);
+    return NextResponse.json({ error: "เกิดข้อผิดพลาด" }, { status: 500 });
   }
 }
 

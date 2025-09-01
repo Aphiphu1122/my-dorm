@@ -27,6 +27,9 @@ type RoomWithTenant = {
   roomNumber: string;
   tenantId: string;
   tenant: { id: string; firstName: string; lastName: string };
+
+  lastWater: number;
+  lastElectric: number;
 };
 
 export default function AdminBillListPage() {
@@ -38,15 +41,19 @@ export default function AdminBillListPage() {
   // form state
   const [tenantRooms, setTenantRooms] = useState<RoomWithTenant[]>([]);
   const [form, setForm] = useState({
-  tenantId: "",
-  roomId: "",
-  billingMonth: "",
-  rentAmount: 3000,
-  waterUnit: 0,
-  waterRate: 8,
-  electricUnit: 0,
-  electricRate: 10,
-});
+    tenantId: "",
+    roomId: "",
+    billingMonth: "",
+    rentAmount: 3000,
+
+    waterPrev: 0,
+    waterCurr: 0,
+    waterRate: 8,
+
+    electricPrev: 0,
+    electricCurr: 0,
+    electricRate: 10,
+  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -61,8 +68,8 @@ export default function AdminBillListPage() {
       const data = await res.json();
       setBills(data);
     } catch (error) {
-    toast.error("เกิดข้อผิดพลาดในการโหลดบิล");
-    console.error(error);
+      toast.error("เกิดข้อผิดพลาดในการโหลดบิล");
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -74,21 +81,21 @@ export default function AdminBillListPage() {
     setTenantRooms(data);
   };
 
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
       [name]:
         name.includes("Amount") ||
-        name.includes("Unit") ||
+        name.includes("Prev") ||
+        name.includes("Curr") ||
         name.includes("Rate")
           ? value === "" ? "" : parseFloat(value)
           : value,
     }));
   };
 
-  const handleTenantSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleTenantSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTenantId = e.target.value;
     const room = tenantRooms.find((r) => r.tenantId === selectedTenantId);
     if (room) {
@@ -96,6 +103,8 @@ export default function AdminBillListPage() {
         ...prev,
         tenantId: selectedTenantId,
         roomId: room.id,
+        waterPrev: room.lastWater || 0,
+        electricPrev: room.lastElectric || 0,
       }));
     }
   };
@@ -120,28 +129,36 @@ export default function AdminBillListPage() {
   };
 
   const getStatusLabel = (status: BillStatus) => {
-      switch (status) {
-        case "PAID":
-          return (
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
-              <i className="ri-checkbox-circle-fill"></i> Paid
-            </span>
-          );
-        case "PENDING_APPROVAL":
-          return (
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-              <i className="ri-indeterminate-circle-fill"></i> Pending
-            </span>
-          );
-        case "UNPAID":
-        default:
-          return (
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
-              <i className="ri-close-circle-fill"></i> Unpaid
-            </span>
-          );
+    switch (status) {
+      case "PAID":
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+            <i className="ri-checkbox-circle-fill"></i> Paid
+          </span>
+        );
+      case "PENDING_APPROVAL":
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
+            <i className="ri-indeterminate-circle-fill"></i> Pending
+          </span>
+        );
+      case "UNPAID":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+            <i className="ri-close-circle-fill"></i> Unpaid
+          </span>
+        );
     }
   };
+
+  // ✅ คำนวณ unit preview
+  const waterUnit = form.waterCurr - form.waterPrev;
+  const electricUnit = form.electricCurr - form.electricPrev;
+  const totalPreview =
+    form.rentAmount +
+    (waterUnit > 0 ? waterUnit * form.waterRate : 0) +
+    (electricUnit > 0 ? electricUnit * form.electricRate : 0);
 
   return (
     <div className="flex min-h-screen">
@@ -231,27 +248,27 @@ export default function AdminBillListPage() {
                       </td>
                       <td className="px-4 py-3">{getStatusLabel(bill.status)}</td>
                       <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (!window.confirm("Delete this bill?")) return;
-                          try {
-                            const res = await fetch(`/api/admin/bills/${bill.id}`, {
-                              method: "DELETE",
-                            });
-                            if (!res.ok) throw new Error();
-                            toast.success("Bill deleted");
-                            fetchBills();
-                          } catch {
-                            toast.error("Delete failed");
-                          }
-                        }}
-                        className="text-gray-400 bg-gray-200 rounded-full p-2 w-10 h-10  items-center justify-center hover:text-red-700 hover:scale-125 transition-transform duration-200"
-                        title="Delete Bill"
-                      >
-                        <i className="ri-delete-bin-fill text-lg "></i>
-                      </button>
-                    </td>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!window.confirm("Delete this bill?")) return;
+                            try {
+                              const res = await fetch(`/api/admin/bills/${bill.id}`, {
+                                method: "DELETE",
+                              });
+                              if (!res.ok) throw new Error();
+                              toast.success("Bill deleted");
+                              fetchBills();
+                            } catch {
+                              toast.error("Delete failed");
+                            }
+                          }}
+                          className="text-gray-400 bg-gray-200 rounded-full p-2 w-10 h-10  items-center justify-center hover:text-red-700 hover:scale-125 transition-transform duration-200"
+                          title="Delete Bill"
+                        >
+                          <i className="ri-delete-bin-fill text-lg "></i>
+                        </button>
+                      </td>
                     </tr>
                   ))
               )}
@@ -261,125 +278,183 @@ export default function AdminBillListPage() {
       </main>
 
       {/* ✅ Modal สำหรับสร้างบิล */}
-{showModal && (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-8 relative animate-fade-in">
-      <button
-        onClick={() => setShowModal(false)}
-        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
-      >
-        ✖
-      </button>
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-8 relative animate-fade-in">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ✖
+            </button>
 
-      <h2 className="text-2xl font-bold mb-4">Create New Bill</h2>
+            <h2 className="text-2xl font-bold mb-4">Create New Bill</h2>
 
-      <div className="space-y-4">
-        {/* Tenant */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Tenant</label>
-          <select
-            name="tenantId"
-            value={form.tenantId}
-            onChange={handleTenantSelect}
-            className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          >
-            <option value="">-- Select Tenant --</option>
-            {tenantRooms.map((room) => (
-              <option key={room.tenantId} value={room.tenantId}>
-                {room.tenant.firstName} {room.tenant.lastName} (Room {room.roomNumber})
-              </option>
-            ))}
-          </select>
-        </div>
+            <div className="space-y-4">
+              {/* Tenant */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Tenant</label>
+                <select
+                  name="tenantId"
+                  value={form.tenantId}
+                  onChange={handleTenantSelect}
+                  className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                >
+                  <option value="">-- Select Tenant --</option>
+                {tenantRooms.map((room) => (
+                  <option key={room.tenantId} value={room.tenantId}>
+                    Room {room.roomNumber} - {room.tenant.firstName} {room.tenant.lastName}
+                  </option>
+                  ))}
+                </select>
+              </div>
 
-        {/* Billing Month */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Billing Month</label>
-          <input
-            type="month"
-            name="billingMonth"
-            value={form.billingMonth}
-            onChange={handleChange}
-            className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          />
-        </div>
+              {/* Billing Month */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Billing Month
+                </label>
+                <input
+                  type="month"
+                  name="billingMonth"
+                  value={form.billingMonth}
+                  onChange={handleChange}
+                  className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                />
+              </div>
 
-        {/* Rent */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Rent</label>
-          <input
-            type="number"
-            name="rentAmount"
-            placeholder="Enter room rent"
-            value={form.rentAmount || ""}
-            onChange={handleChange}
-            className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          />
-        </div>
+              {/* Rent */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Rent</label>
+                <input
+                  type="number"
+                  name="rentAmount"
+                  placeholder="Enter room rent"
+                  value={form.rentAmount || ""}
+                  onChange={handleChange}
+                  className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                />
+              </div>
 
-        {/* Water Unit + Water Rate */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">Water Unit</label>
-            <input
-              type="number"
-              name="waterUnit"
-              value={form.waterUnit || ""}
-              onChange={handleChange}
-              placeholder="Put Water Unit"
-              className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            />
+              {/* Water Meter */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Water Prev
+                  </label>
+                  <input
+                    type="number"
+                    name="waterPrev"
+                    value={form.waterPrev || ""}
+                    onChange={handleChange}
+                    placeholder="Previous water meter"
+                    className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Water Curr
+                  </label>
+                  <input
+                    type="number"
+                    name="waterCurr"
+                    value={form.waterCurr || ""}
+                    onChange={handleChange}
+                    placeholder="Current water meter"
+                    className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Water Rate
+                  </label>
+                  <input
+                    type="number"
+                    name="waterRate"
+                    value={form.waterRate || ""}
+                    onChange={handleChange}
+                    className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Electric Meter */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Electric Prev
+                  </label>
+                  <input
+                    type="number"
+                    name="electricPrev"
+                    value={form.electricPrev || ""}
+                    onChange={handleChange}
+                    placeholder="Previous electric meter"
+                    className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Electric Curr
+                  </label>
+                  <input
+                    type="number"
+                    name="electricCurr"
+                    value={form.electricCurr || ""}
+                    onChange={handleChange}
+                    placeholder="Current electric meter"
+                    className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Electric Rate
+                  </label>
+                  <input
+                    type="number"
+                    name="electricRate"
+                    value={form.electricRate || ""}
+                    onChange={handleChange}
+                    className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="mt-4 p-3 bg-gray-100 rounded-lg text-sm">
+                <p>
+                  น้ำใช้ไป:{" "}
+                  <span className="font-semibold">
+                    {waterUnit >= 0 ? waterUnit : 0}
+                  </span>{" "}
+                  หน่วย
+                </p>
+                <p>
+                  ไฟใช้ไป:{" "}
+                  <span className="font-semibold">
+                    {electricUnit >= 0 ? electricUnit : 0}
+                  </span>{" "}
+                  หน่วย
+                </p>
+                <p>
+                  รวมทั้งหมด:{" "}
+                  <span className="font-bold text-blue-600">
+                    {totalPreview.toFixed(2)} ฿
+                  </span>
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+              >
+                {submitting ? "Creating..." : "Create Bill"}
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Water Rate</label>
-            <input
-              type="number"
-              name="waterRate"
-              placeholder="10"
-              value={form.waterRate || ""}
-              onChange={handleChange}
-              className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            />
-          </div>
         </div>
-
-        {/* Electric Unit + Electric Rate */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">Electric Unit</label>
-            <input
-              type="number"
-              name="electricUnit"
-              placeholder="Put Electric Unit"
-              value={form.electricUnit || ""}
-              onChange={handleChange}
-              className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Electric Rate</label>
-            <input
-              type="number"
-              name="electricRate"
-              placeholder="8"
-              value={form.electricRate || ""}
-              onChange={handleChange}
-              className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            />
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          {submitting ? "Creating..." : "Create Bill"}
-        </button>
-      </div>
-    </div>
-  </div>
       )}
     </div>
   );

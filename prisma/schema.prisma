@@ -58,6 +58,7 @@ model room {
   bills               bill[]               @relation("RoomBills")
   moveOutRequests     moveOutRequest[]
 
+  assignedAt          DateTime?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }
@@ -77,12 +78,14 @@ model profile {
   role                String               @default("user")
   roomId              String?
   room                room?                @relation("UserRoom")
+  
 
   maintenanceRequests maintenanceRequest[]
   bills               bill[]               @relation("TenantBills")
   notifications       notification[]
   moveOutRequests     moveOutRequest[]
 
+  roomStartDate       DateTime?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }
@@ -111,10 +114,18 @@ model bill {
 
   billingMonth   DateTime
   rentAmount     Float
-  waterUnit      Float
-  waterRate      Float
-  electricUnit   Float
-  electricRate   Float
+
+  waterPrev        Float    @default(0)  
+  waterCurr        Float    @default(0)  
+  waterRate        Float
+
+  electricPrev     Float    @default(0)  
+  electricCurr     Float    @default(0)  
+  electricRate     Float
+
+  waterUnit        Float      @default(0)
+  electricUnit     Float      @default(0)
+
   totalAmount    Float
   status         BillStatus @default(UNPAID)
   paymentSlipUrl String?

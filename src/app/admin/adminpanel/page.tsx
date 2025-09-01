@@ -30,6 +30,8 @@ type Profile = {
   userId: string;
   createdAt: string;
   roomNumber: string;
+  roomStartDate?: string;
+  assignedAt?: string;   
 };
  
 export default function AdminDashboardPage() {
@@ -258,8 +260,20 @@ export default function AdminDashboardPage() {
                     <td className="px-4 py-3">{u.userId}</td>
                     <td className="px-4 py-3">{u.roomNumber || "-"}</td>
                     <td className="px-4 py-3">
-                      {new Date(u.createdAt).toLocaleDateString("th-TH")}
-                    </td>
+                    {u.roomStartDate
+                      ? new Date(u.roomStartDate).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : u.assignedAt
+                      ? new Date(u.assignedAt).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "-"}
+                  </td>
                   </tr>
                 ))}
               </tbody>

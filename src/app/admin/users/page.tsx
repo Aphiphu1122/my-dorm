@@ -15,6 +15,8 @@ interface Profile {
   userId: string;
   createdAt: string;
   roomNumber: string;
+  roomStartDate?: string; 
+  assignedAt?: string;
   status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 }
  
@@ -144,6 +146,8 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3">
                         <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
                       </td>
+
+                      
                     </tr>
                   ))
                 : filteredUsers.length > 0
@@ -156,8 +160,20 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3">{u.userId}</td>
                       <td className="px-4 py-3">{u.roomNumber || "-"}</td>
                       <td className="px-4 py-3">
-                        {new Date(u.createdAt).toLocaleDateString("th-TH")}
-                      </td>
+                      {u.roomStartDate
+                        ? new Date(u.roomStartDate).toLocaleDateString("th-TH", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : u.assignedAt
+                        ? new Date(u.assignedAt).toLocaleDateString("th-TH", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "-"}
+                    </td>
                     </tr>
                   ))
                 : (

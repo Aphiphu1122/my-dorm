@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
+import Sidebar from "@/components/sidebar";
 
 type MoveOutStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
 
@@ -94,16 +95,70 @@ export default function AdminMoveOutDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold text-blue-900">รายละเอียดคำร้องย้ายออก</h1>
+    <div className="flex min-h-screen bg-white text-black">
+          {/* Sidebar */}
+          <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+            <Sidebar role="admin" />
+          </aside>
 
-      <div className="bg-white shadow p-6 rounded-lg space-y-3 border">
-        <p><strong>ชื่อผู้เช่า:</strong> {request.user.firstName} {request.user.lastName}</p>
-        <p><strong>อีเมล:</strong> {request.user.email}</p>
-        <p><strong>ห้อง:</strong> {request.room.roomNumber}</p>
-        <p><strong>วันที่ยื่นคำร้อง:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
-        <p><strong>วันที่ต้องการย้ายออก:</strong> {new Date(request.moveOutDate).toLocaleDateString()}</p>
-        <p><strong>เหตุผล:</strong> {request.reason}</p>
+    <div className="flex-1 max-w-5xl mx-auto p-8">
+      <div>
+            <h1 className="text-3xl font-bold text-[#0F3659]">
+              Details of  move out request
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage all tenant move-out requests in the system.
+            </p>
+          </div>
+
+      <div className="bg-white  mt-5">
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-blue-950">Tenant information</h2>
+          <div className="bg-white shadow-md rounded-lg p-2">
+            <div className="divide-y divide-gray-200">
+              <div className="grid grid-cols-2 py-1">
+                <strong className="flex justify-between py-2 p-2 text-gray-700">Name</strong>
+                <span className="text-right mr-5">{request.user.firstName} {request.user.lastName}</span>
+              </div>
+              <div className="grid grid-cols-2 py-1">
+                <strong className="flex justify-between py-2 p-2 text-gray-700">Email</strong>
+                <span className="text-right mr-5">{request.user.email}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2 mt-5">
+          <h2 className="text-xl font-semibold text-blue-950">Room information</h2>
+            <div className="bg-white shadow-md rounded-lg p-2">
+              <div className="divide-y divide-gray-200">
+                <div className="grid grid-cols-2 py-1">
+                  <strong className="flex justify-between py-2 p-2 text-gray-700">Room number</strong>
+                  <span className="text-right mr-5"> {request.room.roomNumber}</span>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <div className="space-y-2 mt-5">
+          <h2 className="text-xl font-semibold text-blue-950">Move out information</h2>
+          <div className="bg-white shadow-md rounded-lg p-2 ">
+            <div className="divide-y divide-gray-200">
+              <div className="grid grid-cols-2 py-1">
+                <strong className="flex justify-between py-2 p-2 text-gray-700">Request date</strong>
+                <span className="text-right mr-5">{new Date(request.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div className="grid grid-cols-2 py-1">
+                <strong className="flex justify-between py-2 p-2 text-gray-700">Moving date</strong>
+                <span className="text-right mr-5">{new Date(request.moveOutDate).toLocaleDateString()}</span>
+              </div>
+              <div className="grid grid-cols-2 py-1">
+                <strong className="flex justify-between py-2 p-2 text-gray-700">Reason</strong>
+                <span className="text-right mr-5 ">{request.reason}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {request.imageUrl && (
           <div>
@@ -118,45 +173,57 @@ export default function AdminMoveOutDetailPage() {
           </div>
         )}
 
-        <div className="mt-4">
-          <p className="text-lg">
-            <strong>สถานะ:</strong>{" "}
-            {request.status === "PENDING_APPROVAL" && (
-              <span className="text-yellow-600 font-semibold">⏳ รอดำเนินการ</span>
-            )}
-            {request.status === "APPROVED" && (
-              <span className="text-green-600 font-semibold">✅ อนุมัติแล้ว</span>
-            )}
-            {request.status === "REJECTED" && (
-              <span className="text-red-600 font-semibold">❌ ปฏิเสธแล้ว</span>
-            )}
-          </p>
-        </div>
+        <div className="space-y-2 mt-5">
+          <h2 className="text-xl font-semibold text-blue-950">Status</h2>
+          <div className="bg-white shadow-md rounded-lg p-2">
+            <div className="grid grid-cols-2 py-1 items-center ">
+              {/* Status */}
+              <div className="flex items-center justify-start py-2 p-2 ">
+                {request.status === "PENDING_APPROVAL" && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
+                    <i className="ri-indeterminate-circle-fill"></i> Pending
+                  </span>
+                )}
+                {request.status === "APPROVED" && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                  <i className="ri-checkbox-circle-fill"></i> Approved </span>
+                )}
+                {request.status === "REJECTED" && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+                 <i className="ri-close-circle-fill"></i> Rejected </span>
+                )}
+              </div>
 
-        {request.status === "PENDING_APPROVAL" && (
-          <div className="mt-4 flex gap-4">
-            <button
-              onClick={() => handleConfirm("APPROVED")}
-              disabled={isProcessing}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
-            >
-              ✅ อนุมัติ
-            </button>
-            <button
-              onClick={() => handleConfirm("REJECTED")}
-              disabled={isProcessing}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-50"
-            >
-              ❌ ปฏิเสธ
-            </button>
+              {/* Buttons */}
+              <div className="flex items-center justify-end py-2 p-2 gap-4">
+                {request.status === "PENDING_APPROVAL" && (
+                  <>
+                    <button
+                      onClick={() => handleConfirm("APPROVED")}
+                      disabled={isProcessing}
+                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleConfirm("REJECTED")}
+                      disabled={isProcessing}
+                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-50"
+                    >
+                      Refuse
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
         <Link
           href="/admin/moveout"
-          className="mt-6 inline-block text-blue-600 hover:underline"
+          className="inline-block px-4 py-2 mt-5 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
         >
-          ← ย้อนกลับไปหน้ารายการคำร้อง
+          Back to all moveout
         </Link>
       </div>
 
@@ -216,5 +283,6 @@ export default function AdminMoveOutDetailPage() {
         </div>
       )}
     </div>
+  </div>
   );
 }

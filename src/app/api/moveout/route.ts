@@ -3,6 +3,7 @@ import { db } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import dayjs from "dayjs";
 
 const moveOutSchema = z.object({
   roomId: z.string().uuid(),
@@ -11,6 +12,9 @@ const moveOutSchema = z.object({
     message: "วันที่ไม่ถูกต้อง",
   }),
   password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
+  acceptTerms: z.boolean().refine((v) => v === true, {
+    message: "คุณต้องยอมรับเงื่อนไขการยื่นคำร้อง",
+  }),
 });
 
 export async function POST(req: NextRequest) {
@@ -40,29 +44,39 @@ export async function POST(req: NextRequest) {
       where: { userId },
     });
     if (existing) {
-      return NextResponse.json({ error: "คุณได้ยื่นคำร้องไปแล้ว" }, { status: 400 });
+      return NextResponse.json(
+        { error: "คุณได้ยื่นคำร้องไปแล้ว" },
+        { status: 400 }
+      );
     }
 
     // ✅ ตรวจสอบรหัสผ่าน
     const user = await db.profile.findUnique({ where: { id: userId } });
     if (!user || !bcrypt.compareSync(password, user.password)) {
-      return NextResponse.json({ error: { password: ["รหัสผ่านไม่ถูกต้อง"] } }, { status: 400 });
+      return NextResponse.json(
+        { error: { password: ["รหัสผ่านไม่ถูกต้อง"] } },
+        { status: 400 }
+      );
     }
 
-    // ✅ ตรวจสอบว่ามีบิลค้างชำระหรือไม่
-    const unpaidBills = await db.bill.findMany({
-      where: {
-        tenantId: userId,
-        status: {
-          not: "PAID",
-        },
-      },
-    });
+    // ✅ ตรวจสอบวันย้ายออก
+    const today = dayjs();
+    const moveDate = dayjs(moveOutDate);
 
-    if (unpaidBills.length > 0) {
-      return NextResponse.json({
-        error: "คุณมีบิลที่ยังไม่ได้ชำระ กรุณาชำระให้เรียบร้อยก่อนแจ้งย้ายออก",
-      }, { status: 400 });
+    // ต้องอย่างน้อย 30 วันล่วงหน้า
+    if (moveDate.diff(today, "day") < 30) {
+      return NextResponse.json(
+        { error: "ต้องยื่นคำร้องล่วงหน้าอย่างน้อย 30 วัน" },
+        { status: 400 }
+      );
+    }
+
+    // ต้องเป็นเดือนถัดไปหรือหลังจากนั้น ห้ามเป็นเดือนเดียวกับวันนี้
+    if (moveDate.month() === today.month() && moveDate.year() === today.year()) {
+      return NextResponse.json(
+        { error: "ไม่สามารถยื่นคำร้องภายในเดือนปัจจุบันได้" },
+        { status: 400 }
+      );
     }
 
     // ✅ สร้างคำร้องย้ายออก
@@ -71,14 +85,16 @@ export async function POST(req: NextRequest) {
         userId,
         roomId,
         reason,
-        moveOutDate: new Date(moveOutDate),
+        moveOutDate: moveDate.toDate(),
       },
     });
 
     return NextResponse.json({ message: "ส่งคำร้องเรียบร้อยแล้ว" });
-
   } catch (err) {
     console.error("❌ Moveout error:", err);
-    return NextResponse.json({ error: "เกิดข้อผิดพลาดในการส่งคำร้อง" }, { status: 500 });
+    return NextResponse.json(
+      { error: "เกิดข้อผิดพลาดในการส่งคำร้อง" },
+      { status: 500 }
+    );
   }
 }

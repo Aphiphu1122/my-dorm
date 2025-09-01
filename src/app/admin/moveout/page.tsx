@@ -159,20 +159,20 @@ export default function AdminMoveOutListPage() {
                     <td className="px-4 py-3 font-medium flex items-center gap-2">
                       {req.status === "PENDING_APPROVAL" && (
                         <>
-                          <i className="ri-indeterminate-circle-fill text-yellow-600 text-lg"></i>
-                          <span className="text-yellow-600">Pending</span>
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
+                          <i className="ri-indeterminate-circle-fill"></i> Pending</span>
                         </>
                       )}
                       {req.status === "APPROVED" && (
                         <>
-                          <i className="ri-checkbox-circle-fill text-green-600 text-lg"></i>
-                          <span className="text-green-600">Approved</span>
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                          <i className="ri-checkbox-circle-fill"></i> Approved </span>
                         </>
                       )}
                       {req.status === "REJECTED" && (
                         <>
-                          <i className="ri-close-circle-fill text-red-600 text-lg"></i>
-                          <span className="text-red-600">Rejected</span>
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+                           <i className="ri-close-circle-fill"></i> Rejected </span>
                         </>
                       )}
                     </td>

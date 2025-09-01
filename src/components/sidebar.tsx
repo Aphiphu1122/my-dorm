@@ -15,7 +15,6 @@ const roleLinks: Record<Role, { href: string; label: string; icon: string }[]> =
     { href: "/admin/users", label: "Tenant Management", icon: "ri-team-line" },
     { href: "/admin/bills", label: "Bills Management", icon: "ri-refund-2-line" },
     { href: "/admin/maintenance", label: "Repair Management", icon: "ri-tools-line" },
-    { href: "/admin/report", label: "Report", icon: "ri-line-chart-line" },
     { href: "/admin/moveout", label: "Moveout Management", icon: "ri-door-open-line" },
   ],
   user: [
