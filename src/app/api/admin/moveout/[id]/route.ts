@@ -12,8 +12,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const request = await db.moveOutRequest.findUnique({
       where: { id: params.id },
       include: {
-        user: true,
         room: true,
+        user: {
+          include: {
+            bills: {
+              where: { status: "UNPAID" }, // ✅ เพิ่มตรงนี้
+            },
+          },
+        },
       },
     });
 
@@ -52,7 +58,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!request) {
       return new NextResponse("Moveout request not found", { status: 404 });
     }
-
 
     const updated = await db.moveOutRequest.update({
       where: { id: params.id },

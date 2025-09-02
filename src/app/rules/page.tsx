@@ -139,7 +139,7 @@ export default function RulesContractPage() {
             <div className="mt-8">
                 <h3 className="text-lg font-semibold mb-4">Contract PDF</h3>
                 <iframe
-                  src="/rules/สัญญาเช่าห้องพัก.pdf"
+                  src="/สัญญาเช่าห้องพัก.pdf"
                   className="w-full h-[600px] border rounded-lg shadow"
                 />
               </div>
