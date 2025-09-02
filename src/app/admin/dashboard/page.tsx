@@ -40,6 +40,11 @@ interface DashboardSummary {
     water: number;
     electricity: number;
   }[];
+  monthlyPaidUnpaid?: {
+    month: string;
+    paid: number;
+    unpaid: number;
+  }[]; // ✅ สำหรับ toggle รายเดือน
 }
 
 function StatCard({
@@ -54,7 +59,9 @@ function StatCard({
   bg: string;
 }) {
   return (
-    <div className={`rounded-lg p-4 ${bg} shadow flex items-center justify-between`}>
+    <div
+      className={`rounded-lg p-4 ${bg} shadow flex items-center justify-between`}
+    >
       <div>
         <p className="text-sm text-gray-700">{title}</p>
         <p className="text-xl font-bold text-black">{value}</p>
@@ -69,6 +76,7 @@ export default function AdminDashboardPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"year" | "month">("year"); // ✅ toggle mode
 
   useEffect(() => {
     fetchSummary(selectedYear);
@@ -100,11 +108,11 @@ export default function AdminDashboardPage() {
       <main className="flex-1 p-8 max-w-6xl mx-auto">
         <Toaster position="top-right" />
         <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-[#0F3659]">
-          DASHBOARD {selectedYear}
-        </h1>
-        <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
-      </div>
+          <h1 className="text-3xl font-bold text-[#0F3659]">
+            DASHBOARD {selectedYear}
+          </h1>
+          <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+        </div>
 
         {loading ? (
           <div className="space-y-4 animate-pulse">
@@ -117,6 +125,7 @@ export default function AdminDashboardPage() {
           <p className="text-gray-500">ไม่พบข้อมูลสรุป</p>
         ) : (
           <>
+            {/* Top stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
               <StatCard
                 title="อัตราการเข้าพัก"
@@ -144,32 +153,80 @@ export default function AdminDashboardPage() {
               />
             </div>
 
+            {/* Rent status + Monthly revenue */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               <div className="bg-white shadow rounded-lg p-6">
-                <h3 className="font-semibold mb-4">สถานะการชำระค่าเช่า</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: "Paid", value: summary.totalPaid },
-                        { name: "Unpaid", value: summary.totalUnpaid },
-                      ]}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={70}
-                      label
+                {/* ✅ Toggle switch */}
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">สถานะการชำระค่าเช่า</h3>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={
+                        viewMode === "year" ? "font-bold text-blue-600" : ""
+                      }
                     >
-                      <Cell fill="#10b981" />
-                      <Cell fill="#facc15" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                      ปี
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={viewMode === "month"}
+                        onChange={() =>
+                          setViewMode(viewMode === "year" ? "month" : "year")
+                        }
+                      />
+                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600"></div>
+                      <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition peer-checked:translate-x-5"></div>
+                    </label>
+                    <span
+                      className={
+                        viewMode === "month" ? "font-bold text-blue-600" : ""
+                      }
+                    >
+                      เดือน
+                    </span>
+                  </div>
+                </div>
+
+                {/* ✅ Chart */}
+                {viewMode === "year" ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: "Paid", value: summary.totalPaid },
+                          { name: "Unpaid", value: summary.totalUnpaid },
+                        ]}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        label
+                      >
+                        <Cell fill="#10b981" />
+                        <Cell fill="#facc15" />
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={summary.monthlyPaidUnpaid || []}>
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="paid" fill="#10b981" />
+                      <Bar dataKey="unpaid" fill="#facc15" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
+              {/* Monthly revenue */}
               <div className="bg-white shadow rounded-lg p-6">
                 <h3 className="font-semibold mb-4">รายได้รวมต่อเดือน</h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -184,6 +241,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+            {/* Maintenance trend + Revenue by category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white shadow rounded-lg p-6">
                 <h3 className="font-semibold mb-4">แนวโน้มการแจ้งซ่อม</h3>

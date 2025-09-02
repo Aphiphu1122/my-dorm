@@ -17,32 +17,29 @@ export async function GET(request: Request) {
     const startOfYear = dayjs(`${year}-01-01`).startOf("year");
     const endOfYear = startOfYear.endOf("year");
 
-    // ✅ ห้องพักทั้งหมด (ไม่ขึ้นกับปี)
+    // ✅ ห้องพักทั้งหมด
     const totalRooms = await db.room.count();
 
-    // ✅ ห้องที่มีการเช็คอินในปีที่เลือก (ใช้ roomStartDate)
-    const occupiedRooms = await db.profile.count({
+    // ✅ ห้องที่มีผู้เช่าในปีที่เลือก
+    const occupiedRooms = await db.room.count({
       where: {
-        roomId: { not: null },
-        roomStartDate: {
+        status: "OCCUPIED",
+        createdAt: {
           gte: startOfYear.toDate(),
           lte: endOfYear.toDate(),
         },
       },
     });
 
-    // ✅ ห้องที่ว่างในปีที่เลือก
+    // ✅ ห้องว่าง
     const vacantRooms = await db.room.count({
       where: {
         status: "AVAILABLE",
-        createdAt: {
-          lte: endOfYear.toDate(), // ห้องที่มีอยู่แล้วในปีนี้
-        },
+        createdAt: { lte: endOfYear.toDate() },
       },
     });
 
-    // ✅ ค้างชำระ (filter ตามปี)
-    const unpaidRooms = await db.bill.count({
+    const unpaidRooms = await db.bill.findMany({
       where: {
         status: "UNPAID",
         createdAt: {
@@ -50,7 +47,13 @@ export async function GET(request: Request) {
           lte: endOfYear.toDate(),
         },
       },
+      select: {
+        roomId: true,
+      },
+      distinct: ["roomId"], // ✅ นับไม่ให้ซ้ำห้อง
     });
+
+    const unpaidRoomsCount = unpaidRooms.length;
 
     const occupancyRate =
       totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
@@ -72,9 +75,11 @@ export async function GET(request: Request) {
         waterUnit: true,
         electricRate: true,
         electricUnit: true,
+        createdAt: true,
       },
     });
 
+    // ✅ รวมยอดทั้งปี
     const totalPaid = bills
       .filter((b) => b.status === "PAID")
       .reduce((sum, b) => sum + b.totalAmount, 0);
@@ -83,7 +88,7 @@ export async function GET(request: Request) {
       .filter((b) => b.status === "UNPAID")
       .reduce((sum, b) => sum + b.totalAmount, 0);
 
-    // ✅ สร้าง array ของเดือนในปีนั้น
+    // ✅ array เดือน
     const months = Array.from({ length: 12 }, (_, i) =>
       startOfYear.add(i, "month")
     );
@@ -126,7 +131,26 @@ export async function GET(request: Request) {
       return { month: label, rent, water, electricity };
     });
 
-    // ✅ แจ้งซ่อมของปีที่เลือก
+    // ✅ รายการบิล Paid/Unpaid ต่อเดือน
+    const monthlyPaidUnpaid = months.map((month) => {
+      const label = month.format("MMM");
+
+      const monthlyBills = bills.filter((b) =>
+        dayjs(b.createdAt).isSame(month, "month")
+      );
+
+      const paid = monthlyBills
+        .filter((b) => b.status === "PAID")
+        .reduce((sum, b) => sum + b.totalAmount, 0);
+
+      const unpaid = monthlyBills
+        .filter((b) => b.status === "UNPAID")
+        .reduce((sum, b) => sum + b.totalAmount, 0);
+
+      return { month: label, paid, unpaid };
+    });
+
+    // ✅ แนวโน้มการแจ้งซ่อม
     const maintenanceRequests = await db.maintenanceRequest.findMany({
       where: {
         createdAt: {
@@ -134,10 +158,7 @@ export async function GET(request: Request) {
           lte: endOfYear.toDate(),
         },
       },
-      select: {
-        status: true,
-        createdAt: true,
-      },
+      select: { status: true, createdAt: true },
     });
 
     const maintenanceTrend = months.map((month) => {
@@ -165,13 +186,15 @@ export async function GET(request: Request) {
       occupancyRate: parseFloat(occupancyRate.toFixed(2)),
       vacantRooms,
       occupiedRooms,
-      unpaidRooms,
+      unpaidRooms: unpaidRoomsCount,
       totalPaid,
       totalUnpaid,
       monthlyRevenue,
       revenueByCategory,
+      monthlyPaidUnpaid,
       maintenanceTrend,
     });
+
   } catch (error) {
     console.error("Dashboard summary error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
