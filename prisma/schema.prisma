@@ -86,6 +86,10 @@ model profile {
   moveOutRequests     moveOutRequest[]
 
   roomStartDate       DateTime?
+
+  isActive     Boolean   @default(true)   
+  moveOutDate  DateTime?                  
+
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }

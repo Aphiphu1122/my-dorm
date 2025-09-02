@@ -27,7 +27,6 @@ export default function AdminMoveOutListPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<MoveOutRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRequests();
@@ -45,44 +44,6 @@ export default function AdminMoveOutListPage() {
       toast.error("ไม่สามารถโหลดข้อมูลได้");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAction = async (
-    id: string,
-    action: "APPROVED" | "REJECTED"
-  ) => {
-    const target = requests.find((r) => r.id === id);
-    if (!target) {
-      toast.error("ไม่พบคำร้อง");
-      return;
-    }
-
-    if (target.status !== "PENDING_APPROVAL") {
-      toast.error("สามารถดำเนินการได้เฉพาะคำร้องที่รอดำเนินการเท่านั้น");
-      return;
-    }
-
-    setActionLoadingId(id);
-    try {
-      const res = await fetch(`/api/admin/moveout/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: action }),
-      });
-
-      if (!res.ok) throw new Error("อัปเดตไม่สำเร็จ");
-
-      toast.success(
-        `อัปเดตคำร้องเป็น "${action === "APPROVED" ? "อนุมัติ" : "ปฏิเสธ"}" แล้ว`
-      );
-      fetchRequests();
-    } catch (err) {
-      console.error(err);
-      toast.error("เกิดข้อผิดพลาด");
-    } finally {
-      setActionLoadingId(null);
     }
   };
 
@@ -138,15 +99,14 @@ export default function AdminMoveOutListPage() {
                   <th className="px-4 py-3">Reason</th>
                   <th className="px-4 py-3">Moving date</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Management</th>
+                  <th className="px-4 py-3">Detail</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((req) => (
                   <tr
                     key={req.id}
-                    className="border-t border-gray-200 hover:bg-gray-200 cursor-pointer"
-                    onClick={() => router.push(`/admin/moveout/${req.id}`)}
+                    className="border-t border-gray-200 hover:bg-gray-200 transition-colors"
                   >
                     <td className="px-4 py-3">
                       {req.user.firstName} {req.user.lastName}
@@ -158,53 +118,29 @@ export default function AdminMoveOutListPage() {
                     </td>
                     <td className="px-4 py-3 font-medium flex items-center gap-2">
                       {req.status === "PENDING_APPROVAL" && (
-                        <>
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-                          <i className="ri-indeterminate-circle-fill"></i> Pending</span>
-                        </>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
+                          <i className="ri-indeterminate-circle-fill"></i>{" "}
+                          Pending
+                        </span>
                       )}
                       {req.status === "APPROVED" && (
-                        <>
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
-                          <i className="ri-checkbox-circle-fill"></i> Approved </span>
-                        </>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
+                          <i className="ri-checkbox-circle-fill"></i> Approved
+                        </span>
                       )}
                       {req.status === "REJECTED" && (
-                        <>
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
-                           <i className="ri-close-circle-fill"></i> Rejected </span>
-                        </>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
+                          <i className="ri-close-circle-fill"></i> Rejected
+                        </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 space-x-2">
-                      {req.status === "PENDING_APPROVAL" && (
-                        <>
-                          <button
-                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAction(req.id, "APPROVED");
-                            }}
-                            disabled={actionLoadingId === req.id}
-                          >
-                            {actionLoadingId === req.id
-                              ? "กำลังอนุมัติ..."
-                              : "Approve"}
-                          </button>
-                          <button
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAction(req.id, "REJECTED");
-                            }}
-                            disabled={actionLoadingId === req.id}
-                          >
-                            {actionLoadingId === req.id
-                              ? "กำลังปฏิเสธ..."
-                              : "Refuse"}
-                          </button>
-                        </>
-                      )}
+                    <td className="px-4 py-3">
+                      <button
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
+                        onClick={() => router.push(`/admin/moveout/${req.id}`)}
+                      >
+                        View Detail
+                      </button>
                     </td>
                   </tr>
                 ))}

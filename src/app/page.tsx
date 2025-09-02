@@ -12,10 +12,12 @@ export default function HomePage() {
   const [showContactModal, setShowContactModal] = useState(false);
  
   const images = [
-    "https://s.isanook.com/wo/0/ud/42/210425/210425-20221223071830-5775dce.jpg?ip/resize/w1280/q80/jpg",
-    "https://bcdn.renthub.in.th/listing_picture/202401/20240119/W2E2K69JvJqgFauZ97By.jpg?class=doptimized",
-    "https://bcdn.renthub.in.th/listing_picture/202401/20240119/k1yEnWMSYs79VVSeugmi.jpg?class=doptimized",
-  ];
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",   
+  "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",  
+  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80&utm_source=chatgpt.com"
+
+];
  
   const [currentImage, setCurrentImage] = useState(0);
  
@@ -28,39 +30,50 @@ export default function HomePage() {
  
   return (
     <div className="min-h-screen bg-white text-black font-sans">
-      {/* Header */}
-      <header className="fixed top-0 left-0 w-full flex justify-between items-center bg-white/70 backdrop-blur-lg px-12 py-4 shadow-md z-50"><div className="flex items-center space-x-3">
-          <i className="ri-home-heart-fill text-4xl text-blue-700"></i>
-          <h1 className="text-2xl font-extrabold text-blue-900">Dorm</h1>
-        </div>
-        <nav className="flex items-center space-x-8">
-          <button
-            onClick={() => {
-              setShowAboutModal(true);
-              setShowContactModal(false);
-            }}
-            className="relative font-medium text-gray-700 hover:text-blue-800 transition after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all"
-          >
-            About Us
-          </button>
-          <button
-            onClick={() => {
-              setShowContactModal(true);
-              setShowAboutModal(false);
-            }}
-            className="relative font-medium text-gray-700 hover:text-blue-800 transition after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all"
-          >
-            Contact
-          </button>
-          <button
-            onClick={() => router.push("/login")}
-            className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-2 rounded-full shadow-md hover:scale-105 hover:shadow-lg transition-all"
-          >
-            Sign in
-          </button>
-        </nav>
-      </header>
- 
+          {/* Header */}
+          <header className="fixed top-0 left-0 w-full flex justify-between items-center 
+      bg-white/40 backdrop-blur-md border-b border-white/20
+      px-12 py-4 shadow-lg z-50 transition">
+      <div className="flex items-center space-x-3">
+        <i className="ri-home-heart-fill text-4xl text-blue-700"></i>
+        <h1 className="text-2xl font-extrabold text-blue-900">Dorm</h1>
+      </div>
+      <nav className="flex items-center space-x-8">
+        <button
+          onClick={() => {
+            setShowAboutModal(true);
+            setShowContactModal(false);
+          }}
+          className="relative font-medium text-white hover:text-blue-200 transition 
+            after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full 
+            after:bg-blue-200 after:transition-all"
+        >
+          About Us
+        </button>
+
+        <button
+          onClick={() => {
+            setShowContactModal(true);
+            setShowAboutModal(false);
+          }}
+          className="relative font-medium text-white hover:text-blue-200 transition 
+            after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full 
+            after:bg-blue-200 after:transition-all"
+        >
+          Contact
+        </button>
+
+        <button
+          onClick={() => router.push("/login")}
+          className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-2 
+            rounded-full shadow-md hover:scale-105 hover:shadow-lg transition-all"
+        >
+          Sign in
+        </button>
+      </nav>
+    </header>
+
+
       {/* Hero */}
       <main className="relative h-screen text-center overflow-hidden">
         <div
@@ -161,8 +174,8 @@ export default function HomePage() {
             {
               icon: "ri-file-pdf-line",
               color: "text-red-500",
-              title: "ใบเสร็จ PDF",
-              desc: "ดาวน์โหลดใบเสร็จค่าเช่าเพื่อเก็บไว้ได้ในรูปแบบ PDF",
+              title: "ใบเสร็จ อัตโนมัติ",
+              desc: "ดาวน์โหลดใบเสร็จค่าเช่าเพื่อเก็บไว้ได้",
             },
             {
               icon: "ri-notification-2-line",
@@ -197,7 +210,7 @@ export default function HomePage() {
             <p className="text-gray-700 italic">
               แจ้งซ่อมออนไลน์สะดวกสุดๆ ไม่ต้องเดินไปที่ออฟฟิศเลย
             </p>
-            <span className="block mt-4 font-semibold text-green-800">– น.ส. สายไหม, ผู้เช่า</span>
+            <span className="block mt-4 font-semibold text-green-800">– น.ส. ใจดี, ผู้เช่า</span>
           </blockquote>
         </div>
       </section>

@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { getRoleFromCookie } from "@/lib/auth";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const role = await getRoleFromCookie();
   if (role !== "admin") {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -16,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         user: {
           include: {
             bills: {
-              where: { status: "UNPAID" }, // ✅ เพิ่มตรงนี้
+              where: { status: "UNPAID" },
             },
           },
         },
@@ -34,7 +37,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const role = await getRoleFromCookie();
   if (role !== "admin") {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -64,21 +70,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: { status },
     });
 
+    //  ถ้าอนุมัติ → ปล่อยห้องว่าง + ตัดการเชื่อมกับผู้เช่า + อัปเดตสถานะผู้ใช้
     if (status === "APPROVED") {
       await db.room.update({
         where: { id: request.room.id },
-        data: { status: "AVAILABLE" },
+        data: { status: "AVAILABLE", tenantId: null },
       });
 
       await db.profile.update({
         where: { userId: request.user.userId },
-        data: {
-          room: {
-            disconnect: true,
-          },
+        data: { 
+          roomId: null,
+          isActive: false,         // ผู้เช่าไม่ active แล้ว
+          moveOutDate: new Date(), // เก็บวันที่ย้ายออกล่าสุด
         },
       });
     }
+
+    //  แจ้งเตือนผู้ใช้
+    let message = "";
+    if (status === "APPROVED") {
+      message = "📢 คำร้องย้ายออกของคุณได้รับการอนุมัติ ✅";
+    } else if (status === "REJECTED") {
+      message = "📢 คำร้องย้ายออกของคุณถูกปฏิเสธ ❌";
+    }
+
+    await db.notification.create({
+      data: {
+        userId: request.user.id,
+        message,
+        type: "MOVEOUT",
+      },
+    });
 
     return NextResponse.json(updated);
   } catch (error) {
