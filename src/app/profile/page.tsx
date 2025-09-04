@@ -163,7 +163,7 @@ export default function ProfilePage() {
         <Sidebar role="user" />
       </aside>
 
-      <main className="flex-1 p-8 max-w-5xl mx-auto">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         <div>
           <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">Change Profile</h3>
           <p className="text-gray-500 mb-8">You can manage your personal information and passwords here.</p>
@@ -193,120 +193,144 @@ export default function ProfilePage() {
         </div>
 
         {activeTab === "personal" && (
-          <div className="space-y-3 ">
-            {success && <p className="text-green-600 font-medium">{success}</p>}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 flex flex-col lg:flex-row gap-6">
+              {/* Left: Avatar */}
+              <div className="flex flex-col mt-15 items-center  lg:items-center  w-full lg:w-1/3 pb-6 lg:pb-0">
+                <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-400 mb-4 flex items-center justify-center bg-gray-400 text-white text-5xl font-bold">
+                  {profile ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}` : ""}
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800">{profile?.firstName} {profile?.lastName}</h2>
+                <p className="text-gray-500">{profile?.email}</p>
+                
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">First Name</label>
-              {editing ? (
-                <input
-                  name="firstName"
-                  value={formData.firstName || ""}
-                  onChange={handleChange}
-                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-              ) : (
-                <span>{profile.firstName}</span>
-              )}
-            </div>
+              {/* Right: Personal Information */}
+              <div className="flex-1 space-y-4 ml-20"> 
+                <h2 className="text-2xl font-semibold text-[#0F3659] mb-4">Personal Information</h2>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">Last Name</label>
-              {editing ? (
-                <input
-                  name="lastName"
-                  value={formData.lastName || ""}
-                  onChange={handleChange}
-                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-              ) : (
-                <span>{profile.lastName}</span>
-              )}
-            </div>
+              <div className="divide-y divide-gray-200"></div>
+              {/* First Name */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2  ">
+                <label className="w-40 text-gray-600 font-medium">First Name</label>
+                {editing ? (
+                  <input
+                    name="firstName"
+                    value={formData.firstName || ""}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  />
+                ) : (
+                  <span className="flex-1 text-gray-800">{profile.firstName}</span>
+                )}
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">Email</label>
-              <span>{profile.email}</span>
-            </div>
+              {/* Last Name */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <label className="w-40 text-gray-600 font-medium">Last Name</label>
+                {editing ? (
+                  <input
+                    name="lastName"
+                    value={formData.lastName || ""}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  />
+                ) : (
+                  <span className="flex-1 text-gray-800">{profile.lastName}</span>
+                )}
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">Phone Number</label>
-              {editing ? (
-                <input
-                  name="phone"
-                  value={formData.phone || ""}
-                  onChange={handleChange}
-                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-              ) : (
-                <span>{profile.phone}</span>
-              )}
-            </div>
+              {/* Email */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <label className="w-40 text-gray-600 font-medium">Email</label>
+                <span className="flex-1 text-gray-800">{profile.email}</span>
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">Birthdate</label>
-              {editing ? (
-                <input
-                  name="birthday"
-                  type="date"
-                  value={formData.birthday?.substring(0, 10) || ""}
-                  onChange={handleChange}
-                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-              ) : (
-                <span>{formattedBirthday}</span>
-              )}
-            </div>
+              {/* Phone Number */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <label className="w-40 text-gray-600 font-medium">Phone Number</label>
+                {editing ? (
+                  <input
+                    name="phone"
+                    value={formData.phone || ""}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  />
+                ) : (
+                  <span className="flex-1 text-gray-800">{profile.phone}</span>
+                )}
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">Address</label>
-              {editing ? (
-                <textarea
-                  name="address"
-                  value={formData.address || ""}
-                  onChange={handleChange}
-                  className="w-1/2 border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-              ) : (
-                <span>{profile.address}</span>
-              )}
-            </div>
+              {/* Birthdate */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <label className="w-40 text-gray-600 font-medium">Birthdate</label>
+                {editing ? (
+                  <input
+                    name="birthday"
+                    type="date"
+                    value={formData.birthday?.substring(0, 10) || ""}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  />
+                ) : (
+                  <span className="flex-1 text-gray-800">{formattedBirthday}</span>
+                )}
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">National ID</label>
-              <span>{profile.nationalId}</span>
-            </div>
+              {/* Address */}
+              <div className="flex flex-col md:flex-row md:items-start gap-2">
+                <label className="w-40 text-gray-600 font-medium">Address</label>
+                {editing ? (
+                  <textarea
+                    name="address"
+                    value={formData.address || ""}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
+                  />
+                ) : (
+                  <span className="flex-1 text-gray-800">{profile.address}</span>
+                )}
+              </div>
 
-            <div className="bg-white shadow-md rounded-lg flex justify-between py-3 px-4 text-gray-700 hover:transition duration-200 transform hover:scale-103">
-              <label className="font-semibold">Room Number</label>
-              <span>{profile.room?.roomNumber || "-"}</span>
-            </div>
-            
-            <div className="flex justify-end mt-4 gap-4">
-              {editing ? (
-                <>
+              {/* National ID */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <label className="w-40 text-gray-600 font-medium">National ID</label>
+                <span className="flex-1 text-gray-800">{profile.nationalId}</span>
+              </div>
+
+              {/* Room Number */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <label className="w-40 text-gray-600 font-medium">Room Number</label>
+                <span className="flex-1 text-gray-800">{profile.room?.roomNumber || "-"}</span>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 mt-4">
+                {editing ? (
+                  <>
+                    <button
+                      onClick={handleSave}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md transition"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={handleSave}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded transition"
+                    onClick={() => setEditing(true)}
+                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2 rounded-md transition"
                   >
-                    Save
+                    Edit
                   </button>
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="bg-gray-400 hover:bg-gray-500 text-white px-8 py-2 rounded transition"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="bg-gray-400 hover:bg-gray-500 text-white px-8 py-2 rounded transition"
-                >
-                  Edit
-                </button>
-              )}
+                )}
+              </div>
             </div>
+
 
           </div>
         )}

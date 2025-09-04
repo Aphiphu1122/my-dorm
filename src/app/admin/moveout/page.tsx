@@ -67,7 +67,7 @@ export default function AdminMoveOutListPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-8 max-w-5xl mx-auto">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-[#0F3659]">
@@ -99,28 +99,23 @@ export default function AdminMoveOutListPage() {
                   <th className="px-4 py-3">Reason</th>
                   <th className="px-4 py-3">Moving date</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Detail</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((req) => (
                   <tr
                     key={req.id}
-                    className="border-t border-gray-200 hover:bg-gray-200 transition-colors"
+                    className="border-t border-gray-200 hover:bg-gray-200 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/admin/moveout/${req.id}`)}
                   >
-                    <td className="px-4 py-3">
-                      {req.user.firstName} {req.user.lastName}
-                    </td>
+                    <td className="px-4 py-3">{req.user.firstName} {req.user.lastName}</td>
                     <td className="px-4 py-3">{req.room.roomNumber}</td>
                     <td className="px-4 py-3">{req.reason}</td>
-                    <td className="px-4 py-3">
-                      {new Date(req.moveOutDate).toLocaleDateString()}
-                    </td>
+                    <td className="px-4 py-3">{new Date(req.moveOutDate).toLocaleDateString()}</td>
                     <td className="px-4 py-3 font-medium flex items-center gap-2">
                       {req.status === "PENDING_APPROVAL" && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-                          <i className="ri-indeterminate-circle-fill"></i>{" "}
-                          Pending
+                          <i className="ri-indeterminate-circle-fill"></i> Pending
                         </span>
                       )}
                       {req.status === "APPROVED" && (
@@ -134,17 +129,10 @@ export default function AdminMoveOutListPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
-                        onClick={() => router.push(`/admin/moveout/${req.id}`)}
-                      >
-                        View Detail
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
         )}

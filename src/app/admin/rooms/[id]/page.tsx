@@ -6,6 +6,16 @@ import { toast } from "react-hot-toast";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
 import dayjs from "dayjs";
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Trash2,
+  ArrowLeft,
+  Clock,
+  Info,
+} from "lucide-react";
 
 type RoomDetail = {
   id: string;
@@ -14,7 +24,6 @@ type RoomDetail = {
   createdAt?: string;
   updatedAt?: string;
   assignedAt?: string;
-  maintenanceCount?: number;
   tenant: {
     firstName: string;
     lastName: string;
@@ -28,6 +37,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"room" | "tenant" | "timeline">("room");
   const router = useRouter();
 
   const fetchRoom = useCallback(async () => {
@@ -52,9 +62,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
   }, [fetchRoom]);
 
   const handleDelete = async () => {
-    const confirmDelete = window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบห้องนี้?");
-    if (!confirmDelete) return;
-
+    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบห้องนี้?")) return;
     try {
       const res = await fetch(`/api/admin/rooms/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -70,118 +78,150 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "OCCUPIED":
+        return <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">Occupied</span>;
+      case "AVAILABLE":
+        return <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">Available</span>;
+      default:
+        return <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-medium">Maintenance</span>;
+    }
+  };
+
   return (
-  <div className="flex min-h-screen bg-gray-50">
-    <Sidebar role="admin" />
+     <div className="flex min-h-screen bg-white">
+      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+        <Sidebar role="admin" />
+      </aside>
 
-    <div className="flex-1 p-8 max-w-5xl mx-auto">
-      {loading ? (
-        <div className="text-center mt-10 text-gray-500">กำลังโหลดข้อมูลห้อง...</div>
-      ) : !room ? (
-        <div className="text-center mt-10 text-red-500">ไม่พบข้อมูลห้อง</div>
-      ) : (
-        <>
-          <h1 className="text-3xl font-bold text-gray-900">Room {room.roomNumber}</h1>
-          <p className="text-gray-500 mb-8">Manage room information</p>
-
-          {/* ✅ Room Info */}
-          <div className="space-y-2 mb-8">
-            <h2 className="text-xl font-semibold text-blue-950">Room Info</h2>
-            <div className="bg-white shadow-md rounded-lg p-2">
-              <div className="divide-y divide-gray-200">
-                <div className="grid grid-cols-2 py-2">
-                  <strong className="flex justify-between py-2 p-2 text-gray-700">Status</strong>
-                  <span className="text-right text-gray-900 p-2">
-                    {room.status === "OCCUPIED"
-                      ? "Occupied"
-                      : room.status === "AVAILABLE"
-                      ? "Available"
-                      : "Maintenance"}
-                  </span>
-                </div>
-                {room.assignedAt && (
-                  <div className="grid grid-cols-2 py-2">
-                    <strong className="flex justify-between py-2 p-2 text-gray-700">Assigned At</strong>
-                    <span className="text-right text-gray-900 p-2">
-                      {dayjs(room.assignedAt).format("DD/MM/YYYY")}
-                    </span>
-                  </div>
-                )}
-                {room.createdAt && (
-                  <div className="grid grid-cols-2 py-2">
-                    <strong className="flex justify-between py-2 p-2 text-gray-700">Created At</strong>
-                    <span className="text-right text-gray-900 p-2">
-                      {dayjs(room.createdAt).format("DD/MM/YYYY")}
-                    </span>
-                  </div>
-                )}
-                {room.updatedAt && (
-                  <div className="grid grid-cols-2 py-2">
-                    <strong className="flex justify-between py-2 p-2 text-gray-700">Updated At</strong>
-                    <span className="text-right text-gray-900 p-2">
-                      {dayjs(room.updatedAt).format("DD/MM/YYYY HH:mm")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
+        {loading ? (
+          <div className="flex justify-center items-center h-96 text-gray-500 text-lg">
+          ...Loading room information...
           </div>
+        ) : !room ? (
+          <div className="flex justify-center items-center h-96 text-red-500 text-lg">
+            ❌ Room information not found
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="mb-8 flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Room {room.roomNumber}
+                </h1>
+                <p className="text-gray-500 mt-1">Room and tenant details</p>
+              </div>
+              {getStatusBadge(room.status)}
+            </div>
 
-          {/* ✅ Tenant Info */}
-          {room.tenant ? (
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-blue-950">Tenant information</h2>
-              <div className="bg-white shadow-md rounded-lg p-2">
-                <div className="divide-y divide-gray-200">
-                  <div className="grid grid-cols-2 py-2">
-                    <strong className="flex justify-between py-2 p-2 text-gray-700">Name</strong>
-                    <span className="text-right">
-                      {room.tenant.firstName} {room.tenant.lastName}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 py-2">
-                    <strong className="flex justify-between py-2 p-2 text-gray-700">Email</strong>
-                    <span className="text-right">{room.tenant.email}</span>
-                  </div>
-                  <div className="grid grid-cols-2 py-2">
-                    <strong className="flex justify-between py-2 p-2 text-gray-700">Phone number</strong>
-                    <span className="text-right">{room.tenant.phone ?? "-"}</span>
-                  </div>
-                  {room.tenant.roomStartDate && (
-                    <div className="grid grid-cols-2 py-2">
-                      <strong className="flex justify-between py-2 p-2 text-gray-700">Check-in Date</strong>
-                      <span className="text-right">
-                        {dayjs(room.tenant.roomStartDate).format("DD/MM/YYYY")}
-                      </span>
-                    </div>
+            {/* Tabs */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="-mb-px flex space-x-6">
+                <button
+                  className={`pb-2 text-sm font-medium ${
+                    activeTab === "room"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("room")}
+                >
+                  <Info className="inline w-4 h-4 mr-1" /> Room Info
+                </button>
+                <button
+                  className={`pb-2 text-sm font-medium ${
+                    activeTab === "tenant"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("tenant")}
+                >
+                  <User className="inline w-4 h-4 mr-1" /> Tenant Info
+                </button>
+                <button
+                  className={`pb-2 text-sm font-medium ${
+                    activeTab === "timeline"
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("timeline")}
+                >
+                  <Clock className="inline w-4 h-4 mr-1" /> Timeline
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="bg-white rounded-xl shadow p-6">
+              {activeTab === "room" && (
+                <div className="space-y-3 text-gray-700">
+                  <p><span className="font-medium">Status:</span> {getStatusBadge(room.status)}</p>
+                  {room.assignedAt && (
+                    <p><span className="font-medium">Assigned At:</span> {dayjs(room.assignedAt).format("DD/MM/YYYY")}</p>
+                  )}
+                  {room.createdAt && (
+                    <p><span className="font-medium">Created At:</span> {dayjs(room.createdAt).format("DD/MM/YYYY")}</p>
+                  )}
+                  {room.updatedAt && (
+                    <p><span className="font-medium">Updated At:</span> {dayjs(room.updatedAt).format("DD/MM/YYYY HH:mm")}</p>
                   )}
                 </div>
-              </div>
+              )}
+
+              {activeTab === "tenant" && (
+                <div>
+                  {room.tenant ? (
+                    <div className="space-y-3 text-gray-700">
+                      <p className="flex items-center gap-2"><User className="w-4 h-4 text-gray-500" /> {room.tenant.firstName} {room.tenant.lastName}</p>
+                      <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-gray-500" /> {room.tenant.email}</p>
+                      <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-gray-500" /> {room.tenant.phone ?? "-"}</p>
+                      {room.tenant.roomStartDate && (
+                        <p className="flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-500" /> Check-in: {dayjs(room.tenant.roomStartDate).format("DD/MM/YYYY")}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic">There are no tenants in this room.</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "timeline" && (
+                <ul className="space-y-3 text-gray-700">
+                  {room.createdAt && (
+                    <li>🟢 Created on {dayjs(room.createdAt).format("DD MMM YYYY")}</li>
+                  )}
+                  {room.assignedAt && (
+                    <li>🟡 Assigned on {dayjs(room.assignedAt).format("DD MMM YYYY")}</li>
+                  )}
+                  {room.updatedAt && (
+                    <li>🔄 Last updated {dayjs(room.updatedAt).format("DD MMM YYYY HH:mm")}</li>
+                  )}
+                </ul>
+              )}
             </div>
-          ) : (
-            <p className="text-gray-500 italic">This room currently has no tenant.</p>
-          )}
 
-          {/* ✅ Actions */}
-          <div className="mt-6 flex justify-between">
-            <Link href="/admin/rooms">
-              <button className="inline-block bg-gray-200 text-gray-900 px-4 py-2 rounded hover:bg-gray-300 text-sm transition duration-200 transform hover:scale-105">
-                Back to All Room
-              </button>
-            </Link>
+            {/* Actions */}
+            <div className="mt-10 flex justify-between">
+              <Link href="/admin/rooms">
+                <button className="inline-flex items-center gap-2 bg-gray-200 text-gray-900 px-5 py-2.5 rounded-lg hover:bg-gray-300 transition text-sm font-medium">
+                  <ArrowLeft className="w-4 h-4" /> Back to All Rooms
+                </button>
+              </Link>
 
-            {!room.tenant && (
-              <button
-                onClick={handleDelete}
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition duration-200 transform hover:scale-105 text-sm"
-              >
-                Delete Room
-              </button>
-            )}
-          </div>
-        </>
-      )}
+              {!room.tenant && (
+                <button
+                  onClick={handleDelete}
+                  className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-lg hover:bg-red-700 transition text-sm font-medium"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete Room
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </main>
     </div>
-  </div>
-);
+  );
 }

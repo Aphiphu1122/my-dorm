@@ -140,8 +140,8 @@ export default function RoomManagementPage() {
         {/* Sidebar ซ้าย */}
         <Sidebar role="admin" />
  
-        {/* คอลัมน์ขวา */}
-        <div className="flex-1 p-8 max-w-5xl mx-auto">
+        {/* main */}
+        <div className="flex-1 p-8 max-w-6xl mx-auto">
           <Toaster position="top-right" />
  
           <div className="w-full">
@@ -161,7 +161,7 @@ export default function RoomManagementPage() {
                   </label>
                   <select
                     id="filter"
-                    className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+                    className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={filterStatus}
                     onChange={(e) =>
                       setFilterStatus(e.target.value as "ALL" | RoomStatus)
@@ -181,12 +181,11 @@ export default function RoomManagementPage() {
                       type="text"
                       inputMode="numeric"
                       pattern="\d*"
-                      maxLength={4} // ✅ กันตั้งแต่ attribute
-                      className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-52 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+                      maxLength={4} // 
+                      className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-52 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Room number"
                       value={newRoomNumber}
                       onChange={(e) => {
-                        // ✅ อนุญาตเฉพาะตัวเลข และตัดความยาวเกิน 4
                         const value = e.target.value.replace(/\D/g, "").slice(0, 4);
                         setNewRoomNumber(value);
                       }}

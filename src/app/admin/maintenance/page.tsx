@@ -75,10 +75,12 @@ export default function MaintenanceListPage() {
  
 return (
   <div className="flex min-h-screen bg-white">
-    <Sidebar role="admin" />
+    <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+      <Sidebar role="admin" />
+    </aside>
  
     {/* ขวา*/}
-    <main className="flex-1 p-4 max-w-5xl mx-auto mt-5">
+    <div className="flex-1 p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 px-4 md:px-6">
         <div>
@@ -159,7 +161,7 @@ return (
           </table>
         </div>
       )}
-    </main>
+    </div>
   </div>
 );
 }

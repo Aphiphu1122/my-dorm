@@ -129,7 +129,7 @@ export default function MoveOutRequestPage() {
         <Sidebar role="user" />
       </aside>
 
-      <main className="flex-1 max-w-5xl mx-auto p-6">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         {initialLoading ? (
           <div className="text-center py-24 text-gray-400 text-lg font-medium animate-pulse">
             กำลังโหลดข้อมูล...

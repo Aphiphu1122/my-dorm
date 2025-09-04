@@ -119,7 +119,7 @@ export default function HomePage() {
       </aside>
 
       {/* Main content: เต็มจอ ไม่มีขอบข้าง */}
-      <main className="flex-1 max-w-5xl mx-auto p-6">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 px-4 md:px-6">
           <div>

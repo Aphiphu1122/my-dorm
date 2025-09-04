@@ -142,8 +142,8 @@ export default function AdminDashboardPage() {
           <Sidebar role="admin" />
        </aside>
  
-      {/* ขวา: เอา max-w-5xl/mx-auto ออก ให้เต็มจอ */}
-      <div className="flex-1 p-8 max-w-5xl mx-auto">
+      {/*main */}
+      <div className="flex-1 p-8 max-w-6xl mx-auto">
         <Toaster position="top-right" />
  
         {/* ===== Rooms Section ===== */}
