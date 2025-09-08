@@ -1,3 +1,4 @@
+// src/app/api/notifications/me/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { getUserIdFromCookie } from "@/lib/auth";
@@ -17,7 +18,10 @@ export async function GET() {
     return NextResponse.json({ notifications });
   } catch (error) {
     console.error("Fetch notifications error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -28,13 +32,17 @@ export async function DELETE() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ❌ ลบเฉพาะที่อ่านแล้ว
     await db.notification.deleteMany({
-      where: { userId },
+      where: { userId, read: true },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete notifications error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

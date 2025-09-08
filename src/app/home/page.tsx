@@ -17,6 +17,7 @@ type Notification = {
   id: string;
   message: string;
   createdAt: string;
+  read: boolean;
 };
 
 interface UserProfile {
@@ -40,7 +41,6 @@ export default function HomePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [hasNewBill, setHasNewBill] = useState(false);
 
   // ===== Banner states =====
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -59,8 +59,8 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, [isHover]);
 
-    useEffect(() => {
-      const fetchProfile = async () => {
+  useEffect(() => {
+    const fetchProfile = async () => {
       const res = await fetch("/api/profile/me");
       if (!res.ok) return toast.error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
       const data = await res.json();
@@ -86,12 +86,6 @@ export default function HomePage() {
       if (!Array.isArray(notiArray)) return;
 
       setNotifications(notiArray);
-      const currentMonth = new Date().getMonth();
-      const newBillNoti = notiArray.some((n: Notification) => {
-        const createdMonth = new Date(n.createdAt).getMonth();
-        return createdMonth === currentMonth;
-      });
-      setHasNewBill(newBillNoti);
     };
 
     fetchProfile();
@@ -99,11 +93,21 @@ export default function HomePage() {
     fetchNotifications();
   }, []);
 
-  const handleClearNotifications = async () => {
+  const handleClearNotifications = async (idsToClear?: string[]) => {
     try {
-      await fetch("/api/notifications/me", { method: "DELETE" });
-      setNotifications([]);
-      setHasNewBill(false);
+      if (idsToClear && idsToClear.length > 0) {
+        await fetch("/api/notifications/me", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: idsToClear }),
+        });
+        setNotifications((prev) =>
+          prev.filter((n) => !idsToClear.includes(n.id))
+        );
+      } else {
+        await fetch("/api/notifications/me", { method: "DELETE" });
+        setNotifications([]);
+      }
       toast.success("ล้างการแจ้งเตือนเรียบร้อยแล้ว");
     } catch (err) {
       console.error("Failed to delete notifications", err);
@@ -118,8 +122,7 @@ export default function HomePage() {
         <Sidebar role="user" />
       </aside>
 
-      {/* Main content: เต็มจอ ไม่มีขอบข้าง */}
-      <main className="flex-1 max-w-5xl mx-auto p-6">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 px-4 md:px-6">
           <div>
@@ -128,12 +131,25 @@ export default function HomePage() {
             </h1>
             <p className="text-gray-600">Welcome to the dormitory website</p>
           </div>
-          <NotificationBell
-            notifications={notifications}
-            hasNew={hasNewBill}
-            onClearNotifications={handleClearNotifications}
-          />
-        </div>
+              <NotificationBell
+                notifications={notifications}
+                onClearNotifications={handleClearNotifications}
+                onMarkRead={async (id) => {
+                  try {
+                    // ✅ เรียก API PATCH ไป DB
+                    await fetch(`/api/notifications/${id}`, { method: "PATCH" });
+
+                    // ✅ อัปเดต state ฝั่ง client
+                    setNotifications((prev) =>
+                      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+                    );
+                  } catch (err) {
+                    console.error("Failed to mark notification as read", err);
+                    toast.error("ไม่สามารถอัปเดตการแจ้งเตือนได้");
+                  }
+                }}
+              />
+               </div>
 
         {/* ===== Banner (อัปเกรด) ===== */}
         <div
@@ -305,5 +321,7 @@ export default function HomePage() {
         </div>
       </main>
     </div>
+    
+    
   );
 }

@@ -36,8 +36,8 @@ export default function RulesContractPage() {
             <Sidebar role="user" />
           </aside>
  
-      <main className="flex-1 max-w-5xl mx-auto p-6">
-        <div className="w-full max-w-6xl mx-auto py-10">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
+        <div className="">
           {/* Title */}
           <div>
           <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">Regulations & Rental Contract</h3>

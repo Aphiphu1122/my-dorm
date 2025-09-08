@@ -92,7 +92,7 @@ export default function MaintenancePage() {
       <Sidebar role="user" />
     </aside>
 
-    <main className="flex-1 max-w-5xl mx-auto p-6">
+    <main className="flex-1 p-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold text-[#0F3659] mb-1">Maintenance & Repair</h1>
       <p className="text-gray-600 mb-6">Submit and track your maintenance requests easily.</p>
 
@@ -104,14 +104,14 @@ export default function MaintenancePage() {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe the issue..."
           rows={4}
-          className="w-full border border-gray-300 p-3 rounded-md bg-white text-black focus:ring-2 focus:ring-[#0F3659] outline-none mb-4"
+          className="w-full border border-gray-300 p-3 rounded-md bg-white text-black focus:ring-2 focus:ring-blue-500 outline-none mb-4"
         />
 
         <label className="block font-medium text-gray-700 mb-2">Category</label>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full border border-gray-300 p-3 rounded-md text-black bg-white focus:ring-2 focus:ring-[#0F3659] outline-none mb-6"
+          className="w-full border border-gray-300 p-3 rounded-md text-black bg-white focus:ring-2 focus:ring-blue-500 outline-none mb-6"
           required
         >
           <option value="" disabled>-- Please select a category --</option>
@@ -169,52 +169,31 @@ export default function MaintenancePage() {
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold text-[#0F3659] mb-4">Your Requests</h2>
-        <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-100 text-gray-600 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 border-b border-gray-200">Request ID</th>
-                <th className="px-4 py-3 border-b border-gray-200">Category</th>
-                <th className="px-4 py-3 border-b border-gray-200">Status</th>
-                <th className="px-4 py-3 border-b border-gray-200">Submitted</th>
-                <th className="px-4 py-3 border-b border-gray-200">Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((r) => (
-                <tr key={r.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-4 py-3">#{r.id.slice(0, 8)}</td>
-                  <td className="px-4 py-3">{r.category}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      r.status === 'PENDING'
-                        ? 'bg-gray-400 text-white'
-                        : r.status === 'IN_PROGRESS'
-                        ? 'bg-yellow-500 text-white'
-                        : r.status === 'COMPLETED'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-red-600 text-white'
-                    }`}>
-                      {r.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">{dayjs(r.createdAt).format('DD MMM YYYY')}</td>
-                  <td className="px-4 py-3">{dayjs(r.updatedAt).format('DD MMM YYYY')}</td>
-                </tr>
-              ))}
-              {requests.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center py-6 text-gray-500">
-                    No requests found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Requests History */}
+    <h2 className="text-xl font-semibold text-[#0F3659] mb-4 flex items-center gap-2">
+      <i className="ri-history-line text-2xl text-blue-600"></i> Your Requests
+    </h2>
+    <div className="grid md:grid-cols-2 gap-6 ">
+      {requests.length > 0 ? requests.map((r) => (
+        <div key={r.id} className="bg-white cursor-pointer hover:scale-105 transition-transform duration-200 rounded-2xl shadow-md p-4 border border-gray-100 hover:shadow-lg ">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-semibold text-gray-800">#{r.id.slice(0, 8)}</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              r.status === 'PENDING' ? 'bg-gray-400 text-white' :
+              r.status === 'IN_PROGRESS' ? 'bg-yellow-500 text-white' :
+              r.status === 'COMPLETED' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`}>
+              {r.status.replace('_',' ')}
+            </span>
+          </div>
+          <p className="text-gray-600 mb-1"><strong>Category:</strong> {r.category}</p>
+          <p className="text-gray-500 text-sm">Submitted: {dayjs(r.createdAt).format('DD MMM YYYY')}</p>
+          <p className="text-gray-500 text-sm">Updated: {dayjs(r.updatedAt).format('DD MMM YYYY')}</p>
         </div>
-      </div>
-    </main>
-  </div>
+      )) : (
+        <p className="text-gray-500 col-span-2 text-center py-6">No requests found.</p>
+      )}
+    </div>
+  </main>
+</div>
 );}

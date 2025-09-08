@@ -46,7 +46,7 @@ export default function Sidebar({ role }: SidebarProps) {
       toast.success("ออกจากระบบเรียบร้อย");
 
       setTimeout(() => {
-        router.push("/login");
+        router.push("/");
       }, 1200);
     } else {
       toast.error("เกิดข้อผิดพลาดในการออกจากระบบ");

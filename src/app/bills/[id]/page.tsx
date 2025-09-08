@@ -121,7 +121,7 @@ export default function BillDetailPage() {
         <Sidebar role="user" />
       </aside>
  
-      <main className="flex-1 max-w-5xl mx-auto p-8">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Bills </h1>
         <p className="text-gray-500 mb-8">Manage your bills and rent</p>
  

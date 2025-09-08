@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
+import Image from "next/image";
 
 type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
 
@@ -108,7 +109,7 @@ export default function BillsPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-5xl mx-auto p-8">
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Billing & Payments</h1>
         <p className="text-gray-500 mb-6">Manage your bills and rent</p>
 
@@ -191,7 +192,7 @@ export default function BillsPage() {
                   hover:scale-105 hover:shadow-lg rounded-md"
               >
                 <div className="flex items-center space-x-4 min-w-0 flex-1">
-                  <img
+                  <Image
                     src={account.bankLogoUrl}
                     alt={account.bankName}
                     className="w-20 h-20 object-cover rounded-md"

@@ -105,6 +105,8 @@ export default function AdminBillDetailPage() {
       </p>
     );
 
+    
+
   const waterTotal = bill.waterUnit * bill.waterRate;
   const electricTotal = bill.electricUnit * bill.electricRate;
 
@@ -122,7 +124,7 @@ export default function AdminBillDetailPage() {
     </aside>
 
     {/* Content */}
-    <main className="flex-1 max-w-4xl mx-auto p-6">
+    <main className="flex-1 p-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold text-black dark:text-gray-900 mb-2">
         Bills & Payments
       </h1>

@@ -106,10 +106,10 @@ export default function AdminDashboardPage() {
       </aside>
 
       <main className="flex-1 p-8 max-w-6xl mx-auto">
-        <Toaster position="top-right" />
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-[#0F3659]">
-            DASHBOARD {selectedYear}
+         <Toaster position="top-right" />
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+          <h1 className="text-3xl font-extrabold text-[#0F3659]">
+            ADMIN DASHBOARD {selectedYear}
           </h1>
           <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
         </div>
@@ -131,25 +131,25 @@ export default function AdminDashboardPage() {
                 title="อัตราการเข้าพัก"
                 value={`${summary.occupancyRate ?? 0}%`}
                 icon="ri-home-heart-fill"
-                bg="bg-purple-200"
+                bg="bg-gradient-to-tr from-purple-300 to-purple-100"
               />
               <StatCard
                 title="ห้องว่าง"
                 value={`${summary.vacantRooms ?? 0} ห้อง`}
                 icon="ri-building-line"
-                bg="bg-yellow-200"
+                bg="bg-gradient-to-tr from-yellow-300 to-yellow-100"
               />
               <StatCard
                 title="ห้องที่มีผู้เช่า"
                 value={`${summary.occupiedRooms ?? 0} ห้อง`}
                 icon="ri-user-line"
-                bg="bg-green-200"
+                bg="bg-gradient-to-tr from-green-300 to-green-100"
               />
               <StatCard
                 title="ค้างชำระ"
                 value={`${summary.unpaidRooms ?? 0} ห้อง`}
                 icon="ri-calendar-close-line"
-                bg="bg-red-200"
+                bg="bg-gradient-to-tr from-red-300 to-red-100"
               />
             </div>
 

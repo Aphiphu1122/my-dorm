@@ -165,7 +165,7 @@ export default function AdminBillListPage() {
       <Sidebar role="admin" />
 
       {/* Content */}
-      <main className="flex-1 p-8 max-w-5xl mx-auto">
+      <div className="flex-1 p-8 max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -275,7 +275,7 @@ export default function AdminBillListPage() {
             </tbody>
           </table>
         </div>
-      </main>
+      </div>
 
       {/* ✅ Modal สำหรับสร้างบิล */}
       {showModal && (
