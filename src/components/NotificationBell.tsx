@@ -69,7 +69,6 @@ export default function NotificationBell({
         )}
       </button>
 
-      {/* Dropdown */}
       <div
         id="notification-dropdown"
         className={`absolute right-0 mt-3 w-96 bg-white/90 backdrop-blur-lg border border-gray-300 rounded-2xl shadow-2xl z-50
