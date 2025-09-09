@@ -30,25 +30,7 @@ export default function AboutUsPage() {
               fostering better relationships between owners and tenants.
             </p>
           </div>
-        </div>
-
-        {/* Our Values */}
-        <div className="mt-12 text-left">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Our Values</h3>
-          <ul className="space-y-3 text-gray-700">
-            <li>✅ Transparency – Clear and fair management for both parties.</li>
-            <li>✅ Convenience – Easy access anytime, anywhere.</li>
-            <li>✅ Security – Safe and reliable system for sensitive data.</li>
-          </ul>
-        </div>
-
-        {/* Contact */}
-        <div className="mt-12 text-left">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Contact Us</h3>
-          <p className="text-gray-600">
-            Have questions or feedback? Reach out at <span className="text-blue-600 font-medium">support@dormsystem.com</span>
-          </p>
-        </div>
+        </div>  
       </div>
     </div>
   );
