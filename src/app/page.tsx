@@ -140,7 +140,7 @@ export default function HomePage() {
  
  
       {/* Features */}
-      <section className="bg-gray-50 py-20 px-6 text-center">
+      <section className="bg-white py-20 px-6 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-14">
           ฟีเจอร์เด่นของระบบหอพัก
         </h2>
@@ -200,13 +200,13 @@ export default function HomePage() {
       <section className="py-16 bg-white px-6 text-center">
         <h3 className="text-3xl font-bold text-blue-900 mb-10">เสียงจากผู้ใช้จริง</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <blockquote className="p-6 border-l-4 border-blue-500 bg-gray-50 rounded shadow">
+          <blockquote className="p-6 border-l-4 border-blue-500 bg-white rounded shadow">
             <p className="text-gray-700 italic">
               ระบบนี้ช่วยให้ฉันจัดการห้องพักได้ง่ายขึ้นมาก
             </p>
             <span className="block mt-4 font-semibold text-blue-800">– คุณสมชาย, ผู้ดูแลหอ</span>
           </blockquote>
-          <blockquote className="p-6 border-l-4 border-green-500 bg-gray-50 rounded shadow">
+          <blockquote className="p-6 border-l-4 border-green-500 bg-white rounded shadow">
             <p className="text-gray-700 italic">
               แจ้งซ่อมออนไลน์สะดวกสุดๆ ไม่ต้องเดินไปที่ออฟฟิศเลย
             </p>
@@ -216,7 +216,7 @@ export default function HomePage() {
       </section>
  
       {/* FAQ */}
-      <section className="py-16 bg-gray-100 px-6 text-left max-w-4xl mx-auto">
+      <section className="py-16 bg-white px-6 text-left max-w-4xl mx-auto">
         <h3 className="text-3xl font-bold text-blue-900 mb-8 text-center">คำถามที่พบบ่อย</h3>
         <div className="space-y-6">
           <div>

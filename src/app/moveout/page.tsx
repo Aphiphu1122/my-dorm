@@ -146,7 +146,7 @@ export default function MoveOutRequestPage() {
 
             {/* Personal Info Panel */}
             {userInfo && room && (
-              <div className="bg-gradient-to-r from-blue-50 to-white p-6 rounded-2xl shadow-xl mb-10 border border-blue-100">
+              <div className="bg-white p-6 rounded-2xl shadow-xl mb-10 border border-gray-100">
                 <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                   <i className="ri-user-line text-2xl text-blue-700"></i>{" "}
                   Personal Information
@@ -190,7 +190,7 @@ export default function MoveOutRequestPage() {
             {/* Move-out Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Reason */}
-              <div className="bg-gradient-to-r from-blue-50 to-white  mb-10 border border-blue-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
+              <div className="bg-50 to-white  mb-10 border border-gray-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
                 <label className=" text-lg font-semibold text-black mb-2 flex items-center gap-2">
                   <i className="ri-file-text-line text-2xl text-blue-500"></i>{" "}
                   Reasons for moving out
