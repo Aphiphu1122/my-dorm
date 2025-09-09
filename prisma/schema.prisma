@@ -51,8 +51,7 @@ model room {
   roomNumber          String               @unique
   status              RoomStatus           @default(AVAILABLE)
 
-  tenantId            String?              @unique
-  tenant              profile?             @relation("UserRoom", fields: [tenantId], references: [id])
+  tenant              profile?             @relation("RoomTenant")
 
   maintenanceRequests maintenanceRequest[]
   bills               bill[]               @relation("RoomBills")
@@ -75,10 +74,10 @@ model profile {
   address             String
   nationalId          String               @unique
 
-  role                String               @default("user")
-  roomId              String?
-  room                room?                @relation("UserRoom")
-  
+  role                UserRole             @default(user)
+
+  roomId              String?              @unique
+  room                room?                @relation("RoomTenant",fields: [roomId],references: [id],onDelete: SetNull,onUpdate: Cascade)
 
   maintenanceRequests maintenanceRequest[]
   bills               bill[]               @relation("TenantBills")
@@ -86,9 +85,8 @@ model profile {
   moveOutRequests     moveOutRequest[]
 
   roomStartDate       DateTime?
-
-  isActive     Boolean   @default(true)   
-  moveOutDate  DateTime?                  
+  isActive            Boolean              @default(true)
+  moveOutDate         DateTime?
 
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt

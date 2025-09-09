@@ -1,7 +1,7 @@
+// src/app/api/registeruser/route.ts
 import { db } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { syncRoomStatus } from "@/lib/syncRoomStatus";
 
 const RegisterSchema = z
   .object({
@@ -28,14 +28,10 @@ const RegisterSchema = z
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
-    const result = RegisterSchema.safeParse(body);
-    if (!result.success) {
-      const errorMessage =
-        result.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: 400,
-      });
+    const parsed = RegisterSchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
+      return new Response(JSON.stringify({ error: msg }), { status: 400 });
     }
 
     const {
@@ -50,63 +46,79 @@ export async function POST(req: Request) {
       userId,
       role,
       roomId,
-    } = result.data;
+    } = parsed.data;
 
-    // ✅ ตรวจสอบว่าห้องมีอยู่ และว่าง
-    const room = await db.room.findUnique({
-      where: { id: roomId },
-    });
-
-    if (!room || room.status !== "AVAILABLE") {
-      return new Response(
-        JSON.stringify({ error: "ไม่สามารถเลือกห้องนี้ได้ (ไม่มีอยู่หรือไม่ว่าง)" }),
-        { status: 400 }
-      );
+    // ✅ ตรวจว่าห้องมีอยู่และว่าง (ไม่มีใครถืออยู่ และสถานะ AVAILABLE)
+    const room = await db.room.findUnique({ where: { id: roomId } });
+    if (!room) {
+      return new Response(JSON.stringify({ error: "ไม่พบห้องที่เลือก" }), { status: 404 });
+    }
+    if (room.status !== "AVAILABLE") {
+      return new Response(JSON.stringify({ error: "ห้องนี้ไม่ว่าง" }), { status: 400 });
+    }
+    // กันเคสมีโปรไฟล์ถือ roomId นี้อยู่ (กันชนกับ unique ด้วย)
+    const someoneInThisRoom = await db.profile.findFirst({ where: { roomId } });
+    if (someoneInThisRoom) {
+      return new Response(JSON.stringify({ error: "มีผู้เช่าห้องนี้อยู่แล้ว" }), { status: 400 });
     }
 
-    // ✅ ตรวจสอบซ้ำ (email / nationalId / userId)
+    // ✅ ตรวจซ้ำ (email / nationalId / userId)
     const existing = await db.profile.findFirst({
-      where: {
-        OR: [{ email }, { nationalId }, { userId }],
-      },
+      where: { OR: [{ email }, { nationalId }, { userId }] },
+      select: { id: true },
     });
-
     if (existing) {
       return new Response(
-        JSON.stringify({
-          error: "มีผู้ใช้นี้อยู่แล้ว (email, บัตร ปชช. หรือ userId ซ้ำ)",
-        }),
+        JSON.stringify({ error: "มีผู้ใช้นี้อยู่แล้ว (email/บัตร ปชช./userId ซ้ำ)" }),
         { status: 409 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
-    // ✅ สร้างผู้ใช้ และเชื่อมกับห้อง
-    const user = await db.profile.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        phone,
-        birthday: new Date(birthday),
-        address,
-        nationalId,
-        password: hashedPassword,
-        userId,
-        role,
-        roomStartDate: new Date(),
-        room: {
-          connect: { id: roomId },
+    // ✅ ทำงานแบบ atomic ใน transaction
+    const created = await db.$transaction(async (tx) => {
+      // 1) สร้าง profile (ยังไม่ผูกห้อง)
+      const user = await tx.profile.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          phone,
+          birthday: new Date(birthday),
+          address,
+          nationalId,
+          password: hashed,
+          userId,
+          role, // Prisma enum รับค่า "user" | "admin" ตรง ๆ ได้
         },
-      },
+        select: { id: true, firstName: true, lastName: true, email: true },
+      });
+
+      // 2) ผูกห้องให้ผู้ใช้ + ตั้งค่าเริ่มต้น
+      await tx.profile.update({
+        where: { id: user.id },
+        data: {
+          roomId,                 
+          roomStartDate: new Date(),
+          isActive: true,
+        },
+      });
+
+      // 3) อัปเดตสถานะห้อง
+      await tx.room.update({
+        where: { id: roomId },
+        data: {
+          status: "OCCUPIED",
+          assignedAt: new Date(),
+        },
+      });
+
+      return user;
     });
 
-    // ✅ ใช้ฟังก์ชัน sync สถานะห้อง
-    await syncRoomStatus(roomId);
-
     return new Response(
-      JSON.stringify({ message: "สมัครสมาชิกสำเร็จ", user }),
+      JSON.stringify({ message: "สมัครสมาชิกสำเร็จ", user: created }),
       { status: 201 }
     );
   } catch (error) {
@@ -115,7 +127,5 @@ export async function POST(req: Request) {
       JSON.stringify({ error: "เกิดข้อผิดพลาดภายในระบบ" }),
       { status: 500 }
     );
-  } finally {
-    await db.$disconnect();
   }
 }
