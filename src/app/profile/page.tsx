@@ -318,7 +318,7 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={handleSave}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition"
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition"
                     >
                       Save
                     </button>
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                 ) : (
                   <button
                     onClick={() => setEditing(true)}
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2 rounded-md transition"
+                    className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-2 rounded-md transition"
                   >
                     Edit
                   </button>

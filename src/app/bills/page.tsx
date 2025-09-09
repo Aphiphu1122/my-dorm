@@ -196,9 +196,9 @@ export default function BillsPage() {
           <Image
             src={`/payment${index + 1}.png`} // => payment1.png, payment2.png, payment3.png
             alt={account.bankName}
-            width={80}
-            height={80}
-            className="w-20 h-20 object-cover rounded-md"
+            width={70}
+            height={70}
+            className="w-20 h-20 object-cover rounded-md  "
           />
           <div className="min-w-0">
             <div className="font-semibold break-all text-black">
@@ -216,7 +216,7 @@ export default function BillsPage() {
         <div className="flex-shrink-0">
           <button
             onClick={() => handleCopy(account.accountNumber)}
-            className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition"
+            className="bg-blue-100 text-blue-700 px-4 py-2 rounded-2xl hover:bg-blue-200 transition mr-8 flex"
           >
             Copy account number
           </button>
