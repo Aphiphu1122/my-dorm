@@ -183,45 +183,48 @@ export default function BillsPage() {
         )}
 
         {activeTab === "payments" && (
-          <div className="divide-y divide-gray-200">
-            {bankAccounts.map((account) => (
-              <div
-                key={account.id}
-                className="flex flex-wrap md:flex-nowrap items-center justify-between py-4 gap-4
-                  transform transition-transform duration-200 ease-in-out
-                  hover:scale-105 hover:shadow-lg rounded-md"
-              >
-                <div className="flex items-center space-x-4 min-w-0 flex-1">
-                  <Image
-                    src={account.bankLogoUrl}
-                    alt={account.bankName}
-                    className="w-20 h-20 object-cover rounded-md"
-                  />
-                  <div className="min-w-0">
-                    <div className="font-semibold break-all text-black">
-                      {account.accountNumber}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Name: {account.accountHolder}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {account.bankName}, {account.branch}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0">
-                  <button
-                    onClick={() => handleCopy(account.accountNumber)}
-                    className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition"
-                  >
-                    Copy account number
-                  </button>
-                </div>
-              </div>
-            ))}
+  <div className="divide-y divide-gray-200">
+    {bankAccounts.map((account, index) => (
+      <div
+        key={account.id}
+        className="flex flex-wrap md:flex-nowrap items-center justify-between py-4 gap-4
+          transform transition-transform duration-200 ease-in-out
+          hover:scale-105 hover:shadow-lg rounded-md"
+      >
+        {/* รูปภาพ */}
+        <div className="flex items-center space-x-4 min-w-0 flex-1">
+          <Image
+            src={`/payment${index + 1}.png`} // => payment1.png, payment2.png, payment3.png
+            alt={account.bankName}
+            width={80}
+            height={80}
+            className="w-20 h-20 object-cover rounded-md"
+          />
+          <div className="min-w-0">
+            <div className="font-semibold break-all text-black">
+              {account.accountNumber}
+            </div>
+            <div className="text-sm text-gray-600">
+              Name: {account.accountHolder}
+            </div>
+            <div className="text-sm text-gray-400">
+              {account.bankName}, {account.branch}
+            </div>
           </div>
-        )}
+        </div>
+
+        <div className="flex-shrink-0">
+          <button
+            onClick={() => handleCopy(account.accountNumber)}
+            className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition"
+          >
+            Copy account number
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
       </main>
     </div>
   );

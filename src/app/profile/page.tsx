@@ -5,12 +5,13 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 
+/** ===== Types ===== */
 type UserProfile = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  birthday: string;
+  birthday: string; // ISO string
   address: string;
   nationalId: string;
   room?: {
@@ -18,6 +19,33 @@ type UserProfile = {
   };
 };
 
+type FieldErrors = Record<string, string[] | undefined>;
+
+type ApiErrorObject = {
+  fieldErrors?: FieldErrors; // zod.flatten().fieldErrors
+  formErrors?: string[];     // zod.flatten().formErrors
+};
+
+type ApiErrorResponse =
+  | { error: string }
+  | { error: ApiErrorObject };
+
+type ApiSuccessResponse = { message?: string };
+
+/** ===== Type Guards ===== */
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return !!val && typeof val === "object";
+}
+
+function isApiErrorObject(val: unknown): val is ApiErrorObject {
+  return isRecord(val) && ("fieldErrors" in val || "formErrors" in val);
+}
+
+function isApiErrorResponse(data: unknown): data is ApiErrorResponse {
+  return isRecord(data) && "error" in data;
+}
+
+/** ===== Component ===== */
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -38,11 +66,11 @@ export default function ProfilePage() {
         const res = await fetch("/api/profile/me", { credentials: "include" });
         const data = await res.json();
         if (!res.ok) {
-          toast.error(data.error || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+          toast.error((data as ApiErrorResponse)?.error as string || "เกิดข้อผิดพลาดในการโหลดข้อมูล");
           return;
         }
-        setProfile(data);
-        setFormData(data);
+        setProfile(data as UserProfile);
+        setFormData(data as UserProfile);
       } catch (err) {
         console.error(err);
         toast.error("ไม่สามารถโหลดข้อมูลได้");
@@ -81,19 +109,22 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          firstName: formData.firstName?.trim(),
+          lastName: formData.lastName?.trim(),
           phone: formData.phone,
           birthday: formData.birthday,
-          address: formData.address,
+          address: formData.address?.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
+        const msg =
+          (data as ApiErrorResponse)?.error as string ||
+          "เกิดข้อผิดพลาดในการอัปเดตข้อมูล";
+        toast.error(msg);
         return;
       }
-      setProfile(data.user);
+      setProfile((data as { user: UserProfile }).user);
       setEditing(false);
       toast.success("อัปเดตข้อมูลสำเร็จแล้ว");
       router.push("/home");
@@ -103,17 +134,66 @@ export default function ProfilePage() {
     }
   };
 
+  /** ===== ดึงข้อความ error จาก JSON ของ API (แบบ type-safe ไม่ใช้ any) ===== */
+  const getApiErrorMessage = (data: unknown): string => {
+    if (!isApiErrorResponse(data)) return "เกิดข้อผิดพลาด";
+
+    // error เป็น string ตรง ๆ
+    if (typeof data.error === "string") return data.error;
+
+    // error เป็น object จาก zod
+    if (isApiErrorObject(data.error)) {
+      const fe = data.error.fieldErrors ?? {};
+      const form = data.error.formErrors ?? [];
+
+      // หยิบ field ที่สนใจก่อน
+      const candidates: (string | undefined)[] = [
+        fe["oldPassword"]?.[0],
+        fe["newPassword"]?.[0],
+        fe["confirmPassword"]?.[0],
+      ];
+
+      // ถ้าไม่มี ลองดู field อื่น ๆ ตัวแรกที่เจอ
+      if (!candidates.some(Boolean)) {
+        for (const key of Object.keys(fe)) {
+          const arr = fe[key];
+          if (arr && arr[0]) {
+            candidates.push(arr[0]);
+            break;
+          }
+        }
+      }
+
+      const firstFieldError = candidates.find(Boolean);
+      if (firstFieldError) return firstFieldError;
+
+      if (form.length > 0) return form[0];
+    }
+
+    return "เกิดข้อผิดพลาด";
+  };
+
   const handleChangePassword = async () => {
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (changingPassword) return;
+
+    const oldP = oldPassword.trim();
+    const newP = newPassword.trim();
+    const confirmP = confirmPassword.trim();
+
+    if (!oldP || !newP || !confirmP) {
       toast.error("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
-    if (newPassword.length < 6) {
+    if (newP.length < 6) {
       toast.error("รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร");
       return;
     }
-    if (newPassword !== confirmPassword) {
+    if (newP !== confirmP) {
       toast.error("รหัสผ่านใหม่ไม่ตรงกัน");
+      return;
+    }
+    if (oldP === newP) {
+      toast.error("รหัสผ่านใหม่ต้องแตกต่างจากรหัสผ่านเดิม");
       return;
     }
 
@@ -122,17 +202,21 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile/change-password", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
+        credentials: "include",
+        body: JSON.stringify({ oldPassword: oldP, newPassword: newP, confirmPassword: confirmP }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success("เปลี่ยนรหัสผ่านสำเร็จ");
-        setOldPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } else {
-        toast.error(data.error || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+
+      const data: unknown = await res.json();
+
+      if (!res.ok) {
+        toast.error(getApiErrorMessage(data));
+        return;
       }
+
+      toast.success((data as ApiSuccessResponse).message || "เปลี่ยนรหัสผ่านสำเร็จ");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (err) {
       console.error(err);
       toast.error("เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน");
@@ -347,9 +431,7 @@ export default function ProfilePage() {
           <div className="mt-4 bg-white rounded-xl shadow-md border border-gray-200 p-6">
             <div className="mb-6">
               <h3 className="text-xl font-bold text-[#0F3659]">Change Password</h3>
-              <p className="text-gray-500 mt-1">
-                Manage your passwords securely here.
-              </p>
+              <p className="text-gray-500 mt-1">Manage your passwords securely here.</p>
             </div>
             <div className="space-y-4">
               <input
@@ -376,7 +458,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleChangePassword}
                 disabled={changingPassword}
-                className="w-full bg-gray-400 hover:bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {changingPassword ? "Saving..." : "Save New Password"}
               </button>

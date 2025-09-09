@@ -40,13 +40,12 @@ export default function NotificationBell({
     return () => window.removeEventListener("click", handleClickOutside);
   }, [open]);
 
-  // ✅ mark ว่าอ่านแล้ว (ส่งขึ้น parent ให้ API PATCH DB)
   const handleClickNotification = async (id: string) => {
     await onMarkRead(id);
     setOpen(false);
   };
 
-  // ✅ คำนวณ unread
+
   const hasNew = notifications.some((n) => !n.read);
 
   return (
