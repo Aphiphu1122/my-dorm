@@ -8,10 +8,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
+  // ✅ ใช้ tenant: { isNot: null } แทน tenantId
   const rooms = await db.room.findMany({
     where: {
-      tenantId: { not: null },
       status: "OCCUPIED",
+      tenant: { isNot: null },
     },
     include: {
       tenant: {
@@ -23,7 +24,7 @@ export async function GET() {
       },
       bills: {
         orderBy: { billingMonth: "desc" },
-        take: 1, // ✅ ดึงบิลล่าสุด
+        take: 1,
         select: {
           waterCurr: true,
           electricCurr: true,
@@ -32,15 +33,17 @@ export async function GET() {
     },
   });
 
-  // ✅ reshape response
-  const result = rooms.map((room) => ({
-    id: room.id,
-    roomNumber: room.roomNumber,
-    tenantId: room.tenantId!,
-    tenant: room.tenant,
-    lastWater: room.bills[0]?.waterCurr || 0,
-    lastElectric: room.bills[0]?.electricCurr || 0,
-  }));
+  const result = rooms.map((room) => {
+    const lastBill = room.bills?.[0];
+    return {
+      id: room.id,
+      roomNumber: room.roomNumber,
+      tenantId: room.tenant?.id ?? null,
+      tenant: room.tenant,
+      lastWater: lastBill?.waterCurr ?? 0,
+      lastElectric: lastBill?.electricCurr ?? 0,
+    };
+  });
 
   return NextResponse.json(result);
 }
