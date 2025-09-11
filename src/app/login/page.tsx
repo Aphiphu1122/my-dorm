@@ -45,20 +45,20 @@ export default function LoginPage() {
   };
 
 
-   return (
-    <div className="min-h-screen flex flex-col items-center bg-white">
+  return (
+    <div className="min-h-screen flex flex-col bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
       {/* Header */}
-      <header className="w-full fixed top-0 left-0 right-0 flex justify-between items-center bg-white px-20 py-4 shadow-md z-50">
+      <header className="w-full fixed top-0 left-0 right-0 flex justify-between items-center backdrop-blur-md bg-white/70 px-20 py-4 shadow-lg z-50 rounded-b-2xl">
         <div className="flex items-center space-x-2">
-          <i className="ri-home-heart-fill text-4xl text-blue-950"></i>
-          <h4 className="text-xl text-black font-semibold">Dorm</h4>
+          <i className="ri-home-heart-fill text-4xl text-blue-900 drop-shadow-sm"></i>
+          <h4 className="text-xl text-blue-950 font-bold">Dorm</h4>
         </div>
-        <nav className="flex items-center space-x-8">
-          <ul className="flex space-x-8 text-gray-700 font-semibold">
+        <nav>
+          <ul className="flex space-x-10 text-gray-700 font-semibold">
             <li>
               <button
                 onClick={() => setShowAboutModal(true)}
-                className="relative font-medium text-gray-700 hover:text-blue-800 transition after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all"
+                className="hover:text-blue-900 transition relative after:block after:h-[2px] after:bg-blue-600 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left"
               >
                 About Us
               </button>
@@ -66,7 +66,7 @@ export default function LoginPage() {
             <li>
               <button
                 onClick={() => setShowContactModal(true)}
-                className="relative font-medium text-gray-700 hover:text-blue-800 transition after:content-[''] after:block after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all"
+                className="hover:text-blue-900 transition relative after:block after:h-[2px] after:bg-blue-600 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left"
               >
                 Contact
               </button>
@@ -76,18 +76,20 @@ export default function LoginPage() {
       </header>
 
       {/* Content */}
-      <div className="flex flex-col md:flex-row justify-center items-center w-full max-w-6xl mt-24 px-4 py-12 gap-10">
+      <div className="flex flex-col md:flex-row justify-center items-center w-full max-w-6xl mx-auto mt-32 px-6 py-12 gap-12">
         {/* Left Section */}
         <div className="md:w-1/2 text-center md:text-left space-y-6">
-          <h1 className="text-4xl font-bold text-blue-950">Welcome to Dorm</h1>
-          <p className="text-gray-600 text-lg">
+          <h1 className="text-5xl font-extrabold text-blue-950 drop-shadow-md">
+            Welcome to Dorm
+          </h1>
+          <p className="text-gray-700 text-lg">
             Easy-to-use dormitory management system for everyone
           </p>
-          <p className="text-gray-700">
+          <p className="text-gray-800">
             Don&apos;t have an account?{" "}
             <a
               href="/register"
-              className="text-blue-600 hover:underline font-semibold"
+              className="text-blue-700 hover:underline font-semibold"
             >
               Sign up here
             </a>
@@ -97,55 +99,67 @@ export default function LoginPage() {
         {/* Login Form */}
         <form
           onSubmit={handleLogin}
-          className="bg-white p-8 rounded-lg shadow-lg w-full md:w-1/2 max-w-md"
+          className="backdrop-blur-lg bg-white/80 p-10 rounded-2xl shadow-2xl w-full md:w-1/2 max-w-md border border-white/40"
         >
-          <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">
+          <h2 className="text-3xl font-bold mb-3 text-center text-blue-950">
             Login
           </h2>
-          <h3 className="text-gray-500 mb-5 text-center">
+          <h3 className="text-gray-500 mb-6 text-center">
             Sign in to manage your account
           </h3>
 
           {errorMsg && (
-            <p className="text-red-600 text-sm mb-4">{errorMsg}</p>
+            <p className="text-red-600 text-sm mb-4 text-center">{errorMsg}</p>
           )}
 
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="mb-5">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Email
             </label>
-            <input
-              id="email"
-              type="email"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
+            <div className="flex items-center border rounded-md px-3 py-2 bg-white/70 focus-within:ring-2 focus-within:ring-blue-400">
+              <i className="ri-mail-fill text-gray-400 mr-2"></i>
+              <input
+                id="email"
+                type="email"
+                className="flex-1 bg-transparent outline-none text-gray-900"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="mb-8">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
+            <div className="flex items-center border rounded-md px-3 py-2 bg-white/70 focus-within:ring-2 focus-within:ring-blue-400">
+              <i className="ri-lock-password-fill text-gray-400 mr-2"></i>
+              <input
+                id="password"
+                type="password"
+                className="flex-1 bg-transparent outline-none text-gray-900"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={!(email && password)}
-            className={`w-full py-2 rounded-md transition ${
+            className={`w-full py-3 rounded-full font-semibold shadow-md transition-all ${
               email && password
-                ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-md hover:scale-105 hover:shadow-lg transition-all"
+                ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:scale-105 hover:shadow-xl"
                 : "bg-gray-400 text-white cursor-not-allowed"
             }`}
           >
@@ -157,11 +171,11 @@ export default function LoginPage() {
       {/* Modal: About Us */}
       {showAboutModal && (
         <div
-          className="fixed inset-0 bg-white bg-opacity-70 flex justify-center items-start pt-20 z-50 overflow-auto"
+          className="fixed inset-0 bg-black/40 flex justify-center items-center z-50"
           onClick={() => setShowAboutModal(false)}
         >
           <div
-            className="bg-white rounded-3xl p-6 max-w-3xl w-full mx-4 shadow-lg relative max-h-[80vh] overflow-y-auto"
+            className="bg-white/90 backdrop-blur-lg rounded-3xl p-6 max-w-3xl w-full mx-4 shadow-2xl relative animate-[fadeIn_0.3s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -179,11 +193,11 @@ export default function LoginPage() {
       {/* Modal: Contact */}
       {showContactModal && (
         <div
-          className="fixed inset-0 bg-white bg-opacity-70 flex justify-center items-start pt-20 z-50 overflow-auto"
+          className="fixed inset-0 bg-black/40 flex justify-center items-center z-50"
           onClick={() => setShowContactModal(false)}
         >
           <div
-            className="bg-white rounded-3xl p-6 max-w-3xl w-full mx-4 shadow-lg relative max-h-[80vh] overflow-y-auto"
+            className="bg-white/90 backdrop-blur-lg rounded-3xl p-6 max-w-3xl w-full mx-4 shadow-2xl relative animate-[fadeIn_0.3s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
             <button

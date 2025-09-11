@@ -193,7 +193,7 @@ export default function RoomManagementPage() {
                   </div>
  
                   <button
-                    className="bg-[#0F3659] text-white px-5 py-2 rounded-md hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-500 text-white px-5 py-2 rounded-md hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleAddRoom}
                     disabled={!newRoomNumber || !isValidRoomNumber}
                   >

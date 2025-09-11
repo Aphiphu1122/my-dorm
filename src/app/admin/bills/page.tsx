@@ -200,7 +200,7 @@ export default function AdminBillListPage() {
         {/* Table */}
         <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg mt-8">
           <table className="w-full border text-sm border-gray-200">
-            <thead className="bg-white text-left text-s font-semibold text-gray-600">
+            <thead className="bg-gray-100 text-left text-s font-semibold text-gray-600">
               <tr>
                 <th className="px-4 py-3 border-b border-gray-200">Month</th>
                 <th className="px-4 py-3 border-b border-gray-200">Room</th>

@@ -101,9 +101,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 };
 
   return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
       <Toaster position="top-right" />
-      <header className="w-full fixed top-0 left-0 right-0 flex justify-between items-center bg-white px-20 py-4 shadow-md z-50">
+      <header className="w-full fixed top-0 left-0 right-0 flex justify-between items-center backdrop-blur-md bg-white/70 px-20 py-4 shadow-lg z-50 rounded-b-2xl">
         <div className="flex items-center space-x-2">
           <i className="ri-home-heart-fill text-4xl text-blue-950"></i>
           <h4 className="text-xl text-black font-semibold">Dorm</h4>
@@ -133,10 +133,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="flex flex-col md:flex-row w-full max-w-6xl mx-auto mt-17 px-4 py-12 gap-10">
 
         <div className="md:w-1/2 md:sticky md:top-70 self-start text-center md:text-left space-y-6">
-          <h1 className="text-4xl font-bold text-blue-950">Welcome to Dorm</h1>
-          <p className="text-gray-600 text-lg">Easy-to-use dormitory management system for everyone</p>
-          <p className="text-gray-700">
-            Already have an account? <a href="/login" className="text-blue-600 hover:underline font-semibold">Log in here</a>
+          <h1 className="text-5xl font-extrabold text-blue-950 drop-shadow-md">Welcome to Dorm</h1>
+          <p className="text-gray-700 text-lg">Easy-to-use dormitory management system for everyone</p>
+          <p className="text-gray-800">
+            Already have an account? <a href="/login" className="text-blue-700 hover:underline font-semibold">Log in here</a>
           </p>  
         </div>
 
@@ -234,6 +234,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
               <div>
                 <label className="block mb-1 font-medium text-gray-700">Email</label>
+                
                 <input
                   type="email"
                   name="email"
