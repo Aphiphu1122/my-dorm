@@ -10,19 +10,10 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
+  // ✅ หา tenant จาก profile.roomId = room.id
   const room = await db.room.findUnique({
     where: { id: params.id },
     include: {
-      tenant: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          phone: true,
-          roomStartDate: true,   // ✅ เพิ่มให้เห็นวันเข้าพักจริง
-        },
-      },
       maintenanceRequests: true,
     },
   });
@@ -31,6 +22,19 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     return NextResponse.json({ error: "ไม่พบห้อง" }, { status: 404 });
   }
 
+  // ✅ หา tenant แยกต่างหาก
+  const tenant = await db.profile.findFirst({
+    where: { roomId: room.id },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      roomStartDate: true,
+    },
+  });
+
   return NextResponse.json({
     room: {
       id: room.id,
@@ -38,9 +42,9 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       status: room.status,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
-      assignedAt: room.assignedAt, // ✅ เพิ่ม
+      assignedAt: room.assignedAt,
       maintenanceCount: room.maintenanceRequests.length,
-      tenant: room.tenant,
+      tenant, // ✅ tenant ที่หาได้
     },
   });
 }
@@ -63,15 +67,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // ✅ ถ้ามีการ assign tenant ใหม่
     if (tenantId) {
-      dataToUpdate.tenantId = tenantId;
-      dataToUpdate.assignedAt = new Date();
-
+      // อัปเดต profile ให้ผูกกับห้องนี้
       await db.profile.update({
         where: { id: tenantId },
         data: { roomStartDate: new Date(), roomId: params.id },
       });
+
+      // mark assignedAt ของห้อง
+      dataToUpdate.assignedAt = new Date();
     }
 
+    // ✅ อัปเดตห้อง (ไม่มี tenantId ให้ update แล้ว)
     const updatedRoom = await db.room.update({
       where: { id: params.id },
       data: dataToUpdate,
@@ -97,7 +103,6 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
     const room = await db.room.findUnique({
       where: { id: roomId },
       include: {
-        tenant: true,
         maintenanceRequests: true,
         bills: true,
       },
@@ -114,13 +119,11 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
       );
     }
 
-    // ✅ ถ้ามี tenant → clear roomId และ roomStartDate ใน profile
-    if (room.tenantId) {
-      await db.profile.update({
-        where: { id: room.tenantId },
-        data: { roomId: null, roomStartDate: null },
-      });
-    }
+    // ✅ clear tenant: หา profile ที่ roomId = roomId แล้ว set null
+    await db.profile.updateMany({
+      where: { roomId },
+      data: { roomId: null, roomStartDate: null },
+    });
 
     await db.room.delete({
       where: { id: roomId },

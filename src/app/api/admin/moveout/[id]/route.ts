@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         userId: true,
         roomId: true,
         room: {
-          select: { id: true, roomNumber: true, status: true, tenantId: true },
+          select: { id: true, roomNumber: true, status: true },
         },
         user: {
           select: {
@@ -80,7 +80,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         status: true, // PENDING_APPROVAL | APPROVED | REJECTED
         userId: true, // profile.id
         roomId: true,
-        room: { select: { id: true, tenantId: true, status: true } },
+        room: { select: { id: true, status: true } },
         user: {
           select: {
             id: true, // profile.id
@@ -108,9 +108,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: "User still has unpaid bills" }, { status: 422 });
     }
 
-    // ความปลอดภัย: ห้องนี้ต้องผูกกับผู้เช่าคนนี้จริง (tenantId = profile.id)
-    if (status === "APPROVED") {
-      if (request.room.tenantId && request.room.tenantId !== request.userId) {
+     if (status === "APPROVED") {
+      // ดึง profile ของผู้ใช้มาเช็ก roomId
+      const profile = await db.profile.findUnique({
+        where: { id: request.userId },
+        select: { roomId: true },
+      });
+
+      if (!profile || profile.roomId !== request.roomId) {
         return NextResponse.json({ error: "Room tenant mismatch" }, { status: 409 });
       }
     }
@@ -127,19 +132,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         // ปล่อยห้องว่างและเลิกผูกผู้เช่า
         await tx.room.update({
           where: { id: request.roomId },
-          data: { status: "AVAILABLE", tenantId: null },
+          data: { status: "AVAILABLE" },
         });
-
-        // อัปเดตโปรไฟล์ผู้เช่า
         await tx.profile.update({
-          where: { id: request.userId }, // profile.id
+          where: { id: request.userId },
           data: {
             roomId: null,
             isActive: false,
             moveOutDate: new Date(),
           },
         });
-      }
+              }
 
       // แจ้งเตือนผู้ใช้ (profile.id)
       const message =
