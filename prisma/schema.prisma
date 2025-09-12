@@ -35,9 +35,9 @@ enum MaintenanceCategory {
 }
 
 enum BillStatus {
-  UNPAID           
-  PENDING_APPROVAL 
-  PAID             
+  UNPAID
+  PENDING_APPROVAL
+  PAID
 }
 
 enum MoveOutStatus {
@@ -47,86 +47,117 @@ enum MoveOutStatus {
 }
 
 model room {
-  id                  String               @id @default(uuid())
-  roomNumber          String               @unique
-  status              RoomStatus           @default(AVAILABLE)
+  id         String     @id @default(uuid())
+  roomNumber String     @unique
+  status     RoomStatus @default(AVAILABLE)
 
-  tenant              profile?             @relation("RoomTenant")
+  tenant profile? @relation("RoomTenant")
 
   maintenanceRequests maintenanceRequest[]
   bills               bill[]               @relation("RoomBills")
   moveOutRequests     moveOutRequest[]
 
-  assignedAt          DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  assignedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  contracts contract[]
 }
 
 model profile {
-  id                  String               @id @default(uuid())
-  userId              String               @unique
-  email               String               @unique
-  password            String
-  firstName           String
-  lastName            String
-  phone               String
-  birthday            DateTime
-  address             String
-  nationalId          String               @unique
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  email      String   @unique
+  password   String
+  firstName  String
+  lastName   String
+  phone      String
+  birthday   DateTime
+  address    String
+  nationalId String   @unique
 
-  role                UserRole             @default(user)
+  role UserRole @default(user)
 
-  roomId              String?              @unique
-  room                room?                @relation("RoomTenant",fields: [roomId],references: [id],onDelete: SetNull,onUpdate: Cascade)
+  roomId String? @unique
+  room   room?   @relation("RoomTenant", fields: [roomId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   maintenanceRequests maintenanceRequest[]
   bills               bill[]               @relation("TenantBills")
   notifications       notification[]
   moveOutRequests     moveOutRequest[]
 
-  roomStartDate       DateTime?
-  isActive            Boolean              @default(true)
-  moveOutDate         DateTime?
+  roomStartDate DateTime?
+  isActive      Boolean   @default(true)
+  moveOutDate   DateTime?
 
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts contract[]
+}
+
+model contract {
+  id        String @id @default(uuid())
+  profileId String
+  roomId    String
+
+  dormOwnerName String
+  dormAddress   String
+
+  contractDate DateTime
+  startDate    DateTime
+  endDate      DateTime
+  rentPerMonth Float
+
+  tenantNationalId String
+  tenantAddress    String
+
+  contractImages String[]
+
+  profile profile @relation(fields: [profileId], references: [id])
+  room    room    @relation(fields: [roomId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([profileId, roomId])
 }
 
 model maintenanceRequest {
   id          String              @id @default(uuid())
   description String
-  imageUrl    String?             
-  imageUrls   String[]          
+  imageUrl    String?
+  imageUrls   String[]
   status      MaintenanceStatus   @default(PENDING)
   category    MaintenanceCategory
-  
-  roomId      String
-  userId      String
-  room        room                @relation(fields: [roomId], references: [id])
-  user        profile             @relation(fields: [userId], references: [id])
 
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  roomId String
+  userId String
+  room   room    @relation(fields: [roomId], references: [id])
+  user   profile @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model bill {
-  id             String     @id @default(uuid())
-  tenantId       String
-  roomId         String
+  id       String @id @default(uuid())
+  tenantId String
+  roomId   String
 
-  billingMonth   DateTime
-  rentAmount     Float
+  billingMonth DateTime
+  rentAmount   Float
 
-  waterPrev        Float    @default(0)  
-  waterCurr        Float    @default(0)  
-  waterRate        Float
+  waterPrev Float @default(0)
+  waterCurr Float @default(0)
+  waterRate Float
 
-  electricPrev     Float    @default(0)  
-  electricCurr     Float    @default(0)  
-  electricRate     Float
+  electricPrev Float @default(0)
+  electricCurr Float @default(0)
+  electricRate Float
 
-  waterUnit        Float      @default(0)
-  electricUnit     Float      @default(0)
+  waterUnit    Float @default(0)
+  electricUnit Float @default(0)
 
   totalAmount    Float
   status         BillStatus @default(UNPAID)
@@ -134,38 +165,38 @@ model bill {
   paymentDate    DateTime?
   transactionRef String?
 
-  tenant         profile    @relation("TenantBills", fields: [tenantId], references: [id])
-  room           room       @relation("RoomBills", fields: [roomId], references: [id])
+  tenant profile @relation("TenantBills", fields: [tenantId], references: [id])
+  room   room    @relation("RoomBills", fields: [roomId], references: [id])
 
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model notification {
-  id        String   @id @default(uuid())
-  userId    String
-  message   String
-  type      String
-  read      Boolean  @default(false)
+  id      String  @id @default(uuid())
+  userId  String
+  message String
+  type    String
+  read    Boolean @default(false)
 
-  user      profile  @relation(fields: [userId], references: [id])
+  user profile @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 }
 
 model moveOutRequest {
-  id           String         @id @default(uuid())
-  userId       String
-  roomId       String
-  reason       String
-  note         String?
-  moveOutDate  DateTime
-  status       MoveOutStatus  @default(PENDING_APPROVAL)
-  imageUrl     String?
+  id          String        @id @default(uuid())
+  userId      String
+  roomId      String
+  reason      String
+  note        String?
+  moveOutDate DateTime
+  status      MoveOutStatus @default(PENDING_APPROVAL)
+  imageUrl    String?
 
-  user         profile        @relation(fields: [userId], references: [id])
-  room         room           @relation(fields: [roomId], references: [id])
+  user profile @relation(fields: [userId], references: [id])
+  room room    @relation(fields: [roomId], references: [id])
 
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

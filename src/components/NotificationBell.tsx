@@ -86,7 +86,7 @@ export default function NotificationBell({
               }}
               className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full text-sm shadow-md transition-transform active:scale-95"
             >
-              Clear Read
+              เคลียร์แจ้งเตือนที่อ่านแล้ว
             </button>
           )}
         </div>
@@ -119,7 +119,7 @@ export default function NotificationBell({
             ))
           ) : (
             <li className="p-6 text-center text-gray-400 font-medium">
-              No notifications
+              ไม่มี แจ้งเตือน
             </li>
           )}
         </ul>
