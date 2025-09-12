@@ -3,7 +3,7 @@
 export default function ContactPage() {
   return (
     <div className="space-y-2 text-center max-w-xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800  border-b pb-3 text-left mt-2">Contact</h2>
+      <h2 className="text-2xl font-bold text-gray-800  border-b pb-3 text-left mt-2">ติดต่อเรา</h2>
       <p className="text-sm text-gray-700 leading-relaxed">
         If you have any questions or suggestions, feel free to reach out to us through the following channels.
       </p>
