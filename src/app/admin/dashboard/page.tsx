@@ -44,7 +44,7 @@ interface DashboardSummary {
     month: string;
     paid: number;
     unpaid: number;
-  }[]; // ✅ สำหรับ toggle รายเดือน
+  }[];
 }
 
 function StatCard({
@@ -88,12 +88,12 @@ export default function AdminDashboardPage() {
       const res = await fetch(`/api/admin/dashboard/summary?year=${year}`, {
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to fetch summary");
+      if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
       const data: DashboardSummary = await res.json();
       setSummary(data);
     } catch (err) {
       console.error("Dashboard Error:", err);
-      toast.error("โหลดข้อมูล dashboard ไม่สำเร็จ");
+      toast.error("โหลดข้อมูลแดชบอร์ดไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
@@ -106,10 +106,10 @@ export default function AdminDashboardPage() {
       </aside>
 
       <main className="flex-1 p-8 max-w-6xl mx-auto">
-         <Toaster position="top-right" />
+        <Toaster position="top-right" />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
           <h1 className="text-3xl font-extrabold text-[#0F3659]">
-            ADMIN DASHBOARD {selectedYear}
+            แดชบอร์ดผู้ดูแล {selectedYear}
           </h1>
           <YearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
         </div>
@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
           <p className="text-gray-500">ไม่พบข้อมูลสรุป</p>
         ) : (
           <>
-            {/* Top stats */}
+            {/* สถิติด้านบน */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
               <StatCard
                 title="อัตราการเข้าพัก"
@@ -153,10 +153,10 @@ export default function AdminDashboardPage() {
               />
             </div>
 
-            {/* Rent status + Monthly revenue */}
+            {/* สถานะการชำระ + รายได้รวมต่อเดือน */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               <div className="bg-white shadow rounded-lg p-6">
-                {/* ✅ Toggle switch */}
+                {/* Toggle switch */}
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold">สถานะการชำระค่าเช่า</h3>
                   <div className="flex items-center gap-2">
@@ -189,14 +189,14 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* ✅ Chart */}
+                {/* Chart */}
                 {viewMode === "year" ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                       <Pie
                         data={[
-                          { name: "Paid", value: summary.totalPaid },
-                          { name: "Unpaid", value: summary.totalUnpaid },
+                          { name: "ชำระแล้ว", value: summary.totalPaid },
+                          { name: "ค้างชำระ", value: summary.totalUnpaid },
                         ]}
                         dataKey="value"
                         nameKey="name"
@@ -219,14 +219,14 @@ export default function AdminDashboardPage() {
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="paid" fill="#10b981" />
-                      <Bar dataKey="unpaid" fill="#facc15" />
+                      <Bar dataKey="paid" fill="#10b981" name="ชำระแล้ว" />
+                      <Bar dataKey="unpaid" fill="#facc15" name="ค้างชำระ" />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </div>
 
-              {/* Monthly revenue */}
+              {/* รายได้รวมต่อเดือน */}
               <div className="bg-white shadow rounded-lg p-6">
                 <h3 className="font-semibold mb-4">รายได้รวมต่อเดือน</h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -235,13 +235,13 @@ export default function AdminDashboardPage() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="revenue" fill="#3b82f6" />
+                    <Bar dataKey="revenue" fill="#3b82f6" name="รายได้" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Maintenance trend + Revenue by category */}
+            {/* แนวโน้มการแจ้งซ่อม + รายได้แยกตามประเภท */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white shadow rounded-lg p-6">
                 <h3 className="font-semibold mb-4">แนวโน้มการแจ้งซ่อม</h3>
@@ -251,10 +251,10 @@ export default function AdminDashboardPage() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line dataKey="PENDING" stroke="#f59e0b" />
-                    <Line dataKey="IN_PROGRESS" stroke="#3b82f6" />
-                    <Line dataKey="COMPLETED" stroke="#10b981" />
-                    <Line dataKey="CANCLE" stroke="#ef4444" />
+                    <Line dataKey="PENDING" stroke="#f59e0b" name="รอดำเนินการ" />
+                    <Line dataKey="IN_PROGRESS" stroke="#3b82f6" name="กำลังดำเนินการ" />
+                    <Line dataKey="COMPLETED" stroke="#10b981" name="เสร็จสิ้น" />
+                    <Line dataKey="CANCLE" stroke="#ef4444" name="ยกเลิก" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -267,9 +267,9 @@ export default function AdminDashboardPage() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="rent" stackId="a" fill="#3b82f6" />
-                    <Bar dataKey="water" stackId="a" fill="#10b981" />
-                    <Bar dataKey="electricity" stackId="a" fill="#f59e0b" />
+                    <Bar dataKey="rent" stackId="a" fill="#3b82f6" name="ค่าเช่า" />
+                    <Bar dataKey="water" stackId="a" fill="#10b981" name="ค่าน้ำ" />
+                    <Bar dataKey="electricity" stackId="a" fill="#f59e0b" name="ค่าไฟ" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
