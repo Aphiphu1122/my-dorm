@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation"; // ✅ เพิ่ม useRouter
 import Sidebar from "@/components/sidebar";
 import Image from "next/image";
 
@@ -42,6 +42,7 @@ interface TenantDetail {
 
 export default function TenantDetailPage() {
   const params = useParams();
+  const router = useRouter(); // ✅
   const id = params?.id as string;
 
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
@@ -103,6 +104,15 @@ export default function TenantDetailPage() {
         </aside>
         <main className="flex-1 p-8">
           <div className="text-red-500">ไม่พบข้อมูลผู้เช่า</div>
+          {/* ปุ่มย้อนกลับ */}
+          <div className="mt-6">
+            <button
+              onClick={() => router.back()}
+              className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+            >
+              ย้อนกลับ
+            </button>
+          </div>
         </main>
       </div>
     );
@@ -116,7 +126,7 @@ export default function TenantDetailPage() {
 
       <main className="flex-1 p-8 max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold text-[#0F3659] mb-4">
-          Tenant Detail
+          ข้อมูลส่วนตัวผู้เช่า
         </h1>
 
         {/* ข้อมูลผู้เช่า */}
@@ -274,6 +284,16 @@ export default function TenantDetailPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* ✅ ปุ่มย้อนกลับ */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+          >
+            ย้อนกลับ
+          </button>
         </div>
       </main>
     </div>

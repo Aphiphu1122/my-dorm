@@ -94,13 +94,12 @@ export default function HomePage() {
         </p>
 
         <button
-          onClick={() => router.push("/register")}
-          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-emerald-600 hover:to-green-500
-                    text-white text-lg px-10 py-4 rounded-2xl shadow-xl
-                    transform hover:scale-110 transition duration-300 ease-out"
-        >
-          สมัครสมาชิก
-        </button>
+            onClick={() => router.push("/login")}
+            className="bg-gradient-to-r from-teal-400/80 to-blue-500/80 text-white px-6 py-2 
+              rounded-full shadow-md hover:scale-105 hover:shadow-lg transition-all"
+          >
+            เข้าสู่ระบบ
+          </button>
       </main>
 
       {/* Modal About */}
@@ -144,8 +143,8 @@ export default function HomePage() {
             {
               icon: "ri-home-smile-line",
               color: "text-blue-500",
-              title: "สมัครผู้ใช้",
-              desc: "ผู้เช่าสามารถดูห้องว่างและเลือกห้องได้ทันทีผ่านระบบ",
+              title: "รอบัญชีจากแอดมินได้เลย",
+              desc: "ผู้เช่าสามารถรับบัญชีจากแอดมินและเข้าสู่ระบบได้ทันที",
             },
             {
               icon: "ri-tools-line",
@@ -222,8 +221,8 @@ export default function HomePage() {
         </h3>
         <div className="space-y-6 bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
           <div>
-            <h4 className="font-semibold text-lg text-gray-800">สมัครสมาชิกแล้วต้องรออนุมัติไหม?</h4>
-            <p className="text-gray-700">ไม่ต้องรอ! คุณสามารถเข้าสู่ระบบและใช้งานได้ทันทีหลังจากสมัคร</p>
+            <h4 className="font-semibold text-lg text-gray-800">ได้บัญชีแล้วต้องทำอะไรบ้าง</h4>
+            <p className="text-gray-700">คุณสามารถเข้าสู่ระบบและใช้งานได้ทันที และ เปลี่ยนรหัสผ่านเป็นของคุณได้เลย</p>
           </div>
           <div>
             <h4 className="font-semibold text-lg text-gray-800">ชำระค่าเช่าผ่านช่องทางไหนได้บ้าง?</h4>

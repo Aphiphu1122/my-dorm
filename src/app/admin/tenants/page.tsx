@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
+import { Toaster, toast } from "react-hot-toast";
 
 // ---------- Types ----------
 interface Profile {
@@ -44,7 +45,7 @@ interface CreateTenantForm {
   dormOwnerName: string;
   dormAddress: string;
   tempPassword: string;
-  // optional
+  // optional (เก็บ URL รูปหลังอัปโหลด)
   emailPrefix: string;
   emailDomain: string;
   contractImage1: string;
@@ -65,6 +66,7 @@ const toThaiDate = (iso?: string | null) => {
       });
 };
 
+// ✅ ค่าเริ่มต้นตามที่ขอ (แก้ได้ภายหลัง)
 const defaultForm: CreateTenantForm = {
   firstName: "",
   lastName: "",
@@ -73,11 +75,11 @@ const defaultForm: CreateTenantForm = {
   address: "",
   nationalId: "",
   roomId: "",
-  rentPerMonth: "",
+  rentPerMonth: "3000",
   startDate: "",
-  dormOwnerName: "",
-  dormAddress: "",
-  tempPassword: "",
+  dormOwnerName: "John Doe",
+  dormAddress: "มหาวิทยาลัยพะเยา",
+  tempPassword: "dorm01234",
   emailPrefix: "Dormmy",
   emailDomain: "@dorm.com",
   contractImage1: "",
@@ -99,7 +101,7 @@ export default function AdminTenantsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // upload states
+  // upload states (choose files)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -112,11 +114,11 @@ export default function AdminTenantsPage() {
       const data = await res.json();
       const list: Profile[] = res.ok && Array.isArray(data?.users) ? data.users : [];
       setUsers(list);
-       } catch (e) {
-        console.error("loadTenants error:", e);
-        setUsers([]);
-        setBanner({ type: "error", text: "โหลดรายชื่อผู้เช่าไม่สำเร็จ" });
-        } finally {
+    } catch (e) {
+      console.error("loadTenants error:", e);
+      setUsers([]);
+      setBanner({ type: "error", text: "โหลดรายชื่อผู้เช่าไม่สำเร็จ" });
+    } finally {
       setLoading(false);
     }
   };
@@ -165,8 +167,7 @@ export default function AdminTenantsPage() {
     setSelectedFiles([]);
     setPreviews([]);
     setShowModal(true);
-    // refresh ห้องว่างตอนกดเปิด เพื่อกันกรณีเพิ่งถูกจอง
-    loadAvailableRooms();
+    loadAvailableRooms(); // refresh ห้องว่างตอนเปิด
   };
 
   const handleChange = (
@@ -183,7 +184,7 @@ export default function AdminTenantsPage() {
 
   const uploadSelected = async () => {
     if (!selectedFiles.length) {
-      setBanner({ type: "error", text: "กรุณาเลือกไฟล์ก่อน" });
+      toast.error("กรุณาเลือกไฟล์ก่อน");
       return;
     }
     try {
@@ -191,6 +192,7 @@ export default function AdminTenantsPage() {
       const fd = new FormData();
       selectedFiles.forEach((f) => fd.append("files", f));
 
+      // ปรับ endpoint ให้ตรงกับโปรเจกต์ของคุณ
       const res = await fetch("/api/admin/uploads/contract", {
         method: "POST",
         body: fd,
@@ -207,16 +209,84 @@ export default function AdminTenantsPage() {
       }));
       setSelectedFiles([]);
       setPreviews([]);
-      setBanner({ type: "success", text: "อัปโหลดรูปสัญญาสำเร็จ" });
+      toast.success("อัปโหลดรูปสัญญาสำเร็จ");
     } catch (e) {
-      setBanner({ type: "error", text: (e as Error).message });
+      toast.error((e as Error).message);
     } finally {
       setUploading(false);
     }
   };
 
+  const removeUploadedAt = (idx: 0 | 1 | 2) => {
+    setForm((s) => {
+      const next = { ...s };
+      if (idx === 0) next.contractImage1 = "";
+      if (idx === 1) next.contractImage2 = "";
+      if (idx === 2) next.contractImage3 = "";
+      return next;
+    });
+  };
+
+  // ✅ ฟังก์ชัน validate ก่อน submit + ยิง toast
+  const validateForm = (): boolean => {
+    const isEmpty = (v: string) => !v || !v.trim();
+
+    // เช็คว่ามีช่องไหนว่างไหม (เฉพาะช่องจำเป็น)
+    const requiredEmpty =
+      isEmpty(form.firstName) ||
+      isEmpty(form.lastName) ||
+      isEmpty(form.phone) ||
+      isEmpty(form.birthday) ||
+      isEmpty(form.address) ||
+      isEmpty(form.nationalId) ||
+      isEmpty(form.roomId) ||
+      isEmpty(form.rentPerMonth) ||
+      isEmpty(form.startDate) ||
+      isEmpty(form.tempPassword) ||
+      isEmpty(form.dormOwnerName) ||
+      isEmpty(form.dormAddress);
+
+    if (requiredEmpty) {
+      toast.error("กรุณากรอกให้ครบทุกช่อง");
+      return false;
+    }
+
+    // รูปแบบเพิ่มเติม
+    if (!/^\d{13}$/.test(form.nationalId.trim())) {
+      toast.error("เลขบัตรประชาชนต้องมี 13 หลัก");
+      return false;
+    }
+
+    if (form.phone.replace(/\D/g, "").length < 9) {
+      toast.error("กรุณากรอกเบอร์โทรให้ถูกต้อง (อย่างน้อย 9 หลัก)");
+      return false;
+    }
+
+    const rent = Number(form.rentPerMonth);
+    if (!Number.isFinite(rent) || rent <= 0) {
+      toast.error("ค่าเช่าต้องมากกว่า 0");
+      return false;
+    }
+
+    if (isNaN(Date.parse(form.birthday))) {
+      toast.error("วันเกิดไม่ถูกต้อง");
+      return false;
+    }
+    if (isNaN(Date.parse(form.startDate))) {
+      toast.error("วันที่เริ่มสัญญาไม่ถูกต้อง");
+      return false;
+    }
+
+    return true;
+    // หมายเหตุ: รูปสัญญาไม่บังคับอัปโหลดตาม backend ปัจจุบัน
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ✅ ตรวจฟอร์มก่อน
+    if (!validateForm()) return;
+
     setSubmitting(true);
     setBanner(null);
 
@@ -238,7 +308,6 @@ export default function AdminTenantsPage() {
       contractImages: images,
       emailPrefix: form.emailPrefix.trim() || "Dormmy",
       emailDomain: form.emailDomain.trim() || "@dorm.com",
-      // endDate / contractDate ไม่ส่ง ให้ backend คำนวณ (+1 ปี / now)
     };
 
     try {
@@ -250,15 +319,15 @@ export default function AdminTenantsPage() {
       });
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data?.error || "ไม่สามารถสร้างผู้เช่าได้");
-      }
+      if (!res.ok) throw new Error(data?.error || "ไม่สามารถสร้างผู้เช่าได้");
 
+      toast.success("สร้างผู้เช่าพร้อมสัญญาสำเร็จ");
       setBanner({ type: "success", text: "สร้างผู้เช่าพร้อมสัญญาสำเร็จ" });
       setShowModal(false);
       await loadTenants();
       await loadAvailableRooms();
     } catch (err) {
+      toast.error((err as Error).message);
       setBanner({ type: "error", text: (err as Error).message });
     } finally {
       setSubmitting(false);
@@ -268,6 +337,9 @@ export default function AdminTenantsPage() {
   // ---------- UI ----------
   return (
     <div className="flex min-h-screen bg-slate-50">
+      {/* Toaster (ถ้ามีวางไว้ที่ root แล้ว จะซ้ำได้โดยไม่เป็นไร) */}
+      <Toaster position="top-right" />
+
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-200 bg-white sticky top-0 h-screen">
         <Sidebar role="admin" />
@@ -277,7 +349,7 @@ export default function AdminTenantsPage() {
         {/* Header + Actions */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Tenant Management</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">จัดการผู้เช่า</h1>
             <p className="text-slate-500">จัดการผู้เช่า ห้องพัก และสัญญา</p>
           </div>
 
@@ -300,7 +372,7 @@ export default function AdminTenantsPage() {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as RoomStatus)}
             >
-              <option value="ALL">All</option>
+              <option value="ALL">ทั้งหมด</option>
               <option value="AVAILABLE">Available</option>
               <option value="OCCUPIED">Occupied</option>
             </select>
@@ -310,7 +382,7 @@ export default function AdminTenantsPage() {
               className="inline-flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm"
             >
               <i className="ri-user-add-line" />
-              Add Tenant
+              เพิ่มบัญชีผู้ใช้
             </button>
           </div>
         </div>
@@ -407,123 +479,125 @@ export default function AdminTenantsPage() {
         </div>
       </main>
 
-        {/* ---------- Modal: Add Tenant ---------- */}
-        {showModal && (
+      {/* ---------- Modal: Add Tenant ---------- */}
+      {showModal && (
         <div className="fixed inset-0 z-50">
-            {/* Overlay */}
-            <div
+          {/* Overlay */}
+          <div
             className="absolute inset-0 bg-black/40"
             onClick={() => !submitting && setShowModal(false)}
-            />
+          />
 
-            {/* Container (padding รอบ, responsive center) */}
-            <div className="relative flex min-h-full items-center justify-center p-4 sm:p-6">
-            {/* Panel (กำหนด max width + max height + sticky header/footer) */}
+          {/* Container */}
+          <div className="relative flex min-h-full items-center justify-center p-4 sm:p-6">
+            {/* Panel */}
             <div className="w-full max-w-3xl lg:max-w-4xl bg-white rounded-2xl shadow-xl max-h-[85vh] overflow-hidden flex flex-col">
-                {/* Header sticky */}
-                <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b bg-white">
+              {/* Header */}
+              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b bg-white">
                 <h3 className="text-lg font-semibold text-slate-800">เพิ่มผู้ใช้รายใหม่</h3>
                 <button
-                    className="h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-slate-100"
-                    onClick={() => !submitting && setShowModal(false)}
-                    title="Close"
+                  className="h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-slate-100"
+                  onClick={() => !submitting && setShowModal(false)}
+                  title="Close"
                 >
-                    <i className="ri-close-line text-xl" />
+                  <i className="ri-close-line text-xl" />
                 </button>
-                </div>
+              </div>
 
-                {/* Body scrollable */}
-                <div className="px-6 py-5 overflow-y-auto">
-                {/* ให้ปุ่ม footer กด submit ฟอร์มนี้ด้วย id */}
+              {/* Body */}
+              <div className="px-6 py-5 overflow-y-auto">
+                {/* form */}
                 <form id="createTenantForm" onSubmit={handleSubmit} className="space-y-5">
-                    {/* ผู้เช่า */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* ผู้เช่า */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">ชื่อ</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">ชื่อ</label>
+                      <input
                         name="firstName"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.firstName}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">นามสกุล</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">นามสกุล</label>
+                      <input
                         name="lastName"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.lastName}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">เบอร์โทร</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">เบอร์โทร</label>
+                      <input
                         name="phone"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.phone}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">วันเกิด</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">วันเกิด</label>
+                      <input
                         type="date"
                         name="birthday"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.birthday}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col md:col-span-2">
-                        <label className="text-sm font-medium text-slate-700 mb-1">ที่อยู่</label>
-                        <textarea
+                      <label className="text-sm font-medium text-slate-700 mb-1">ที่อยู่</label>
+                      <textarea
                         name="address"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         rows={2}
                         value={form.address}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col md:col-span-2">
-                        <label className="text-sm font-medium text-slate-700 mb-1">เลขบัตรประชาชน</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">เลขบัตรประชาชน</label>
+                      <input
                         name="nationalId"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.nationalId}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
-                    </div>
+                  </div>
 
-                    {/* ห้อง & สัญญา */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* ห้อง & สัญญา */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">เลือกห้องว่าง</label>
-                        <select
+                      <label className="text-sm font-medium text-slate-700 mb-1">เลือกห้องว่าง</label>
+                      <select
                         name="roomId"
                         className="border border-slate-300 rounded-lg px-3 py-2 bg-white"
                         value={form.roomId}
                         onChange={handleChange}
                         required
-                        >
+                      >
                         <option value="">-- เลือกห้อง --</option>
                         {availableRooms.map((r) => (
-                            <option key={r.id} value={r.id}>
+                          <option key={r.id} value={r.id}>
                             {r.roomNumber}
-                            </option>
+                          </option>
                         ))}
-                        </select>
+                      </select>
                     </div>
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">ค่าเช่า / เดือน (บาท)</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">
+                        ค่าเช่า / เดือน (บาท)
+                      </label>
+                      <input
                         type="number"
                         min="0"
                         inputMode="numeric"
@@ -532,172 +606,168 @@ export default function AdminTenantsPage() {
                         value={form.rentPerMonth}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">วันที่เริ่มสัญญา</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">วันที่เริ่มสัญญา</label>
+                      <input
                         type="date"
                         name="startDate"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.startDate}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">รหัสผ่านเริ่มต้น</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">รหัสผ่านเริ่มต้น</label>
+                      <input
                         name="tempPassword"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.tempPassword}
                         onChange={handleChange}
                         placeholder="เช่น Temp12345"
                         required
-                        />
+                      />
                     </div>
-                    </div>
+                  </div>
 
-                    {/* ข้อมูลหอ */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* ข้อมูลหอ */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-slate-700 mb-1">ชื่อผู้ให้เช่า (เจ้าของหอ)</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">ชื่อผู้ให้เช่า (เจ้าของหอ)</label>
+                      <input
                         name="dormOwnerName"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.dormOwnerName}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
                     <div className="flex flex-col md:col-span-2">
-                        <label className="text-sm font-medium text-slate-700 mb-1">ที่อยู่หอพัก</label>
-                        <input
+                      <label className="text-sm font-medium text-slate-700 mb-1">ที่อยู่หอพัก</label>
+                      <input
                         name="dormAddress"
                         className="border border-slate-300 rounded-lg px-3 py-2"
                         value={form.dormAddress}
                         onChange={handleChange}
                         required
-                        />
+                      />
                     </div>
-                    </div>
+                  </div>
 
-                    {/* รูปสัญญา (อัปโหลดไฟล์ + URL Cloudinary) */}
-                    <div>
+                  {/* รูปสัญญา: เลือกไฟล์ + อัปโหลด (ไม่มีช่องกรอก URL) */}
+                  <div>
                     <label className="text-sm font-medium text-slate-700">
-                        รูปสัญญา (อัปโหลดได้สูงสุด 3 รูป) หรือวาง URL เอง
+                      รูปสัญญา (อัปโหลดได้สูงสุด 3 รูป)
                     </label>
 
-                    {/* เลือกไฟล์ + ปุ่มอัปโหลด */}
                     <div className="mt-2 flex flex-col md:flex-row items-stretch md:items-center gap-3">
-                        <input
+                      <input
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={onSelectFiles}
                         className="border border-slate-300 rounded-lg px-3 py-2 w-full md:w-auto"
-                        />
-                        <button
+                      />
+                      <button
                         type="button"
                         onClick={uploadSelected}
                         disabled={uploading || selectedFiles.length === 0}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border bg-slate-100 hover:bg-slate-200 disabled:opacity-60"
-                        >
+                      >
                         {uploading ? "กำลังอัปโหลด..." : "อัปโหลดไฟล์ไป Cloudinary"}
-                        </button>
-                        <span className="text-xs text-slate-500">เลือกได้สูงสุด 3 รูป (ไฟล์ภาพเท่านั้น)</span>
+                      </button>
+                      <span className="text-xs text-slate-500">
+                        เลือกได้สูงสุด 3 รูป (ไฟล์ภาพเท่านั้น)
+                      </span>
                     </div>
 
-                    {/* พรีวิวไฟล์ที่จะอัปโหลด */}
                     {previews.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-3">
+                      <div className="mt-3 flex flex-wrap gap-3">
                         {previews.map((src, idx) => (
-                            <div key={idx} className="w-28 h-28 rounded-lg overflow-hidden border">
+                          <div key={idx} className="w-28 h-28 rounded-lg overflow-hidden border">
                             <img src={src} alt={`preview-${idx}`} className="w-full h-full object-cover" />
-                            </div>
+                          </div>
                         ))}
-                        </div>
+                      </div>
                     )}
 
-                    {/* ช่อง URL (แก้ไขได้) */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-                        <input
-                        name="contractImage1"
-                        placeholder="https://res.cloudinary.com/.../image1.jpg"
-                        className="border border-slate-300 rounded-lg px-3 py-2"
-                        value={form.contractImage1}
-                        onChange={handleChange}
-                        />
-                        <input
-                        name="contractImage2"
-                        placeholder="https://res.cloudinary.com/.../image2.jpg"
-                        className="border border-slate-300 rounded-lg px-3 py-2"
-                        value={form.contractImage2}
-                        onChange={handleChange}
-                        />
-                        <input
-                        name="contractImage3"
-                        placeholder="https://res.cloudinary.com/.../image3.jpg"
-                        className="border border-slate-300 rounded-lg px-3 py-2"
-                        value={form.contractImage3}
-                        onChange={handleChange}
-                        />
-                    </div>
-                    </div>
+                    {(form.contractImage1 || form.contractImage2 || form.contractImage3) && (
+                      <div className="mt-4">
+                        <div className="text-xs text-slate-600 mb-2">อัปโหลดแล้ว</div>
+                        <div className="flex flex-wrap gap-3">
+                          {[form.contractImage1, form.contractImage2, form.contractImage3].map((u, i) =>
+                            u ? (
+                              <div key={i} className="relative w-28 h-28 rounded-lg overflow-hidden border">
+                                <img src={u} alt={`uploaded-${i}`} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeUploadedAt(i as 0 | 1 | 2)}
+                                  className="absolute top-1 right-1 bg-white/90 hover:bg-white text-rose-600 rounded-full h-6 w-6 flex items-center justify-center shadow"
+                                  title="ลบรูปนี้"
+                                >
+                                  <i className="ri-close-line" />
+                                </button>
+                              </div>
+                            ) : null
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Advanced: email prefix/domain */}
-                    <details className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  {/* Advanced: email prefix/domain */}
+                  <details className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                     <summary className="cursor-pointer text-sm text-slate-700">
-                        ตั้งค่าอีเมลอัตโนมัติจากเลขห้อง (ขั้นสูง)
+                      ตั้งค่าอีเมลอัตโนมัติจากเลขห้อง (ขั้นสูง)
                     </summary>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                        <div className="flex flex-col">
+                      <div className="flex flex-col">
                         <label className="text-xs font-medium text-slate-600 mb-1">Prefix</label>
                         <input
-                            name="emailPrefix"
-                            className="border border-slate-300 rounded-lg px-3 py-2"
-                            value={form.emailPrefix}
-                            onChange={handleChange}
+                          name="emailPrefix"
+                          className="border border-slate-300 rounded-lg px-3 py-2"
+                          value={form.emailPrefix}
+                          onChange={handleChange}
                         />
-                        </div>
-                        <div className="flex flex-col">
+                      </div>
+                      <div className="flex flex-col">
                         <label className="text-xs font-medium text-slate-600 mb-1">Domain</label>
                         <input
-                            name="emailDomain"
-                            className="border border-slate-300 rounded-lg px-3 py-2"
-                            value={form.emailDomain}
-                            onChange={handleChange}
+                          name="emailDomain"
+                          className="border border-slate-300 rounded-lg px-3 py-2"
+                          value={form.emailDomain}
+                          onChange={handleChange}
                         />
-                        </div>
+                      </div>
                     </div>
-                    </details>
+                  </details>
                 </form>
-                </div>
+              </div>
 
-                {/* Footer sticky */}
-                <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t bg-white">
+              {/* Footer */}
+              <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t bg-white">
                 <button
-                    type="button"
-                    className="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50"
-                    onClick={() => !submitting && setShowModal(false)}
+                  type="button"
+                  className="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50"
+                  onClick={() => !submitting && setShowModal(false)}
                 >
-                    ยกเลิก
+                  ยกเลิก
                 </button>
-                {/* ปุ่มนี้ส่งฟอร์มด้านบนผ่าน id="createTenantForm" */}
                 <button
-                    type="submit"
-                    form="createTenantForm"
-                    disabled={submitting}
-                    className="px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+                  type="submit"
+                  form="createTenantForm"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
                 >
-                    {submitting ? "กำลังบันทึก..." : "บันทึก"}
+                  {submitting ? "กำลังบันทึก..." : "บันทึก"}
                 </button>
-                </div>
+              </div>
             </div>
-            </div>
+          </div>
         </div>
-        )}
-
+      )}
     </div>
   );
 }
