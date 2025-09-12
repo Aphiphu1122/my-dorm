@@ -54,7 +54,7 @@ export default function AdminMoveOutListPage() {
           <Sidebar role="admin" />
         </aside>
         <main className="flex-1 p-8 max-w-5xl mx-auto">
-          <p>Loading...</p>
+          <p>กำลังโหลด...</p>
         </main>
       </div>
     );
@@ -71,14 +71,14 @@ export default function AdminMoveOutListPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-[#0F3659]">
-              Request to move out
+              คำร้องขอย้ายออก
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage all tenant move-out requests in the system.
+              จัดการคำร้องขอย้ายออกของผู้เช่าทั้งหมดในระบบ
             </p>
           </div>
           <div className="text-sm text-gray-600">
-            All:{" "}
+            ทั้งหมด:{" "}
             <span className="font-semibold">
               {requests.length.toLocaleString()}
             </span>
@@ -94,11 +94,11 @@ export default function AdminMoveOutListPage() {
             <table className="min-w-full table-auto text-sm text-left">
               <thead>
                 <tr className="bg-gray-100 text-gray-700">
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Room number</th>
-                  <th className="px-4 py-3">Reason</th>
-                  <th className="px-4 py-3">Moving date</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">ชื่อ-นามสกุล</th>
+                  <th className="px-4 py-3">หมายเลขห้อง</th>
+                  <th className="px-4 py-3">เหตุผล</th>
+                  <th className="px-4 py-3">วันที่ย้ายออก</th>
+                  <th className="px-4 py-3">สถานะ</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,31 +108,34 @@ export default function AdminMoveOutListPage() {
                     className="border-t border-gray-200 hover:bg-gray-200 transition-colors cursor-pointer"
                     onClick={() => router.push(`/admin/moveout/${req.id}`)}
                   >
-                    <td className="px-4 py-3">{req.user.firstName} {req.user.lastName}</td>
+                    <td className="px-4 py-3">
+                      {req.user.firstName} {req.user.lastName}
+                    </td>
                     <td className="px-4 py-3">{req.room.roomNumber}</td>
                     <td className="px-4 py-3">{req.reason}</td>
-                    <td className="px-4 py-3">{new Date(req.moveOutDate).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      {new Date(req.moveOutDate).toLocaleDateString("th-TH")}
+                    </td>
                     <td className="px-4 py-3 font-medium flex items-center gap-2">
                       {req.status === "PENDING_APPROVAL" && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-                          <i className="ri-indeterminate-circle-fill"></i> Pending
+                          <i className="ri-indeterminate-circle-fill"></i> รออนุมัติ
                         </span>
                       )}
                       {req.status === "APPROVED" && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
-                          <i className="ri-checkbox-circle-fill"></i> Approved
+                          <i className="ri-checkbox-circle-fill"></i> อนุมัติแล้ว
                         </span>
                       )}
                       {req.status === "REJECTED" && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
-                          <i className="ri-close-circle-fill"></i> Rejected
+                          <i className="ri-close-circle-fill"></i> ปฏิเสธ
                         </span>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-
             </table>
           </div>
         )}

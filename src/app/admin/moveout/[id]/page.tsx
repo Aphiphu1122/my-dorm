@@ -116,27 +116,27 @@ export default function AdminMoveOutDetailPage() {
       <div className="flex-1 max-w-5xl mx-auto p-8">
         <div>
           <h1 className="text-3xl font-bold text-[#0F3659]">
-            Details of move out request
+            รายละเอียดคำร้องขอย้ายออก
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage all tenant move-out requests in the system.
+            จัดการคำร้องขอย้ายออกของผู้เช่าทั้งหมดในระบบ
           </p>
         </div>
 
         <div className="bg-white mt-5">
           {/* Tenant info */}
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-blue-950">Tenant information</h2>
+            <h2 className="text-xl font-semibold text-blue-950">ข้อมูลผู้เช่า</h2>
             <div className="bg-white shadow-md rounded-lg p-2">
               <div className="divide-y divide-gray-200">
                 <div className="grid grid-cols-2 py-1">
-                  <strong className="p-2 text-gray-700">Name</strong>
+                  <strong className="p-2 text-gray-700">ชื่อ-นามสกุล</strong>
                   <span className="text-right mr-5">
                     {request.user.firstName} {request.user.lastName}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 py-1">
-                  <strong className="p-2 text-gray-700">Email</strong>
+                  <strong className="p-2 text-gray-700">อีเมล</strong>
                   <span className="text-right mr-5">{request.user.email}</span>
                 </div>
               </div>
@@ -145,10 +145,10 @@ export default function AdminMoveOutDetailPage() {
 
           {/* Room info */}
           <div className="space-y-2 mt-5">
-            <h2 className="text-xl font-semibold text-blue-950">Room information</h2>
+            <h2 className="text-xl font-semibold text-blue-950">ข้อมูลห้องพัก</h2>
             <div className="bg-white shadow-md rounded-lg p-2">
               <div className="grid grid-cols-2 py-1">
-                <strong className="p-2 text-gray-700">Room number</strong>
+                <strong className="p-2 text-gray-700">หมายเลขห้อง</strong>
                 <span className="text-right mr-5">{request.room.roomNumber}</span>
               </div>
             </div>
@@ -156,23 +156,23 @@ export default function AdminMoveOutDetailPage() {
 
           {/* Move out info */}
           <div className="space-y-2 mt-5">
-            <h2 className="text-xl font-semibold text-blue-950">Move out information</h2>
+            <h2 className="text-xl font-semibold text-blue-950">ข้อมูลการย้ายออก</h2>
             <div className="bg-white shadow-md rounded-lg p-2">
               <div className="divide-y divide-gray-200">
                 <div className="grid grid-cols-2 py-1">
-                  <strong className="p-2 text-gray-700">Request date</strong>
+                  <strong className="p-2 text-gray-700">วันที่ส่งคำร้อง</strong>
                   <span className="text-right mr-5">
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    {new Date(request.createdAt).toLocaleDateString("th-TH")}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 py-1">
-                  <strong className="p-2 text-gray-700">Moving date</strong>
+                  <strong className="p-2 text-gray-700">วันที่จะย้ายออก</strong>
                   <span className="text-right mr-5">
-                    {new Date(request.moveOutDate).toLocaleDateString()}
+                    {new Date(request.moveOutDate).toLocaleDateString("th-TH")}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 py-1">
-                  <strong className="p-2 text-gray-700">Reason</strong>
+                  <strong className="p-2 text-gray-700">เหตุผล</strong>
                   <span className="text-right mr-5">{request.reason}</span>
                 </div>
               </div>
@@ -195,10 +195,10 @@ export default function AdminMoveOutDetailPage() {
             </div>
           )}
 
-          {/* ✅ Unpaid bills */}
+          {/* Unpaid bills */}
           {request.user.bills && request.user.bills.length > 0 && (
             <div className="space-y-2 mt-5">
-              <h2 className="text-xl font-semibold text-red-600">Unpaid Bills</h2>
+              <h2 className="text-xl font-semibold text-red-600">บิลที่ยังไม่ได้ชำระ</h2>
               <div className="bg-white shadow-md rounded-lg p-2">
                 <div className="divide-y divide-gray-200">
                   {request.user.bills.map((bill) => (
@@ -219,7 +219,7 @@ export default function AdminMoveOutDetailPage() {
                         href={`/admin/bills/${bill.id}`}
                         className="text-blue-600 hover:underline text-right"
                       >
-                        View
+                        ดูบิล
                       </Link>
                     </div>
                   ))}
@@ -230,24 +230,24 @@ export default function AdminMoveOutDetailPage() {
 
           {/* Status */}
           <div className="space-y-2 mt-5">
-            <h2 className="text-xl font-semibold text-blue-950">Status</h2>
+            <h2 className="text-xl font-semibold text-blue-950">สถานะ</h2>
             <div className="bg-white shadow-md rounded-lg p-2">
               <div className="grid grid-cols-2 py-1 items-center">
                 {/* Status Badge */}
                 <div className="flex items-center justify-start p-2">
                   {request.status === "PENDING_APPROVAL" && (
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-                      <i className="ri-indeterminate-circle-fill"></i> Pending
+                      <i className="ri-indeterminate-circle-fill"></i> รออนุมัติ
                     </span>
                   )}
                   {request.status === "APPROVED" && (
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
-                      <i className="ri-checkbox-circle-fill"></i> Approved
+                      <i className="ri-checkbox-circle-fill"></i> อนุมัติแล้ว
                     </span>
                   )}
                   {request.status === "REJECTED" && (
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
-                      <i className="ri-close-circle-fill"></i> Rejected
+                      <i className="ri-close-circle-fill"></i> ปฏิเสธแล้ว
                     </span>
                   )}
                 </div>
@@ -261,14 +261,14 @@ export default function AdminMoveOutDetailPage() {
                         disabled={isProcessing}
                         className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
                       >
-                        Approve
+                        อนุมัติ
                       </button>
                       <button
                         onClick={() => handleConfirm("REJECTED")}
                         disabled={isProcessing}
                         className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-50"
                       >
-                        Refuse
+                        ปฏิเสธ
                       </button>
                     </>
                   )}
@@ -281,7 +281,7 @@ export default function AdminMoveOutDetailPage() {
             href="/admin/moveout"
             className="inline-block px-4 py-2 mt-5 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
           >
-            Back to all moveout
+            กลับไปหน้าคำร้องทั้งหมด
           </Link>
         </div>
 

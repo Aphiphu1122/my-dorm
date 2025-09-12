@@ -27,7 +27,6 @@ type Bill = {
   status: BillStatus;
   paymentSlipUrl?: string;
   paymentDate?: string;
-  // transactionRef?: string; // ❌ เอาออกแล้ว
   tenant: {
     firstName: string;
     lastName: string;
@@ -109,9 +108,9 @@ export default function AdminBillDetailPage() {
   const electricTotal = bill.electricUnit * bill.electricRate;
 
   const statusLabel = {
-    UNPAID: "Unpaid",
-    PENDING_APPROVAL: "Pending",
-    PAID: "Paid",
+    UNPAID: "ยังไม่ชำระ",
+    PENDING_APPROVAL: "รออนุมัติ",
+    PAID: "ชำระแล้ว",
   };
 
   return (
@@ -124,23 +123,23 @@ export default function AdminBillDetailPage() {
       {/* Content */}
       <main className="flex-1 p-8 max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-black dark:text-gray-900 mb-2">
-          Bills & Payments
+          จัดการบิล & การชำระเงิน
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8">
-          Manage your bills and rent
+          จัดการบิลค่าเช่าและการชำระเงินของผู้เช่า
         </p>
 
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-blue-950 mb-3">
-            Rent bill{" "}
-            {new Date(bill.billingMonth).toLocaleDateString("en-US", {
+            บิลค่าเช่า{" "}
+            {new Date(bill.billingMonth).toLocaleDateString("th-TH", {
               month: "long",
               year: "numeric",
             })}
           </h2>
 
           <div className="rounded-lg shadow p-4 flex justify-between items-center cursor-pointer border-gray-200 dark:border-gray-700">
-            <span className="text-gray-600 font-medium">Bill Status</span>
+            <span className="text-gray-600 font-medium">สถานะบิล</span>
             <span
               className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold text-sm ${
                 bill.status === "PAID"
@@ -160,43 +159,43 @@ export default function AdminBillDetailPage() {
 
         <section>
           <h2 className="text-xl font-semibold text-blue-950 mb-4">
-            Bill item
+            รายการในบิล
           </h2>
 
           <div className="rounded-lg shadow border border-gray-200">
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-              <span className="text-gray-700">Room Rent</span>
+              <span className="text-gray-700">ค่าเช่าห้อง</span>
               <span className="text-right text-gray-900">
-                {bill.rentAmount.toLocaleString()} Baht
+                {bill.rentAmount.toLocaleString()} บาท
               </span>
             </div>
 
             {/*  Water Meter */}
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
               <span className="text-gray-700">
-                Water (Prev {bill.waterPrev} → Curr {bill.waterCurr})
+                ค่าน้ำ (ครั้งก่อน {bill.waterPrev} → ครั้งนี้ {bill.waterCurr})
               </span>
               <span className="text-right text-gray-900">
-                {bill.waterUnit} units × {bill.waterRate} ={" "}
-                {waterTotal.toLocaleString()} Baht
+                {bill.waterUnit} หน่วย × {bill.waterRate} ={" "}
+                {waterTotal.toLocaleString()} บาท
               </span>
             </div>
 
             {/*  Electric Meter */}
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
               <span className="text-gray-700">
-                Electric (Prev {bill.electricPrev} → Curr {bill.electricCurr})
+                ค่าไฟ (ครั้งก่อน {bill.electricPrev} → ครั้งนี้ {bill.electricCurr})
               </span>
               <span className="text-right text-gray-900">
-                {bill.electricUnit} units × {bill.electricRate} ={" "}
-                {electricTotal.toLocaleString()} Baht
+                {bill.electricUnit} หน่วย × {bill.electricRate} ={" "}
+                {electricTotal.toLocaleString()} บาท
               </span>
             </div>
 
             <div className="grid grid-cols-2 px-6 py-4 font-semibold text-orange-600">
-              <span>Total</span>
+              <span>รวมทั้งหมด</span>
               <span className="text-right">
-                {bill.totalAmount.toLocaleString()} Baht
+                {bill.totalAmount.toLocaleString()} บาท
               </span>
             </div>
           </div>
@@ -207,7 +206,7 @@ export default function AdminBillDetailPage() {
                 href="http://localhost:3000/admin/bills"
                 className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
               >
-                Back to All Bills
+                กลับไปหน้ารายการบิลทั้งหมด
               </a>
             </div>
           )}
@@ -220,7 +219,7 @@ export default function AdminBillDetailPage() {
               disabled={updating}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
-              {updating ? "Approving..." : "Payment approval"}
+              {updating ? "กำลังอนุมัติ..." : "อนุมัติการชำระเงิน"}
             </button>
           </div>
         )}
@@ -228,14 +227,12 @@ export default function AdminBillDetailPage() {
         {bill.paymentSlipUrl && (
           <section className="mt-5 pt-6">
             <h2 className="text-lg font-semibold mb-4 text-blue-950">
-              Payment information
+              ข้อมูลการชำระเงิน
             </h2>
 
             <div className="rounded-lg shadow border border-gray-200">
-              {/* ❌ เอา Transaction Ref ออกแล้ว */}
-
               <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-                <span className="font-medium text-gray-700">Date</span>
+                <span className="font-medium text-gray-700">วันที่ชำระ</span>
                 <span className="text-right text-gray-900">
                   {bill.paymentDate
                     ? new Date(bill.paymentDate).toLocaleString("th-TH")
@@ -244,7 +241,7 @@ export default function AdminBillDetailPage() {
               </div>
 
               <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-                <p className="font-medium text-gray-700 mb-2">Payment Slip</p>
+                <p className="font-medium text-gray-700 mb-2">สลิปการชำระเงิน</p>
                 <Image
                   src={bill.paymentSlipUrl}
                   alt="Payment Slip"
@@ -261,7 +258,7 @@ export default function AdminBillDetailPage() {
                 href="http://localhost:3000/admin/bills"
                 className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
               >
-                Back to All Bills
+                กลับไปหน้ารายการบิลทั้งหมด
               </a>
 
               {bill.status === "PAID" && (
@@ -271,7 +268,7 @@ export default function AdminBillDetailPage() {
                   rel="noopener noreferrer"
                   className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 transform hover:scale-105"
                 >
-                  View Receipt
+                  ดูใบเสร็จ
                 </a>
               )}
             </div>

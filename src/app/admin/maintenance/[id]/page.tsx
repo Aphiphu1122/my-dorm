@@ -48,15 +48,15 @@ export default function MaintenanceDetailPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "PENDING":
-        return { label: "Pending", color: "bg-yellow-100 text-yellow-800" };
+        return { label: "⏳ รอดำเนินการ", color: "bg-yellow-100 text-yellow-800" };
       case "IN_PROGRESS":
-        return { label: "In Progress", color: "bg-blue-100 text-blue-800" };
+        return { label: "🟡 กำลังดำเนินการ", color: "bg-blue-100 text-blue-800" };
       case "COMPLETED":
-        return { label: "Completed", color: "bg-green-100 text-green-800" };
+        return { label: "🟢 เสร็จสิ้น", color: "bg-green-100 text-green-800" };
       case "CANCEL":
-        return { label: "Cancelled", color: "bg-red-100 text-red-800" };
+        return { label: "🔴 ยกเลิก", color: "bg-red-100 text-red-800" };
       default:
-        return { label: "Unknown", color: "bg-gray-100 text-gray-700" };
+        return { label: "ไม่ทราบสถานะ", color: "bg-gray-100 text-gray-700" };
     }
   };
 
@@ -98,7 +98,7 @@ export default function MaintenanceDetailPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-4xl font-bold text-gray-900">
-              Maintenance Detail
+              รายละเอียดการแจ้งซ่อม
             </h1>
             <span
               className={`px-4 py-2 rounded-full font-semibold text-sm ${status.color}`}
@@ -110,29 +110,29 @@ export default function MaintenanceDetailPage() {
           {/* Info Card */}
           <div className="bg-white shadow-lg rounded-2xl p-8 mb-8 border border-gray-200">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Request Info
+              ข้อมูลคำร้อง
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
               <div>
-                <p className="text-gray-500 text-sm">Request ID</p>
+                <p className="text-gray-500 text-sm">รหัสคำร้อง</p>
                 <p className="font-medium">{request.id}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Date</p>
+                <p className="text-gray-500 text-sm">วันที่แจ้ง</p>
                 <p className="font-medium">
                   {new Date(request.createdAt).toLocaleString("th-TH")}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Room</p>
+                <p className="text-gray-500 text-sm">ห้อง</p>
                 <p className="font-medium">{request.room.roomNumber}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Category</p>
+                <p className="text-gray-500 text-sm">ประเภทงานซ่อม</p>
                 <p className="font-medium">{request.category}</p>
               </div>
               <div className="md:col-span-2">
-                <p className="text-gray-500 text-sm mb-1">Description</p>
+                <p className="text-gray-500 text-sm mb-1">รายละเอียด</p>
                 <p className="text-gray-800">{request.description}</p>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function MaintenanceDetailPage() {
           {/* Reporter Info */}
           <div className="bg-white shadow-lg rounded-2xl p-8 mb-8 border border-gray-200">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Reporter
+              ผู้แจ้ง
             </h2>
             <div className="text-gray-700">
               <p className="font-medium">
@@ -156,14 +156,14 @@ export default function MaintenanceDetailPage() {
           {request.imageUrls && request.imageUrls.length > 0 && (
             <div className="bg-white shadow-lg rounded-2xl p-6 mb-8 border border-gray-200">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Images
+                รูปภาพที่แนบมา
               </h2>
               <div className="flex flex-wrap gap-4 overflow-x-auto pb-2">
                 {request.imageUrls.map((url, index) => (
                   <div key={index} className="flex-shrink-0">
                     <Image
                       src={url}
-                      alt={`Maintenance Image ${index + 1}`}
+                      alt={`รูปแจ้งซ่อม ${index + 1}`}
                       width={250}
                       height={150}
                       className="rounded-xl border"
@@ -178,7 +178,7 @@ export default function MaintenanceDetailPage() {
           {/* Update Status */}
           <div className="bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Update Status
+              อัปเดตสถานะ
             </h2>
             <div className="flex flex-col md:justify-start gap-4 mb-6">
               <select
@@ -188,10 +188,10 @@ export default function MaintenanceDetailPage() {
                 onChange={(e) => handleUpdateStatus(e.target.value)}
                 disabled={updating}
               >
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCEL">Cancelled</option>
+                <option value="PENDING">⏳ รอดำเนินการ</option>
+                <option value="IN_PROGRESS">🟡 กำลังดำเนินการ</option>
+                <option value="COMPLETED">🟢 เสร็จสิ้น</option>
+                <option value="CANCEL">🔴 ยกเลิก</option>
               </select>
             </div>
 
@@ -200,7 +200,7 @@ export default function MaintenanceDetailPage() {
                 onClick={() => router.back()}
                 className="px-6 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition duration-200"
               >
-                Back
+                กลับ
               </button>
             </div>
           </div>

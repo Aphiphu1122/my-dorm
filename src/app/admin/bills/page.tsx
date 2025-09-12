@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import { th } from "date-fns/locale";
 import { toast } from "react-hot-toast";
 import Sidebar from "@/components/sidebar";
 
@@ -27,7 +28,6 @@ type RoomWithTenant = {
   roomNumber: string;
   tenantId: string;
   tenant: { id: string; firstName: string; lastName: string };
-
   lastWater: number;
   lastElectric: number;
 };
@@ -95,7 +95,7 @@ export default function AdminBillListPage() {
     }));
   };
 
-    const handleTenantSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleTenantSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTenantId = e.target.value;
     const room = tenantRooms.find((r) => r.tenantId === selectedTenantId);
     if (room) {
@@ -133,20 +133,20 @@ export default function AdminBillListPage() {
       case "PAID":
         return (
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-sm">
-            <i className="ri-checkbox-circle-fill"></i> Paid
+            <i className="ri-checkbox-circle-fill"></i> ชำระแล้ว
           </span>
         );
       case "PENDING_APPROVAL":
         return (
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm">
-            <i className="ri-indeterminate-circle-fill"></i> Pending
+            <i className="ri-indeterminate-circle-fill"></i> รออนุมัติ
           </span>
         );
       case "UNPAID":
       default:
         return (
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold text-sm">
-            <i className="ri-close-circle-fill"></i> Unpaid
+            <i className="ri-close-circle-fill"></i> ยังไม่ชำระ
           </span>
         );
     }
@@ -161,7 +161,7 @@ export default function AdminBillListPage() {
     (electricUnit > 0 ? electricUnit * form.electricRate : 0);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Sidebar role="admin" />
 
       {/* Content */}
@@ -169,19 +169,19 @@ export default function AdminBillListPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#0F3659]">Bills Management</h1>
-            <p className="text-gray-600">Here are all your bills, they can be managed.</p>
+            <h1 className="text-3xl font-bold text-[#0F3659]">จัดการบิล</h1>
+            <p className="text-gray-600">จัดการบิลทั้งหมดของผู้เช่า</p>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Search */}
-            <div className="flex items-center border border-gray-300 rounded w-full sm:w-auto overflow-hidden">
+            <div className="flex items-center border border-gray-300 rounded w-full sm:w-auto overflow-hidden bg-white">
               <span className="flex items-center px-2 text-gray-500">
                 <i className="ri-search-line text-xl"></i>
               </span>
               <input
                 type="text"
-                placeholder="Search tenant name"
+                placeholder="ค้นหาชื่อผู้เช่า"
                 className="flex-1 px-2 py-2 outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -192,35 +192,35 @@ export default function AdminBillListPage() {
               onClick={() => setShowModal(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
-              + New Bill
+              + สร้างบิลใหม่
             </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg mt-8">
+        <div className="overflow-x-auto bg-white rounded-lg shadow-lg mt-8">
           <table className="w-full border text-sm border-gray-200">
-            <thead className="bg-gray-100 text-left text-s font-semibold text-gray-600">
+            <thead className="bg-blue-50 text-left text-sm font-semibold text-gray-700">
               <tr>
-                <th className="px-4 py-3 border-b border-gray-200">Month</th>
-                <th className="px-4 py-3 border-b border-gray-200">Room</th>
-                <th className="px-4 py-3 border-b border-gray-200">Tenant</th>
-                <th className="px-4 py-3 border-b border-gray-200">Total</th>
-                <th className="px-4 py-3 border-b border-gray-200">Status</th>
-                <th className="px-4 py-3 border-b border-gray-200 text-center">Manage</th>
+                <th className="px-4 py-3 border-b border-gray-200">เดือน</th>
+                <th className="px-4 py-3 border-b border-gray-200">ห้อง</th>
+                <th className="px-4 py-3 border-b border-gray-200">ผู้เช่า</th>
+                <th className="px-4 py-3 border-b border-gray-200">รวมทั้งหมด</th>
+                <th className="px-4 py-3 border-b border-gray-200">สถานะ</th>
+                <th className="px-4 py-3 border-b border-gray-200 text-center">จัดการ</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={6} className="text-center py-4">
-                    Loading...
+                    กำลังโหลด...
                   </td>
                 </tr>
               ) : bills.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-4">
-                    No bills found.
+                    ไม่มีข้อมูลบิล
                   </td>
                 </tr>
               ) : (
@@ -233,38 +233,45 @@ export default function AdminBillListPage() {
                   .map((bill) => (
                     <tr
                       key={bill.id}
-                      className="border-b border-gray-200 bg-white hover:bg-gray-200 transition cursor-pointer"
-                      onClick={() => (window.location.href = `/admin/bills/${bill.id}`)}
+                      className="border-b border-gray-200 bg-white hover:bg-blue-50 transition cursor-pointer"
+                      onClick={() =>
+                        (window.location.href = `/admin/bills/${bill.id}`)
+                      }
                     >
                       <td className="px-4 py-3">
-                        {format(new Date(bill.billingMonth), "MMMM yyyy")}
+                        {format(new Date(bill.billingMonth), "MMMM yyyy", {
+                          locale: th,
+                        })}
                       </td>
                       <td className="px-4 py-3">{bill.room.roomNumber}</td>
                       <td className="px-4 py-3">
                         {bill.tenant.firstName} {bill.tenant.lastName}
                       </td>
                       <td className="px-4 py-3 font-semibold">
-                        {bill.totalAmount.toFixed(2)} Baht
+                        {bill.totalAmount.toFixed(2)} บาท
                       </td>
                       <td className="px-4 py-3">{getStatusLabel(bill.status)}</td>
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
-                            if (!window.confirm("Delete this bill?")) return;
+                            if (!window.confirm("ต้องการลบบิลนี้หรือไม่?")) return;
                             try {
-                              const res = await fetch(`/api/admin/bills/${bill.id}`, {
-                                method: "DELETE",
-                              });
+                              const res = await fetch(
+                                `/api/admin/bills/${bill.id}`,
+                                {
+                                  method: "DELETE",
+                                }
+                              );
                               if (!res.ok) throw new Error();
-                              toast.success("Bill deleted");
+                              toast.success("ลบบิลแล้ว");
                               fetchBills();
                             } catch {
-                              toast.error("Delete failed");
+                              toast.error("ลบไม่สำเร็จ");
                             }
                           }}
-                          className="text-gray-400 bg-gray-200 rounded-full p-2 w-10 h-10  items-center justify-center hover:text-red-700 hover:scale-125 transition-transform duration-200"
-                          title="Delete Bill"
+                          className="text-gray-400 bg-gray-100 rounded-full p-2 w-10 h-10 items-center justify-center hover:text-red-700 hover:scale-125 transition-transform duration-200"
+                          title="ลบบิล"
                         >
                           <i className="ri-delete-bin-fill text-lg "></i>
                         </button>
@@ -288,23 +295,26 @@ export default function AdminBillListPage() {
               ✖
             </button>
 
-            <h2 className="text-2xl font-bold mb-4">Create New Bill</h2>
+            <h2 className="text-2xl font-bold mb-4 text-blue-800">
+              สร้างบิลใหม่
+            </h2>
 
             <div className="space-y-4">
               {/* Tenant */}
               <div>
-                <label className="block text-sm font-medium mb-1">Tenant</label>
+                <label className="block text-sm font-medium mb-1">ผู้เช่า</label>
                 <select
                   name="tenantId"
                   value={form.tenantId}
                   onChange={handleTenantSelect}
-                  className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 >
-                  <option value="">-- Select Tenant --</option>
-                {tenantRooms.map((room) => (
-                  <option key={room.tenantId} value={room.tenantId}>
-                    Room {room.roomNumber} - {room.tenant.firstName} {room.tenant.lastName}
-                  </option>
+                  <option value="">-- เลือกผู้เช่า --</option>
+                  {tenantRooms.map((room) => (
+                    <option key={room.tenantId} value={room.tenantId}>
+                      ห้อง {room.roomNumber} - {room.tenant.firstName}{" "}
+                      {room.tenant.lastName}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -312,27 +322,27 @@ export default function AdminBillListPage() {
               {/* Billing Month */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Billing Month
+                  เดือนที่เรียกเก็บ
                 </label>
                 <input
                   type="month"
                   name="billingMonth"
                   value={form.billingMonth}
                   onChange={handleChange}
-                  className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               </div>
 
               {/* Rent */}
               <div>
-                <label className="block text-sm font-medium mb-1">Rent</label>
+                <label className="block text-sm font-medium mb-1">ค่าเช่า</label>
                 <input
                   type="number"
                   name="rentAmount"
-                  placeholder="Enter room rent"
+                  placeholder="ระบุค่าเช่า"
                   value={form.rentAmount || ""}
                   onChange={handleChange}
-                  className="border p-2 w-full rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               </div>
 
@@ -340,33 +350,33 @@ export default function AdminBillListPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Water Prev
+                    น้ำ (ก่อนหน้า)
                   </label>
                   <input
                     type="number"
                     name="waterPrev"
                     value={form.waterPrev || ""}
                     onChange={handleChange}
-                    placeholder="Previous water meter"
+                    placeholder="ค่าน้ำก่อนหน้า"
                     className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Water Curr
+                    น้ำ (ปัจจุบัน)
                   </label>
                   <input
                     type="number"
                     name="waterCurr"
                     value={form.waterCurr || ""}
                     onChange={handleChange}
-                    placeholder="Current water meter"
+                    placeholder="ค่าน้ำปัจจุบัน"
                     className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Water Rate
+                    อัตราน้ำ (บาท/หน่วย)
                   </label>
                   <input
                     type="number"
@@ -382,33 +392,33 @@ export default function AdminBillListPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Electric Prev
+                    ไฟ (ก่อนหน้า)
                   </label>
                   <input
                     type="number"
                     name="electricPrev"
                     value={form.electricPrev || ""}
                     onChange={handleChange}
-                    placeholder="Previous electric meter"
+                    placeholder="ค่าไฟก่อนหน้า"
                     className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Electric Curr
+                    ไฟ (ปัจจุบัน)
                   </label>
                   <input
                     type="number"
                     name="electricCurr"
                     value={form.electricCurr || ""}
                     onChange={handleChange}
-                    placeholder="Current electric meter"
+                    placeholder="ค่าไฟปัจจุบัน"
                     className="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Electric Rate
+                    อัตราไฟ (บาท/หน่วย)
                   </label>
                   <input
                     type="number"
@@ -421,7 +431,7 @@ export default function AdminBillListPage() {
               </div>
 
               {/* Preview */}
-              <div className="mt-4 p-3 bg-gray-100 rounded-lg text-sm">
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
                 <p>
                   น้ำใช้ไป:{" "}
                   <span className="font-semibold">
@@ -439,7 +449,7 @@ export default function AdminBillListPage() {
                 <p>
                   รวมทั้งหมด:{" "}
                   <span className="font-bold text-blue-600">
-                    {totalPreview.toFixed(2)} ฿
+                    {totalPreview.toFixed(2)} บาท
                   </span>
                 </p>
               </div>
@@ -450,7 +460,7 @@ export default function AdminBillListPage() {
                 disabled={submitting}
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
               >
-                {submitting ? "Creating..." : "Create Bill"}
+                {submitting ? "กำลังสร้าง..." : "สร้างบิล"}
               </button>
             </div>
           </div>
