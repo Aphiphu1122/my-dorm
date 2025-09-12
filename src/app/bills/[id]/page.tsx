@@ -7,7 +7,6 @@ import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
 
-
 type BillStatus = "PAID" | "UNPAID" | "PENDING_APPROVAL";
 
 type Bill = {
@@ -36,8 +35,6 @@ export default function BillDetailPage() {
 
   const [paymentDate, setPaymentDate] = useState(defaultDateTime);
 
-
-
   useEffect(() => {
     if (!billId) return;
 
@@ -60,7 +57,7 @@ export default function BillDetailPage() {
 
   const handleUpload = async () => {
     if (!bill) return;
-    if (!slipFile) return toast.error("Please select a slip first.");
+    if (!slipFile) return toast.error("กรุณาเลือกสลิปก่อน");
 
     const formData = new FormData();
     formData.append("file", slipFile);
@@ -73,7 +70,7 @@ export default function BillDetailPage() {
       });
 
       if (res.ok) {
-        toast.success("Attached slip successfully");
+        toast.success("แนบสลิปสำเร็จ");
         router.refresh();
       } else {
         const errorData = await res.json();
@@ -86,91 +83,90 @@ export default function BillDetailPage() {
   };
 
   if (loading)
-    return <p className="text-center mt-8 text-gray-500">Loading...</p>;
+    return <p className="text-center mt-8 text-gray-500">กำลังโหลด...</p>;
   if (!bill)
-    return <p className="text-center mt-8 text-gray-500">Bill information not found</p>;
+    return <p className="text-center mt-8 text-gray-500">ไม่พบบิล</p>;
 
   const waterTotal = bill.waterUnit * bill.waterRate;
   const electricTotal = bill.electricUnit * bill.electricRate;
 
   const statusDisplay = {
-  UNPAID: {
-    text: "Unpaid",
-    color: "text-red-600",
-    icon: <i className="ri-close-circle-fill" />,
-  },
-  PENDING_APPROVAL: {
-    text: "Pending",
-    color: "text-yellow-500",
-    icon: <i className="ri-indeterminate-circle-fill" />,
-  },
-  PAID: {
-    text: "Paid",
-    color: "text-green-600",
-    icon: <i className="ri-checkbox-circle-fill" />,
-  },
-};
+    UNPAID: {
+      text: "ยังไม่ได้ชำระ",
+      color: "text-red-600",
+      icon: <i className="ri-close-circle-fill" />,
+    },
+    PENDING_APPROVAL: {
+      text: "รอตรวจสอบ",
+      color: "text-yellow-500",
+      icon: <i className="ri-indeterminate-circle-fill" />,
+    },
+    PAID: {
+      text: "ชำระแล้ว",
+      color: "text-green-600",
+      icon: <i className="ri-checkbox-circle-fill" />,
+    },
+  };
 
   return (
     <div className="flex min-h-screen bg-white text-black">
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
       </aside>
- 
+
       <main className="flex-1 p-8 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Bills </h1>
-        <p className="text-gray-500 mb-8">Manage your bills and rent</p>
- 
- 
-          <h2 className="text-lg font-semibold text-[#0F3659] mb-1">
-            Rent bill{" "}
-            {new Date(bill.billingMonth).toLocaleDateString("en-GB", {
-              month: "long",
-              year: "numeric",
-            })}
-          </h2>
-          <section className="mb-6 bg-white shadow-md rounded-lg p-2 flex justify-between items-center">
-     
-            <span className="text-gray-700 font-medium p-2 ">Bill Status</span>
-            <span
-              className={`${statusDisplay[bill.status].color} font-semibold flex items-center gap-1`}
-            >
-              <span>{statusDisplay[bill.status].icon}</span> {statusDisplay[bill.status].text}
-            </span>
-         
+        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">บิล</h1>
+        <p className="text-gray-500 mb-8">จัดการบิลและค่าเช่าของคุณ</p>
+
+        <h2 className="text-lg font-semibold text-[#0F3659] mb-1">
+          บิลค่าเช่า{" "}
+          {new Date(bill.billingMonth).toLocaleDateString("th-TH", {
+            month: "long",
+            year: "numeric",
+          })}
+        </h2>
+        <section className="mb-6 bg-white shadow-md rounded-lg p-2 flex justify-between items-center">
+          <span className="text-gray-700 font-medium p-2">สถานะบิล</span>
+          <span
+            className={`${statusDisplay[bill.status].color} font-semibold flex items-center gap-1`}
+          >
+            <span>{statusDisplay[bill.status].icon}</span>{" "}
+            {statusDisplay[bill.status].text}
+          </span>
         </section>
- 
+
         {/* Bill Items */}
-          <h3 className="text-md font-semibold text-[#0F3659] mb-1">Bill item</h3>
-            <section className="bg-white shadow-md rounded-lg p-2">
-              <div className="divide-y divide-gray-200">
-                <div className="flex justify-between py-3 p-2 text-gray-700">
-                  <span>Room Rent</span>
-                  <span>{bill.rentAmount.toLocaleString()} Bath</span>
-                </div>
-                <div className="flex justify-between py-3 p-2 text-gray-700">
-                  <span>Water Bill</span>
-                  <span>{waterTotal.toLocaleString()} Bath</span>
-                </div>
-                <div className="flex justify-between py-3 p-2 text-gray-700">
-                  <span>Electricity Bill</span>
-                  <span>{electricTotal.toLocaleString()} Bath</span>
-                </div>
-                <div className="flex justify-between py-3  p-2 font-bold text-yellow-700">
-                  <span>Total</span>
-                  <span>{bill.totalAmount.toLocaleString()} Bath</span>
-                </div>
-              </div>
-            </section>
- 
+        <h3 className="text-md font-semibold text-[#0F3659] mb-1">รายการบิล</h3>
+        <section className="bg-white shadow-md rounded-lg p-2">
+          <div className="divide-y divide-gray-200">
+            <div className="flex justify-between py-3 p-2 text-gray-700">
+              <span>ค่าเช่าห้อง</span>
+              <span>{bill.rentAmount.toLocaleString()} บาท</span>
+            </div>
+            <div className="flex justify-between py-3 p-2 text-gray-700">
+              <span>ค่าน้ำ</span>
+              <span>{waterTotal.toLocaleString()} บาท</span>
+            </div>
+            <div className="flex justify-between py-3 p-2 text-gray-700">
+              <span>ค่าไฟ</span>
+              <span>{electricTotal.toLocaleString()} บาท</span>
+            </div>
+            <div className="flex justify-between py-3  p-2 font-bold text-yellow-700">
+              <span>รวมทั้งหมด</span>
+              <span>{bill.totalAmount.toLocaleString()} บาท</span>
+            </div>
+          </div>
+        </section>
+
         {/* Payment slip & upload */}
         {bill.status === "PENDING_APPROVAL" && bill.paymentSlipUrl && (
           <div className="mt-6 p-6 bg-yellow-50 rounded-lg shadow-sm text-yellow-700 font-semibold">
-            {statusDisplay.PENDING_APPROVAL.icon} The system has received your slip. Waiting for verification from the dormitory owner.
+            {statusDisplay.PENDING_APPROVAL.icon} ระบบได้รับสลิปของคุณแล้ว
+            กำลังรอตรวจสอบจากเจ้าของหอพัก
             <div className="mt-4 max-w-md">
               <Image
                 src={bill.paymentSlipUrl}
-                alt="payment slip"
+                alt="สลิปชำระเงิน"
                 width={200}
                 height={125}
                 className="rounded-md border"
@@ -179,15 +175,15 @@ export default function BillDetailPage() {
             </div>
           </div>
         )}
- 
+
         {bill.status === "PAID" && (
           <div className="mt-6 p-6 bg-green-50 rounded-lg shadow-sm text-green-700 font-semibold">
-            {statusDisplay.PAID.icon} Payment completed
+            {statusDisplay.PAID.icon} ชำระเงินเรียบร้อยแล้ว
             {bill.paymentSlipUrl && (
               <div className="mt-4 max-w-md">
                 <Image
                   src={bill.paymentSlipUrl}
-                  alt="payment slip"
+                  alt="สลิปชำระเงิน"
                   width={200}
                   height={125}
                   className="rounded-md border mb-2"
@@ -197,12 +193,11 @@ export default function BillDetailPage() {
             )}
           </div>
         )}
- 
+
         {bill.status === "UNPAID" && (
           <section className="bg-white shadow-md rounded-lg p-3 mt-8">
-
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Date & Time
+              วันที่และเวลาชำระเงิน
             </label>
             <input
               type="datetime-local"
@@ -211,9 +206,9 @@ export default function BillDetailPage() {
               required
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
- 
+
             <label className="block font-medium mt-6 mb-2 text-blue-800">
-              Upload payment slip
+              อัปโหลดสลิปชำระเงิน
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -225,34 +220,33 @@ export default function BillDetailPage() {
                 onClick={handleUpload}
                 className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition"
               >
-                Upload
+                อัปโหลด
               </button>
             </div>
           </section>
         )}
         <div className="justify-between flex">
-            <div className="flex justify-start">
-              <a
-                href="http://localhost:3000/bills"
-                className="inline-block mt-5 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
-              >
-                Back to All Bills
-              </a>
-            </div>
-
-            {bill.status === "PAID" && (
-              <div className="justify-end">
-                <Link
-                  href={`/bills/${bill.id}/print`}
-                  target="_blank"
-                  className="inline-block mt-5 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200 transform hover:scale-105"
-                >
-                  View receipt
-                </Link>
-              </div>
-            )}
+          <div className="flex justify-start">
+            <a
+              href="http://localhost:3000/bills"
+              className="inline-block mt-5 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
+            >
+              กลับไปหน้าบิลทั้งหมด
+            </a>
           </div>
 
+          {bill.status === "PAID" && (
+            <div className="justify-end">
+              <Link
+                href={`/bills/${bill.id}/print`}
+                target="_blank"
+                className="inline-block mt-5 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200 transform hover:scale-105"
+              >
+                ดูใบเสร็จ
+              </Link>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
