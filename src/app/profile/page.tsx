@@ -11,7 +11,7 @@ type UserProfile = {
   lastName: string;
   email: string;
   phone: string;
-  birthday: string; // ISO string
+  birthday: string;
   address: string;
   nationalId: string;
   room?: {
@@ -22,8 +22,8 @@ type UserProfile = {
 type FieldErrors = Record<string, string[] | undefined>;
 
 type ApiErrorObject = {
-  fieldErrors?: FieldErrors; // zod.flatten().fieldErrors
-  formErrors?: string[];     // zod.flatten().formErrors
+  fieldErrors?: FieldErrors;
+  formErrors?: string[];
 };
 
 type ApiErrorResponse =
@@ -138,22 +138,18 @@ export default function ProfilePage() {
   const getApiErrorMessage = (data: unknown): string => {
     if (!isApiErrorResponse(data)) return "เกิดข้อผิดพลาด";
 
-    // error เป็น string ตรง ๆ
     if (typeof data.error === "string") return data.error;
 
-    // error เป็น object จาก zod
     if (isApiErrorObject(data.error)) {
       const fe = data.error.fieldErrors ?? {};
       const form = data.error.formErrors ?? [];
 
-      // หยิบ field ที่สนใจก่อน
       const candidates: (string | undefined)[] = [
         fe["oldPassword"]?.[0],
         fe["newPassword"]?.[0],
         fe["confirmPassword"]?.[0],
       ];
 
-      // ถ้าไม่มี ลองดู field อื่น ๆ ตัวแรกที่เจอ
       if (!candidates.some(Boolean)) {
         for (const key of Object.keys(fe)) {
           const arr = fe[key];
@@ -239,7 +235,7 @@ export default function ProfilePage() {
     year: "numeric",
   });
 
-  return (
+    return (
     <div className="flex min-h-screen bg-white">
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
@@ -248,9 +244,9 @@ export default function ProfilePage() {
       <main className="flex-1 p-8 max-w-6xl mx-auto">
         {/* Header */}
         <div>
-          <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">Change Profile</h3>
+          <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">แก้ไขโปรไฟล์</h3>
           <p className="text-gray-500 mb-8">
-            You can manage your personal information and passwords here.
+            คุณสามารถจัดการข้อมูลส่วนตัวและรหัสผ่านได้ที่นี่
           </p>
         </div>
 
@@ -264,7 +260,7 @@ export default function ProfilePage() {
                 : "text-gray-500 hover:text-gray-600"
             } transition`}
           >
-            Personal Information
+            ข้อมูลส่วนตัว
           </button>
           <button
             onClick={() => setActiveTab("password")}
@@ -274,14 +270,13 @@ export default function ProfilePage() {
                 : "text-gray-500 hover:text-gray-600"
             } transition`}
           >
-            Change Password
+            เปลี่ยนรหัสผ่าน
           </button>
         </div>
 
         {/* Personal Info Tab */}
         {activeTab === "personal" && (
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 flex flex-col lg:flex-row gap-6">
-            {/* Left: Avatar */}
             <div className="flex flex-col items-center w-full lg:w-1/3 pb-6 lg:pb-0">
               <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-400 mb-4 flex items-center justify-center bg-gray-400 text-white text-5xl font-bold">
                 {profile
@@ -294,15 +289,15 @@ export default function ProfilePage() {
               <p className="text-gray-500">{profile?.email}</p>
             </div>
 
-            {/* Right: Form */}
+            {/* Right Form */}
             <div className="flex-1 space-y-4 ml-20">
               <h2 className="text-2xl font-semibold text-[#0F3659] mb-4">
-                Personal Information
+                ข้อมูลส่วนตัว
               </h2>
 
               {/* First Name */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">First Name</label>
+                <label className="w-40 text-gray-600 font-medium">ชื่อ</label>
                 {editing ? (
                   <input
                     name="firstName"
@@ -317,7 +312,7 @@ export default function ProfilePage() {
 
               {/* Last Name */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">Last Name</label>
+                <label className="w-40 text-gray-600 font-medium">นามสกุล</label>
                 {editing ? (
                   <input
                     name="lastName"
@@ -332,13 +327,13 @@ export default function ProfilePage() {
 
               {/* Email */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">Email</label>
+                <label className="w-40 text-gray-600 font-medium">อีเมล</label>
                 <span className="flex-1 text-gray-800">{profile.email}</span>
               </div>
 
               {/* Phone */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">Phone Number</label>
+                <label className="w-40 text-gray-600 font-medium">เบอร์โทรศัพท์</label>
                 {editing ? (
                   <input
                     name="phone"
@@ -353,7 +348,7 @@ export default function ProfilePage() {
 
               {/* Birthday */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">Birthdate</label>
+                <label className="w-40 text-gray-600 font-medium">วันเกิด</label>
                 {editing ? (
                   <input
                     name="birthday"
@@ -369,7 +364,7 @@ export default function ProfilePage() {
 
               {/* Address */}
               <div className="flex flex-col md:flex-row md:items-start gap-2">
-                <label className="w-40 text-gray-600 font-medium">Address</label>
+                <label className="w-40 text-gray-600 font-medium">ที่อยู่</label>
                 {editing ? (
                   <textarea
                     name="address"
@@ -384,13 +379,13 @@ export default function ProfilePage() {
 
               {/* National ID */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">National ID</label>
+                <label className="w-40 text-gray-600 font-medium">เลขบัตรประชาชน</label>
                 <span className="flex-1 text-gray-800">{profile.nationalId}</span>
               </div>
 
               {/* Room */}
               <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">Room Number</label>
+                <label className="w-40 text-gray-600 font-medium">ห้องพัก</label>
                 <span className="flex-1 text-gray-800">
                   {profile.room?.roomNumber || "-"}
                 </span>
@@ -404,13 +399,13 @@ export default function ProfilePage() {
                       onClick={handleSave}
                       className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition"
                     >
-                      Save
+                      บันทึก
                     </button>
                     <button
                       onClick={() => setEditing(false)}
                       className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md transition"
                     >
-                      Cancel
+                      ยกเลิก
                     </button>
                   </>
                 ) : (
@@ -418,7 +413,7 @@ export default function ProfilePage() {
                     onClick={() => setEditing(true)}
                     className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-2 rounded-md transition"
                   >
-                    Edit
+                    แก้ไข
                   </button>
                 )}
               </div>
@@ -426,31 +421,30 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Password Tab */}
         {activeTab === "password" && (
           <div className="mt-4 bg-white rounded-xl shadow-md border border-gray-200 p-6">
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-[#0F3659]">Change Password</h3>
-              <p className="text-gray-500 mt-1">Manage your passwords securely here.</p>
+              <h3 className="text-xl font-bold text-[#0F3659]">เปลี่ยนรหัสผ่าน</h3>
+              <p className="text-gray-500 mt-1">จัดการรหัสผ่านของคุณได้ที่นี่</p>
             </div>
             <div className="space-y-4">
               <input
                 type="password"
-                placeholder="Old password"
+                placeholder="รหัสผ่านเดิม"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
                 className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               />
               <input
                 type="password"
-                placeholder="New password (at least 6 characters)"
+                placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               />
               <input
                 type="password"
-                placeholder="Confirm new password"
+                placeholder="ยืนยันรหัสผ่านใหม่"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
@@ -460,7 +454,7 @@ export default function ProfilePage() {
                 disabled={changingPassword}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {changingPassword ? "Saving..." : "Save New Password"}
+                {changingPassword ? "กำลังบันทึก..." : "บันทึกรหัสผ่านใหม่"}
               </button>
             </div>
           </div>
