@@ -14,9 +14,9 @@ interface Profile {
   nationalId: string;
   userId: string;
   createdAt: string;
-  roomNumber: string | null;      // ✅ อาจเป็น null
-  roomStartDate?: string | null;  // ✅ อาจเป็น null
-  assignedAt?: string | null;     // ✅ อาจเป็น null
+  roomNumber: string | null;      
+  roomStartDate?: string | null;  
+  assignedAt?: string | null;     
   status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
 }
 
@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
                 <option value="ALL">All</option>
                 <option value="AVAILABLE">Available</option>
                 <option value="OCCUPIED">Occupied</option>
-                <option value="MAINTENANCE">Maintenance</option>
+=
               </select>
             </div>
           </div>

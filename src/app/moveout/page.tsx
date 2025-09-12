@@ -77,7 +77,7 @@ export default function MoveOutRequestPage() {
     if (!password.trim()) return toast.error("กรุณากรอกรหัสผ่านเพื่อยืนยันตัวตน");
     if (!room?.id) return toast.error("ไม่พบข้อมูลห้องพัก");
     if (!agreePolicy)
-      return toast.error("กรุณายอมรับเงื่อนไขการยื่นคำร้องอย่างน้อย 30 วัน");
+      return toast.error("กรุณายอมรับเงื่อนไขการยื่นคำร้องอย่างน้อย 30 วันล่วงหน้า");
 
     // ✅ ตรวจสอบว่าเป็นเดือนถัดไป
     const selectedDate = new Date(moveOutDate);
@@ -99,7 +99,7 @@ export default function MoveOutRequestPage() {
           reason,
           moveOutDate,
           password,
-          acceptTerms: agreePolicy, // ✅ ส่งค่าไปให้ API
+          acceptTerms: agreePolicy,
         }),
       });
 
@@ -139,9 +139,11 @@ export default function MoveOutRequestPage() {
             {/* Header */}
             <div>
               <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">
-                Move-out Request
+                คำร้องขอย้ายออก
               </h1>
-              <p className="text-gray-500 mb-6">Manage your move here</p>
+              <p className="text-gray-500 mb-6">
+                จัดการคำร้องขอย้ายออกของคุณได้ที่นี่
+              </p>
             </div>
 
             {/* Personal Info Panel */}
@@ -149,29 +151,29 @@ export default function MoveOutRequestPage() {
               <div className="bg-white p-6 rounded-2xl shadow-xl mb-10 border border-gray-100">
                 <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                   <i className="ri-user-line text-2xl text-blue-700"></i>{" "}
-                  Personal Information
+                  ข้อมูลส่วนตัว
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-                    <p className="text-gray-500 text-sm">Name</p>
+                    <p className="text-gray-500 text-sm">ชื่อ–นามสกุล</p>
                     <p className="font-semibold text-gray-900">
                       {userInfo.firstName} {userInfo.lastName}
                     </p>
                   </div>
                   <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-                    <p className="text-gray-500 text-sm">Email</p>
+                    <p className="text-gray-500 text-sm">อีเมล</p>
                     <p className="font-semibold text-gray-900">
                       {userInfo.email}
                     </p>
                   </div>
                   <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-                    <p className="text-gray-500 text-sm">Room Number</p>
+                    <p className="text-gray-500 text-sm">หมายเลขห้อง</p>
                     <p className="font-semibold text-gray-900">
                       {room.roomNumber}
                     </p>
                   </div>
                   <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-                    <p className="text-gray-500 text-sm">Check-in Date</p>
+                    <p className="text-gray-500 text-sm">วันที่เข้าพัก</p>
                     <p className="font-semibold text-gray-900">
                       {new Date(userInfo.roomStartDate).toLocaleDateString(
                         "th-TH",
@@ -190,17 +192,17 @@ export default function MoveOutRequestPage() {
             {/* Move-out Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Reason */}
-              <div className="bg-50 to-white  mb-10 border border-gray-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
+              <div className="mb-10 border border-gray-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
                 <label className=" text-lg font-semibold text-black mb-2 flex items-center gap-2">
                   <i className="ri-file-text-line text-2xl text-blue-500"></i>{" "}
-                  Reasons for moving out
+                  เหตุผลในการย้ายออก
                 </label>
                 <textarea
                   className="w-full border border-gray-200 rounded-xl p-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   rows={4}
-                  placeholder="Please state your reason."
+                  placeholder="โปรดระบุเหตุผลการย้ายออก"
                 />
               </div>
 
@@ -208,8 +210,7 @@ export default function MoveOutRequestPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
                   <label className=" font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <i className="ri-calendar-line text-green-500"></i> Move-out
-                    Date
+                    <i className="ri-calendar-line text-green-500"></i> วันที่ย้ายออก
                   </label>
                   <input
                     type="date"
@@ -222,14 +223,14 @@ export default function MoveOutRequestPage() {
 
                 <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition">
                   <label className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <i className="ri-lock-line text-red-500"></i> Password
+                    <i className="ri-lock-line text-red-500"></i> รหัสผ่านยืนยัน
                   </label>
                   <input
                     type="password"
                     className="w-full border border-gray-200 rounded-xl p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="กรอกรหัสผ่านของคุณ"
                   />
                 </div>
               </div>
@@ -243,12 +244,11 @@ export default function MoveOutRequestPage() {
                   className="mt-1 w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-400"
                 />
                 <p className="text-gray-700 text-sm">
-                  I understand and accept that{" "}
+                  ข้าพเจ้าเข้าใจและยอมรับว่า{" "}
                   <span className="font-semibold underline">
-                    applications must be submitted at least 30 days prior to
-                    move-out
+                    ต้องยื่นคำร้องอย่างน้อย 30 วันล่วงหน้าก่อนย้ายออก
                   </span>{" "}
-                  to request a refund of the security deposit.
+                  เพื่อขอรับเงินประกันคืน
                 </p>
               </div>
 
@@ -262,7 +262,7 @@ export default function MoveOutRequestPage() {
                     : "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 shadow-lg hover:shadow-xl"
                 }`}
               >
-                {loading ? "Submitting..." : "Submit Move-out Request"}
+                {loading ? "กำลังส่ง..." : "ส่งคำร้องขอย้ายออก"}
               </button>
             </form>
           </>

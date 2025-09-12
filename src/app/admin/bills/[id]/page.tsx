@@ -27,7 +27,7 @@ type Bill = {
   status: BillStatus;
   paymentSlipUrl?: string;
   paymentDate?: string;
-  transactionRef?: string;
+  // transactionRef?: string; // ❌ เอาออกแล้ว
   tenant: {
     firstName: string;
     lastName: string;
@@ -92,7 +92,7 @@ export default function AdminBillDetailPage() {
     }
   };
 
-   if (loading)
+  if (loading)
     return (
       <p className="text-center mt-8 text-gray-600 dark:text-gray-300">
         กำลังโหลด...
@@ -105,185 +105,179 @@ export default function AdminBillDetailPage() {
       </p>
     );
 
-    
-
   const waterTotal = bill.waterUnit * bill.waterRate;
   const electricTotal = bill.electricUnit * bill.electricRate;
 
   const statusLabel = {
     UNPAID: "Unpaid",
     PENDING_APPROVAL: "Pending",
-    PAID: " Paid",
+    PAID: "Paid",
   };
 
   return (
-  <div className="bg-white min-h-screen flex">
-    {/* Sidebar */}
-    <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
-      <Sidebar role="admin" />
-    </aside>
+    <div className="bg-white min-h-screen flex">
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+        <Sidebar role="admin" />
+      </aside>
 
-    {/* Content */}
-    <main className="flex-1 p-8 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-black dark:text-gray-900 mb-2">
-        Bills & Payments
-      </h1>
-      <p className="text-gray-500 dark:text-gray-400 mb-8">
-        Manage your bills and rent
-      </p>
+      {/* Content */}
+      <main className="flex-1 p-8 max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold text-black dark:text-gray-900 mb-2">
+          Bills & Payments
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">
+          Manage your bills and rent
+        </p>
 
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold text-blue-950 mb-3">
-          Rent bill{" "}
-          {new Date(bill.billingMonth).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}
-        </h2>
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold text-blue-950 mb-3">
+            Rent bill{" "}
+            {new Date(bill.billingMonth).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
+          </h2>
 
-        <div className="rounded-lg shadow p-4 flex justify-between items-center cursor-pointer border-gray-200 dark:border-gray-700">
-          <span className="text-gray-600 font-medium">Bill Status</span>
-          <span
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold text-sm ${
-              bill.status === "PAID"
-                ? "bg-green-100 text-green-700"
-                : bill.status === "PENDING_APPROVAL"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {statusLabel[bill.status]}
-            {bill.status === "PAID" && (
-              <i className="ri-checkbox-circle-fill text-green-600"></i>
-            )}
-          </span>
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-xl font-semibold text-blue-950 mb-4">
-          Bill item
-        </h2>
-
-        <div className="rounded-lg shadow border border-gray-200">
-          <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-            <span className="text-gray-700">Room Rent</span>
-            <span className="text-right text-gray-900">
-              {bill.rentAmount.toLocaleString()} Baht
-            </span>
-          </div>
-
-          {/*  Water Meter */}
-          <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-            <span className="text-gray-700">
-              Water (Prev {bill.waterPrev} → Curr {bill.waterCurr})
-            </span>
-            <span className="text-right text-gray-900">
-              {bill.waterUnit} units × {bill.waterRate} ={" "}
-              {waterTotal.toLocaleString()} Baht
-            </span>
-          </div>
-
-          {/*  Electric Meter */}
-          <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-            <span className="text-gray-700">
-              Electric (Prev {bill.electricPrev} → Curr {bill.electricCurr})
-            </span>
-            <span className="text-right text-gray-900">
-              {bill.electricUnit} units × {bill.electricRate} ={" "}
-              {electricTotal.toLocaleString()} Baht
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 px-6 py-4 font-semibold text-orange-600">
-            <span>Total</span>
-            <span className="text-right">
-              {bill.totalAmount.toLocaleString()} Baht
-            </span>
-          </div>
-        </div>
-
-        {bill.status === "UNPAID" && (
-          <div className="mt-6">
-            <a
-              href="http://localhost:3000/admin/bills"
-              className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
+          <div className="rounded-lg shadow p-4 flex justify-between items-center cursor-pointer border-gray-200 dark:border-gray-700">
+            <span className="text-gray-600 font-medium">Bill Status</span>
+            <span
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold text-sm ${
+                bill.status === "PAID"
+                  ? "bg-green-100 text-green-700"
+                  : bill.status === "PENDING_APPROVAL"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-red-100 text-red-700"
+              }`}
             >
-              Back to All Bills
-            </a>
+              {statusLabel[bill.status]}
+              {bill.status === "PAID" && (
+                <i className="ri-checkbox-circle-fill text-green-600"></i>
+              )}
+            </span>
           </div>
-        )}
-      </section>
+        </section>
 
-      {bill.status === "PENDING_APPROVAL" && (
-        <div className="mt-6">
-          <button
-            onClick={handleApprovePayment}
-            disabled={updating}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            {updating ? "Approving..." : "Payment approval"}
-          </button>
-        </div>
-      )}
-
-      {bill.paymentSlipUrl && (
-        <section className="mt-5 pt-6">
-          <h2 className="text-lg font-semibold mb-4 text-blue-950">
-            Payment information
+        <section>
+          <h2 className="text-xl font-semibold text-blue-950 mb-4">
+            Bill item
           </h2>
 
           <div className="rounded-lg shadow border border-gray-200">
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-              <span className="font-medium text-gray-700">Transaction Ref</span>
+              <span className="text-gray-700">Room Rent</span>
               <span className="text-right text-gray-900">
-                {bill.transactionRef}
+                {bill.rentAmount.toLocaleString()} Baht
               </span>
             </div>
 
+            {/*  Water Meter */}
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-              <span className="font-medium text-gray-700">Date</span>
+              <span className="text-gray-700">
+                Water (Prev {bill.waterPrev} → Curr {bill.waterCurr})
+              </span>
               <span className="text-right text-gray-900">
-                {bill.paymentDate
-                  ? new Date(bill.paymentDate).toLocaleString("th-TH")
-                  : "-"}
+                {bill.waterUnit} units × {bill.waterRate} ={" "}
+                {waterTotal.toLocaleString()} Baht
               </span>
             </div>
 
+            {/*  Electric Meter */}
             <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
-              <p className="font-medium text-gray-700 mb-2">Payment Slip</p>
-              <Image
-                src={bill.paymentSlipUrl}
-                alt="Payment Slip"
-                width={200}
-                height={120}
-                className="rounded border justify-self-end"
-                unoptimized
-              />
+              <span className="text-gray-700">
+                Electric (Prev {bill.electricPrev} → Curr {bill.electricCurr})
+              </span>
+              <span className="text-right text-gray-900">
+                {bill.electricUnit} units × {bill.electricRate} ={" "}
+                {electricTotal.toLocaleString()} Baht
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 px-6 py-4 font-semibold text-orange-600">
+              <span>Total</span>
+              <span className="text-right">
+                {bill.totalAmount.toLocaleString()} Baht
+              </span>
             </div>
           </div>
 
-          <div className="mt-4 flex justify-between flex-wrap gap-4">
-            <a
-              href="http://localhost:3000/admin/bills"
-              className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
-            >
-              Back to All Bills
-            </a>
-
-            {bill.status === "PAID" && (
+          {bill.status === "UNPAID" && (
+            <div className="mt-6">
               <a
-                href={`/bills/${bill.id}/print`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 transform hover:scale-105"
+                href="http://localhost:3000/admin/bills"
+                className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
               >
-                View Receipt
+                Back to All Bills
               </a>
-            )}
-          </div>
+            </div>
+          )}
         </section>
-      )}
-    </main>
-  </div>
-);}
+
+        {bill.status === "PENDING_APPROVAL" && (
+          <div className="mt-6">
+            <button
+              onClick={handleApprovePayment}
+              disabled={updating}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {updating ? "Approving..." : "Payment approval"}
+            </button>
+          </div>
+        )}
+
+        {bill.paymentSlipUrl && (
+          <section className="mt-5 pt-6">
+            <h2 className="text-lg font-semibold mb-4 text-blue-950">
+              Payment information
+            </h2>
+
+            <div className="rounded-lg shadow border border-gray-200">
+              {/* ❌ เอา Transaction Ref ออกแล้ว */}
+
+              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <span className="font-medium text-gray-700">Date</span>
+                <span className="text-right text-gray-900">
+                  {bill.paymentDate
+                    ? new Date(bill.paymentDate).toLocaleString("th-TH")
+                    : "-"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 px-6 py-4 border-b border-gray-200">
+                <p className="font-medium text-gray-700 mb-2">Payment Slip</p>
+                <Image
+                  src={bill.paymentSlipUrl}
+                  alt="Payment Slip"
+                  width={200}
+                  height={120}
+                  className="rounded border justify-self-end"
+                  unoptimized
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-between flex-wrap gap-4">
+              <a
+                href="http://localhost:3000/admin/bills"
+                className="inline-block px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
+              >
+                Back to All Bills
+              </a>
+
+              {bill.status === "PAID" && (
+                <a
+                  href={`/bills/${bill.id}/print`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 transform hover:scale-105"
+                >
+                  View Receipt
+                </a>
+              )}
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}

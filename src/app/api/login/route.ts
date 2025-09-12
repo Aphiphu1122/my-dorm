@@ -36,7 +36,6 @@ export async function POST(req: Request) {
       { status: 200 }
     );
 
-    // ✅ ใช้ user.id (primary key) แทน user.userId
     response.cookies.set("userId", user.id, {
       path: "/",
       httpOnly: true,

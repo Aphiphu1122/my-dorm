@@ -8,7 +8,6 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  // ✅ ใช้ tenant: { isNot: null } แทน tenantId
   const rooms = await db.room.findMany({
     where: {
       status: "OCCUPIED",

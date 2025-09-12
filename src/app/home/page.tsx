@@ -42,7 +42,7 @@ export default function HomePage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // ===== Banner states =====
+  // Banner states
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHover, setIsHover] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -52,7 +52,6 @@ export default function HomePage() {
   const goNext = () =>
     setCurrentIndex((i) => (i === bannerImages.length - 1 ? 0 : i + 1));
 
-  // Auto slide (หยุดเมื่อ hover)
   useEffect(() => {
     if (isHover || bannerImages.length <= 1) return;
     const id = setInterval(goNext, 4000);
@@ -62,7 +61,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       const res = await fetch("/api/profile/me");
-      if (!res.ok) return toast.error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
+      if (!res.ok) return toast.error("ไม่สามารถโหลดข้อมูลผู้ใช้ได้");
       const data = await res.json();
 
       setUser({
@@ -73,7 +72,7 @@ export default function HomePage() {
 
     const fetchBills = async () => {
       const res = await fetch("/api/bills");
-      if (!res.ok) return toast.error("โหลดข้อมูลบิลไม่สำเร็จ");
+      if (!res.ok) return toast.error("ไม่สามารถโหลดข้อมูลบิลได้");
       const data = await res.json();
       setBills(Array.isArray(data.bills) ? data.bills : []);
     };
@@ -127,31 +126,28 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-6 px-4 md:px-6">
           <div>
             <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">
-              Hello , {user?.firstName} {user?.lastName}
+              สวัสดีคุณ {user?.firstName} {user?.lastName}
             </h1>
-            <p className="text-gray-600">Welcome to the dormitory website</p>
+            <p className="text-gray-600">ยินดีต้อนรับสู่ระบบจัดการหอพัก</p>
           </div>
-              <NotificationBell
-                notifications={notifications}
-                onClearNotifications={handleClearNotifications}
-                onMarkRead={async (id) => {
-                  try {
-                    // ✅ เรียก API PATCH ไป DB
-                    await fetch(`/api/notifications/${id}`, { method: "PATCH" });
+          <NotificationBell
+            notifications={notifications}
+            onClearNotifications={handleClearNotifications}
+            onMarkRead={async (id) => {
+              try {
+                await fetch(`/api/notifications/${id}`, { method: "PATCH" });
+                setNotifications((prev) =>
+                  prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+                );
+              } catch (err) {
+                console.error("Failed to mark notification as read", err);
+                toast.error("ไม่สามารถอัปเดตการแจ้งเตือนได้");
+              }
+            }}
+          />
+        </div>
 
-                    // ✅ อัปเดต state ฝั่ง client
-                    setNotifications((prev) =>
-                      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-                    );
-                  } catch (err) {
-                    console.error("Failed to mark notification as read", err);
-                    toast.error("ไม่สามารถอัปเดตการแจ้งเตือนได้");
-                  }
-                }}
-              />
-               </div>
-
-        {/* ===== Banner (อัปเกรด) ===== */}
+        {/* Banner */}
         <div
           className="px-4 md:px-6 mb-8"
           onMouseEnter={() => setIsHover(true)}
@@ -170,12 +166,11 @@ export default function HomePage() {
             }}
             aria-roledescription="carousel"
           >
-            {/* Slides */}
             {bannerImages.map((src, index) => (
               <Image
                 key={src + index}
                 src={src}
-                alt={`Banner ${index + 1}`}
+                alt={`แบนเนอร์ ${index + 1}`}
                 fill
                 className={`absolute inset-0 object-cover transition-opacity duration-700 ${
                   currentIndex === index ? "opacity-100" : "opacity-0"
@@ -186,15 +181,11 @@ export default function HomePage() {
               />
             ))}
 
-            {/* Gradient ล่างเพื่อความชัด */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
-
-            {/* Controls */}
             {bannerImages.length > 1 && (
               <>
                 <button
                   type="button"
-                  aria-label="Previous slide"
+                  aria-label="สไลด์ก่อนหน้า"
                   onClick={goPrev}
                   className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white
                              backdrop-blur px-3 py-2 shadow-md"
@@ -203,7 +194,7 @@ export default function HomePage() {
                 </button>
                 <button
                   type="button"
-                  aria-label="Next slide"
+                  aria-label="สไลด์ถัดไป"
                   onClick={goNext}
                   className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white
                              backdrop-blur px-3 py-2 shadow-md"
@@ -213,14 +204,13 @@ export default function HomePage() {
               </>
             )}
 
-            {/* Dots */}
             {bannerImages.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
                 {bannerImages.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentIndex(i)}
-                    aria-label={`Go to slide ${i + 1}`}
+                    aria-label={`ไปสไลด์ที่ ${i + 1}`}
                     className={`h-2.5 w-2.5 rounded-full border transition ${
                       currentIndex === i
                         ? "bg-white border-white"
@@ -235,34 +225,34 @@ export default function HomePage() {
 
         {/* Tenant Info */}
         <div className="mb-8 px-4 md:px-6">
-          <h2 className="text-xl font-semibold mb-2">Tenant Info</h2>
+          <h2 className="text-xl font-semibold mb-2">ข้อมูลผู้เช่า</h2>
           <div className="flex items-center gap-2 text-lg">
             <span>🏠</span>
-            <span className="font-medium text-[#0F3659]">Rental Agreement</span>
-            <span>- Room {user?.room?.roomNumber ?? "-"}</span>
+            <span className="font-medium text-[#0F3659]">เลขห้องพัก:</span>
+            <span>{user?.room?.roomNumber ?? "-"}</span>
           </div>
           <div className="flex items-center gap-2 mt-2 text-lg">
             <span>💲</span>
             <span className="font-medium text-[#0F3659]">
-              Rent Amount : {user?.rentAmount?.toLocaleString()} Bath
+              ค่าเช่ารายเดือน: {user?.rentAmount?.toLocaleString()} บาท
             </span>
             <span className="text-sm text-gray-500">
-              Due on the 5th of each month
+              กำหนดชำระภายในวันที่ 5 ของทุกเดือน
             </span>
           </div>
         </div>
 
         {/* Payment History */}
         <div className="px-4 md:px-6">
-          <h2 className="text-xl font-semibold mb-3">Payment History</h2>
+          <h2 className="text-xl font-semibold mb-3">ประวัติการชำระเงิน</h2>
           <div className="overflow-x-auto border border-gray-200 rounded-md">
             <table className="min-w-full table-auto text-sm">
               <thead>
                 <tr className="bg-gray-100 text-gray-600 text-left">
-                  <th className="p-3">Date</th>
-                  <th className="p-3">Amount</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Actions</th>
+                  <th className="p-3">เดือน</th>
+                  <th className="p-3">จำนวนเงิน</th>
+                  <th className="p-3">สถานะ</th>
+                  <th className="p-3">การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,23 +268,23 @@ export default function HomePage() {
                       })}
                     </td>
                     <td className="p-3">
-                      {bill.totalAmount.toLocaleString()} Bath
+                      {bill.totalAmount.toLocaleString()} บาท
                     </td>
                     <td className="p-3">
                       {bill.status === "PAID" ? (
                         <span className="inline-flex bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs items-center gap-1">
                           <i className="ri-checkbox-circle-fill text-green-600"></i>{" "}
-                          Paid
+                          ชำระแล้ว
                         </span>
                       ) : bill.status === "PENDING_APPROVAL" ? (
                         <span className="inline-flex bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs items-center gap-1">
                           <i className="ri-indeterminate-circle-fill text-yellow-600"></i>{" "}
-                          Pending
+                          รอการอนุมัติ
                         </span>
                       ) : (
                         <span className="inline-flex bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs items-center gap-1">
                           <i className="ri-close-circle-fill text-red-600"></i>{" "}
-                          Unpaid
+                          ยังไม่ชำระ
                         </span>
                       )}
                     </td>
@@ -303,7 +293,7 @@ export default function HomePage() {
                         href={`/bills/${bill.id}`}
                         className="text-blue-600 underline text-sm hover:text-blue-800"
                       >
-                        See details
+                        ดูรายละเอียด
                       </a>
                     </td>
                   </tr>
@@ -311,7 +301,7 @@ export default function HomePage() {
                 {bills.length === 0 && (
                   <tr>
                     <td className="p-3 text-gray-500 italic" colSpan={4}>
-                      No payment history found.
+                      ไม่พบประวัติการชำระเงิน
                     </td>
                   </tr>
                 )}
@@ -321,7 +311,5 @@ export default function HomePage() {
         </div>
       </main>
     </div>
-    
-    
   );
 }

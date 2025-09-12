@@ -34,7 +34,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         status: true,
         paymentSlipUrl: true,
         paymentDate: true,
-        transactionRef: true,
         tenant: { select: { firstName: true, lastName: true } },
         room: { select: { roomNumber: true } },
       },

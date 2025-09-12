@@ -2,7 +2,7 @@
  
 export default function ContactPage() {
   return (
-    <div className="space-y-6 text-center px-4 max-w-xl mx-auto">
+    <div className="space-y-2 text-center max-w-xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800  border-b pb-3 text-left mt-2">Contact</h2>
       <p className="text-sm text-gray-700 leading-relaxed">
         If you have any questions or suggestions, feel free to reach out to us through the following channels.
@@ -25,8 +25,7 @@ export default function ContactPage() {
           <span>dormitory@example.com</span>
         </a>
       </div>
- 
-      {/* ที่อยู่ ไม่มีกรอบ */}
+
       <div className="flex items-center space-x-2 mt-4 max-w-xl mx-auto text-gray-800 text-sm justify-center">
         <i className="ri-map-pin-line text-blue-600 text-lg"></i>
         <span>University of Phayao, Mae Ka Subdistrict, Mueang District, Phayao Province 56000</span>

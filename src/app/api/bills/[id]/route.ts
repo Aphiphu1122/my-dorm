@@ -4,11 +4,9 @@ import { getUserIdFromCookie } from "@/lib/auth";
 import { z } from "zod";
 import { BillStatus } from "@prisma/client";
 
-//  PATCH: schema สำหรับแนบสลิป
 const patchSchema = z.object({
   paymentSlipUrl: z.string().url().optional(),
   paymentDate: z.string().datetime().optional(),
-  transactionRef: z.string().optional(),
 });
 
 export async function GET(
@@ -73,16 +71,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const { paymentSlipUrl, paymentDate, transactionRef } = parsed.data;
-    console.log("🔎 PATCH received:", { paymentSlipUrl, paymentDate, transactionRef });
-
+    const { paymentSlipUrl, paymentDate } = parsed.data;
+    console.log("🔎 PATCH received:", { paymentSlipUrl, paymentDate });
 
     const updated = await db.bill.update({
       where: { id: billId },
       data: {
         paymentSlipUrl: paymentSlipUrl ?? current.paymentSlipUrl,
         paymentDate: paymentDate ? new Date(paymentDate) : current.paymentDate,
-        transactionRef: transactionRef ?? current.transactionRef,
         status: BillStatus.PENDING_APPROVAL,
       },
     });

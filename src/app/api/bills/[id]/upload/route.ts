@@ -15,23 +15,21 @@ export const POST = async (
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const transactionRef = formData.get('transactionRef')?.toString();
+    // ❌ เอา transactionRef ออก
+    // const transactionRef = formData.get('transactionRef')?.toString();
 
-    if (!file || !transactionRef) {
-      return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: 'กรุณาอัปโหลดไฟล์' }, { status: 400 });
     }
 
-    // ✅ อัปโหลดรูป
     const imageUrl = await uploadImageToStorage(file, `bill-${billId}`);
 
-    // ✅ อัปเดตสถานะเป็น PENDING_APPROVAL
     const updated = await db.bill.update({
       where: { id: billId },
       data: {
         paymentSlipUrl: imageUrl,
         paymentDate: new Date(),
-        transactionRef,
-        status: "PENDING_APPROVAL", // ✅ เพิ่มตรงนี้
+        status: "PENDING_APPROVAL",
       },
     });
 

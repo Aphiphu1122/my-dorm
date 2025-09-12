@@ -22,7 +22,6 @@ type Bill = {
   status: BillStatus;
   paymentSlipUrl?: string;
   paymentDate?: string;
-  transactionRef?: string;
 };
 
 export default function BillDetailPage() {
@@ -32,7 +31,6 @@ export default function BillDetailPage() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [slipFile, setSlipFile] = useState<File | null>(null);
-  const [transactionRef, setTransactionRef] = useState("");
   const now = new Date();
   const defaultDateTime = now.toISOString().slice(0, 16);
 
@@ -63,12 +61,10 @@ export default function BillDetailPage() {
   const handleUpload = async () => {
     if (!bill) return;
     if (!slipFile) return toast.error("Please select a slip first.");
-    if (!transactionRef) return toast.error("Please enter the transfer reference number.");
 
     const formData = new FormData();
     formData.append("file", slipFile);
     formData.append("paymentDate", paymentDate);
-    formData.append("transactionRef", transactionRef);
 
     try {
       const res = await fetch(`/api/bills/${bill.id}/upload`, {
@@ -204,16 +200,6 @@ export default function BillDetailPage() {
  
         {bill.status === "UNPAID" && (
           <section className="bg-white shadow-md rounded-lg p-3 mt-8">
-            <label className="block font-medium mb-2 text-blue-800">
-              Transaction Ref
-            </label>
-            <input
-              type="text"
-              value={transactionRef}
-              onChange={(e) => setTransactionRef(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. 0123456789"
-            />
 
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Payment Date & Time
