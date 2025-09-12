@@ -70,20 +70,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const { id } = ParamsSchema.parse(params);
-    const { status } = PatchBodySchema.parse(await req.json()); // APPROVED | REJECTED
+    const { status } = PatchBodySchema.parse(await req.json());
 
-    // โหลดคำร้อง + ข้อมูลที่ต้องใช้ตรวจสอบ
     const request = await db.moveOutRequest.findUnique({
       where: { id },
       select: {
         id: true,
-        status: true, // PENDING_APPROVAL | APPROVED | REJECTED
-        userId: true, // profile.id
+        status: true,
+        userId: true, 
         roomId: true,
         room: { select: { id: true, status: true } },
         user: {
           select: {
-            id: true, // profile.id
+            id: true, 
             bills: { where: { status: "UNPAID" }, select: { id: true } },
           },
         },
@@ -102,14 +101,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       );
     }
 
-    // (ตัวเลือกตามนโยบาย) ถ้ามีบิลค้างชำระ ห้ามอนุมัติ
-    // ปิดบรรทัดนี้ถ้าไม่ต้องการบล็อก
-    if (status === "APPROVED" && request.user.bills.length > 0) {
-      return NextResponse.json({ error: "User still has unpaid bills" }, { status: 422 });
-    }
+      if (status === "APPROVED" && request.user.bills.length > 0) {
+    return NextResponse.json(
+      { error: "ไม่สามารถอนุมัติได้ เนื่องจากผู้ใช้งานยังมีบิลค้างชำระ" },
+      { status: 422 }
+    );
+  }
 
      if (status === "APPROVED") {
-      // ดึง profile ของผู้ใช้มาเช็ก roomId
       const profile = await db.profile.findUnique({
         where: { id: request.userId },
         select: { roomId: true },
@@ -125,11 +124,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       // อัปเดตสถานะคำร้อง
       const updatedRequest = await tx.moveOutRequest.update({
         where: { id: request.id },
-        data: { status }, // APPROVED | REJECTED
+        data: { status },
       });
 
       if (status === "APPROVED") {
-        // ปล่อยห้องว่างและเลิกผูกผู้เช่า
         await tx.room.update({
           where: { id: request.roomId },
           data: { status: "AVAILABLE" },
@@ -144,7 +142,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         });
               }
 
-      // แจ้งเตือนผู้ใช้ (profile.id)
       const message =
         status === "APPROVED"
           ? "📢 คำร้องย้ายออกของคุณได้รับการอนุมัติ ✅"

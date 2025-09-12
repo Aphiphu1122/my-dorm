@@ -26,28 +26,28 @@ type BankAccount = {
 const bankAccounts: BankAccount[] = [
   {
     id: 1,
-    bankName: "Kasikorn Bank",
+    bankName: "ธนาคารกสิกรไทย",
     accountNumber: "123456789123456",
     accountHolder: "John Doe",
-    branch: "University of Phayao",
+    branch: "มหาวิทยาลัยพะเยา",
     bankLogoUrl:
       "https://www.matichon.co.th/wp-content/uploads/2023/02/%E0%B8%81%E0%B8%AA%E0%B8%B4%E0%B8%81%E0%B8%A3%E0%B9%84%E0%B8%97%E0%B8%A2.jpg",
   },
   {
     id: 2,
-    bankName: "Krungthai Bank",
+    bankName: "ธนาคารกรุงไทย",
     accountNumber: "123456789123456",
     accountHolder: "John Doe",
-    branch: "University of Phayao",
+    branch: "มหาวิทยาลัยพะเยา",
     bankLogoUrl:
       "https://fortunetown.co.th/wp-content/uploads/2021/09/Logo-BANK-04-2048x2048.jpg",
   },
   {
     id: 3,
-    bankName: "Government Savings Bank",
+    bankName: "ธนาคารออมสิน",
     accountNumber: "123456789123456",
     accountHolder: "John Doe",
-    branch: "University of Phayao",
+    branch: "มหาวิทยาลัยพะเยา",
     bankLogoUrl: "https://saverasia.com/images/site/GSB.png",
   },
 ];
@@ -72,20 +72,20 @@ export default function BillsPage() {
       case "PAID":
         return (
           <span className="items-center gap-1 text-green-600 bg-green-100 inline-flex px-2 rounded-full text-xs font-medium">
-            <i className="ri-checkbox-circle-fill text-lg"></i> Paid
+            <i className="ri-checkbox-circle-fill text-lg"></i> ชำระแล้ว
           </span>
         );
       case "PENDING_APPROVAL":
         return (
           <span className="items-center gap-1 text-yellow-500 bg-amber-100 inline-flex px-2 rounded-full text-xs font-medium">
-            <i className="ri-indeterminate-circle-fill text-lg"></i> Pending
+            <i className="ri-indeterminate-circle-fill text-lg"></i> รอการอนุมัติ
           </span>
         );
       case "UNPAID":
       default:
         return (
           <span className="items-center gap-1 text-red-600 bg-red-100 font-medium inline-flex px-2 rounded-full text-xs">
-            <i className="ri-close-circle-fill text-lg"></i> Unpaid
+            <i className="ri-close-circle-fill text-lg"></i> ยังไม่ชำระ
           </span>
         );
     }
@@ -94,9 +94,9 @@ export default function BillsPage() {
   const handleCopy = async (accountNumber: string) => {
     try {
       await navigator.clipboard.writeText(accountNumber);
-      alert("Copied account number: " + accountNumber);
+      alert("คัดลอกเลขบัญชีเรียบร้อยแล้ว: " + accountNumber);
     } catch (err) {
-      alert("Failed to copy account number. Please try manually.");
+      alert("ไม่สามารถคัดลอกเลขบัญชีได้ กรุณาคัดลอกด้วยตนเอง");
       console.error("Clipboard copy failed:", err);
     }
   };
@@ -110,8 +110,10 @@ export default function BillsPage() {
 
       {/* Main Content */}
       <main className="flex-1 p-8 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">Billing & Payments</h1>
-        <p className="text-gray-500 mb-6">Manage your bills and rent</p>
+        <h1 className="text-3xl font-bold mb-1 text-[#0F3659]">
+          ระบบบิลและการชำระเงิน
+        </h1>
+        <p className="text-gray-500 mb-6">จัดการบิลและค่าเช่าของคุณได้ที่นี่</p>
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-6">
@@ -123,7 +125,7 @@ export default function BillsPage() {
                 : "text-gray-500 hover:text-gray-600"
             } transition`}
           >
-            Bills
+            บิล
           </button>
           <button
             onClick={() => setActiveTab("payments")}
@@ -133,7 +135,7 @@ export default function BillsPage() {
                 : "text-gray-500 hover:text-gray-600"
             } transition`}
           >
-            Payments
+            ช่องทางการชำระเงิน
           </button>
         </div>
 
@@ -141,9 +143,9 @@ export default function BillsPage() {
         {activeTab === "bills" && (
           <>
             {loading ? (
-              <p className="text-center text-gray-500">Loading...</p>
+              <p className="text-center text-gray-500">กำลังโหลด...</p>
             ) : bills.length === 0 ? (
-              <p className="text-center text-gray-500">No bills found.</p>
+              <p className="text-center text-gray-500">ไม่พบบิล</p>
             ) : (
               <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                 {bills.map((bill, idx) => (
@@ -155,8 +157,8 @@ export default function BillsPage() {
                     hover:bg-gray-200 hover:scale-102 transition-transform duration-200`}
                   >
                     <span className="text-gray-900 font-medium">
-                      Rent bill{" "}
-                      {new Date(bill.billingMonth).toLocaleDateString("en-GB", {
+                      บิลค่าเช่า{" "}
+                      {new Date(bill.billingMonth).toLocaleDateString("th-TH", {
                         month: "long",
                         year: "numeric",
                       })}
@@ -183,48 +185,48 @@ export default function BillsPage() {
         )}
 
         {activeTab === "payments" && (
-  <div className="divide-y divide-gray-200">
-    {bankAccounts.map((account, index) => (
-      <div
-        key={account.id}
-        className="flex flex-wrap md:flex-nowrap items-center justify-between py-4 gap-4
-          transform transition-transform duration-200 ease-in-out
-          hover:scale-105 hover:shadow-lg rounded-md"
-      >
-        {/* รูปภาพ */}
-        <div className="flex items-center space-x-4 min-w-0 flex-1">
-          <Image
-            src={`/payment${index + 1}.png`} // => payment1.png, payment2.png, payment3.png
-            alt={account.bankName}
-            width={80}
-            height={80}
-            className="w-20 h-20 object-cover rounded-md"
-          />
-          <div className="min-w-0">
-            <div className="font-semibold break-all text-black">
-              {account.accountNumber}
-            </div>
-            <div className="text-sm text-gray-600">
-              Name: {account.accountHolder}
-            </div>
-            <div className="text-sm text-gray-400">
-              {account.bankName}, {account.branch}
-            </div>
-          </div>
-        </div>
+          <div className="divide-y divide-gray-200">
+            {bankAccounts.map((account, index) => (
+              <div
+                key={account.id}
+                className="flex flex-wrap md:flex-nowrap items-center justify-between py-4 gap-4
+                  transform transition-transform duration-200 ease-in-out
+                  hover:scale-105 hover:shadow-lg rounded-md"
+              >
+                {/* รูปภาพธนาคาร */}
+                <div className="flex items-center space-x-4 min-w-0 flex-1">
+                  <Image
+                    src={`/payment${index + 1}.png`} // => payment1.png, payment2.png, payment3.png
+                    alt={account.bankName}
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 object-cover rounded-md"
+                  />
+                  <div className="min-w-0">
+                    <div className="font-semibold break-all text-black">
+                      {account.accountNumber}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      ชื่อบัญชี: {account.accountHolder}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {account.bankName}, {account.branch}
+                    </div>
+                  </div>
+                </div>
 
-        <div className="flex-shrink-0">
-          <button
-            onClick={() => handleCopy(account.accountNumber)}
-            className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition"
-          >
-            Copy account number
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
+                <div className="flex-shrink-0">
+                  <button
+                    onClick={() => handleCopy(account.accountNumber)}
+                    className="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition"
+                  >
+                    คัดลอกเลขบัญชี
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
