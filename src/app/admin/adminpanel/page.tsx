@@ -155,13 +155,13 @@ export default function AdminDashboardPage() {
           <div className="flex gap-2 w-full sm:w-auto">
             <input
               type="text"
-              className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-[#0F3659]"
+              className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Room number"
               value={newRoomNumber}
               onChange={(e) => setNewRoomNumber(e.target.value)}
             />
             <button
-              className="bg-[#0F3659] text-white px-6 py-2 rounded-md hover:scale-105 transition duration-200"
+              className="bg-blue-500 text-white px-6 py-2 rounded-md hover:scale-105 transition duration-200"
               onClick={handleAddRoom}
             >
               + Add Room
@@ -236,7 +236,7 @@ export default function AdminDashboardPage() {
         ) : (
           <div className="overflow-x-auto bg-gray-100 rounded-lg shadow-lg mx-4 md:mx-6">
             <table className="min-w-full table-auto text-sm text-left">
-              <thead className="border border-gray-200 bg-white text-gray-600">
+              <thead className="border border-gray-200 bg-gray-100 text-gray-600">
                 <tr>
                   <th className="px-4 py-3">First Name</th>
                   <th className="px-4 py-3">Last Name</th>

@@ -4,10 +4,15 @@ export default function AboutUsPage() {
   return (
     <div className="px-6 py-12 ">
       <div className="max-w-4xl mx-auto text-center">
+<<<<<<< HEAD
         <h2 className="text-2xl font-bold text-gray-800 border-b pb-3 text-left">
           เกี่ยวกับเรา
         </h2>
 
+=======
+        <h2 className="text-2xl font-bold text-gray-800 border-b pb-3 text-left ">About Us</h2>
+        
+>>>>>>> c5790935e04736424ec969e76b67782a6ff09551
         {/* คำโปรย */}
         <p className="text-lg text-gray-700 leading-relaxed mb-6 mt-4 text-left">
           <span className="font-semibold text-blue-700 mr-2">Dorm</span>
@@ -16,12 +21,16 @@ export default function AboutUsPage() {
           ผ่านระบบที่ทันสมัย ปลอดภัย และใช้งานได้ง่าย
         </p>
 
-        {/* Mission & Vision */}
+       {/* Mission & Vision */}
         <div className="grid md:grid-cols-2 gap-8 text-left mt-8">
           <div className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition-transform duration-300">
             <h4 className="text-xl font-semibold mb-3 text-gray-800 flex items-center">
               <i className="ri-shield-check-line text-green-600 mr-2"></i>
+<<<<<<< HEAD
               พันธกิจของเรา
+=======
+              Our Mission
+>>>>>>> c5790935e04736424ec969e76b67782a6ff09551
             </h4>
             <p className="text-gray-600">
               มุ่งพัฒนาการบริหารจัดการหอพักให้มีความโปร่งใส รวดเร็ว และมีประสิทธิภาพ 
@@ -33,7 +42,11 @@ export default function AboutUsPage() {
           <div className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition-transform duration-300">
             <h4 className="text-xl font-semibold mb-3 text-gray-800 flex items-center">
               <i className="ri-shield-check-line text-green-600 mr-2"></i>
+<<<<<<< HEAD
               วิสัยทัศน์ของเรา
+=======
+              Our Vision 
+>>>>>>> c5790935e04736424ec969e76b67782a6ff09551
             </h4>
             <p className="text-gray-600">
               มุ่งสู่อนาคตที่ทุกหอพัก ไม่ว่าจะมีขนาดเล็กหรือใหญ่ 
