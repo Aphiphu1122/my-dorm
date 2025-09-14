@@ -10,8 +10,7 @@ type Role = "admin" | "user";
 const roleLinks: Record<Role, { href: string; label: string; icon: string }[]> = {
   admin: [
     { href: "/admin/dashboard", label: "แดชบอร์ด", icon: "ri-pie-chart-line" },
-    { href: "/admin/tenants", label: "จัดการผู้เช่าNEW", icon: "ri-team-line" },
-    { href: "/admin/users", label: "จัดการผู้เช่า", icon: "ri-team-line" },
+    { href: "/admin/tenants", label: "จัดการผู้เช่า", icon: "ri-team-line" },
     { href: "/admin/rooms", label: "จัดการห้องพัก", icon: "ri-home-9-line" },
     { href: "/admin/bills", label: "จัดการบิล", icon: "ri-refund-2-line" },
     { href: "/admin/maintenance", label: "คำขอแจ้งซ่อม", icon: "ri-tools-line" },
@@ -19,9 +18,9 @@ const roleLinks: Record<Role, { href: string; label: string; icon: string }[]> =
   ],
   user: [
     { href: "/home", label: "หน้าหลัก", icon: "ri-home-4-line" },
+    { href: "/profile", label: "โปรไฟล์", icon: "ri-user-settings-line" },
     { href: "/bills", label: "บิลและการชำระเงิน", icon: "ri-refund-2-line" },
     { href: "/maintenance", label: "แจ้งซ่อม", icon: "ri-tools-line" },
-    { href: "/profile", label: "แก้ไขโปรไฟล์", icon: "ri-user-settings-line" },
     { href: "/rules", label: "กฎระเบียบและสัญญา", icon: "ri-file-text-line" },
     { href: "/moveout", label: "แจ้งย้ายออก", icon: "ri-door-open-line" },
   ],

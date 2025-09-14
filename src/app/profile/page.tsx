@@ -1,46 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/sidebar";
+import Image from "next/image";
 
 /** ===== Types ===== */
+type Contract = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  rentPerMonth: number;
+  contractImages: string[];
+  dormOwnerName: string;
+  dormAddress: string;
+  contractDate: string;
+};
+
 type UserProfile = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  birthday: string;
+  birthday: string; // ISO
   address: string;
   nationalId: string;
-  room?: {
-    roomNumber: string;
-  };
+  room?: { roomNumber: string | null } | null;
+
+  // มาจาก table contract
+  contracts?: Contract[];
 };
 
 type FieldErrors = Record<string, string[] | undefined>;
-
-type ApiErrorObject = {
-  fieldErrors?: FieldErrors;
-  formErrors?: string[];
-};
-
-type ApiErrorResponse =
-  | { error: string }
-  | { error: ApiErrorObject };
-
+type ApiErrorObject = { fieldErrors?: FieldErrors; formErrors?: string[] };
+type ApiErrorResponse = { error: string } | { error: ApiErrorObject };
 type ApiSuccessResponse = { message?: string };
 
 /** ===== Type Guards ===== */
 function isRecord(val: unknown): val is Record<string, unknown> {
   return !!val && typeof val === "object";
 }
-
 function isApiErrorObject(val: unknown): val is ApiErrorObject {
   return isRecord(val) && ("fieldErrors" in val || "formErrors" in val);
 }
-
 function isApiErrorResponse(data: unknown): data is ApiErrorResponse {
   return isRecord(data) && "error" in data;
 }
@@ -48,6 +51,7 @@ function isApiErrorResponse(data: unknown): data is ApiErrorResponse {
 /** ===== Component ===== */
 export default function ProfilePage() {
   const router = useRouter();
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
@@ -59,6 +63,10 @@ export default function ProfilePage() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"personal" | "password">("personal");
+
+  // ---- Lightbox (ดูรูปสัญญา) ----
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -78,6 +86,36 @@ export default function ProfilePage() {
     };
     fetchProfile();
   }, []);
+
+  // เลือก “สัญญาล่าสุด”
+  const latestContract: Contract | null = useMemo(() => {
+    const cs = profile?.contracts ?? [];
+    if (!cs.length) return null;
+    return cs.reduce<Contract | null>((acc, c) => {
+      if (!acc) return c;
+      return new Date(c.startDate) > new Date(acc.startDate) ? c : acc;
+    }, null);
+  }, [profile?.contracts]);
+
+  // รูปจากสัญญาล่าสุด
+  const contractImages: string[] = latestContract?.contractImages ?? [];
+
+  const formattedBirthday =
+    profile?.birthday
+      ? new Date(profile.birthday).toLocaleDateString("th-TH", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })
+      : "-";
+
+  const toThaiDate = (iso?: string | null) => {
+    if (!iso) return "-";
+    const t = new Date(iso);
+    return isNaN(t.getTime())
+      ? "-"
+      : t.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
+  };
 
   const validate = () => {
     if (!formData.firstName?.trim() || !formData.lastName?.trim()) {
@@ -134,10 +172,9 @@ export default function ProfilePage() {
     }
   };
 
-  /** ===== ดึงข้อความ error จาก JSON ของ API (แบบ type-safe ไม่ใช้ any) ===== */
+  /** ===== ดึงข้อความ error จาก JSON ของ API ===== */
   const getApiErrorMessage = (data: unknown): string => {
     if (!isApiErrorResponse(data)) return "เกิดข้อผิดพลาด";
-
     if (typeof data.error === "string") return data.error;
 
     if (isApiErrorObject(data.error)) {
@@ -162,10 +199,8 @@ export default function ProfilePage() {
 
       const firstFieldError = candidates.find(Boolean);
       if (firstFieldError) return firstFieldError;
-
       if (form.length > 0) return form[0];
     }
-
     return "เกิดข้อผิดพลาด";
   };
 
@@ -226,16 +261,50 @@ export default function ProfilePage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (error) return <p className="text-red-600 text-center mt-4 font-medium">{error}</p>;
-  if (!profile) return <p className="text-center mt-4">กำลังโหลดข้อมูล...</p>;
+  // Lightbox helpers (เหมือนฝั่ง admin: คลิกที่รูปย่อเพื่อเปิด ไม่ต้องมีปุ่ม)
+  const openLightbox = (idx: number) => {
+    if (!contractImages.length) return;
+    setCurrentIndex(idx);
+    setLightboxOpen(true);
+  };
+  const closeLightbox = () => setLightboxOpen(false);
+  const showPrev = useCallback(() => {
+    if (!contractImages.length) return;
+    setCurrentIndex((i) => (i - 1 + contractImages.length) % contractImages.length);
+  }, [contractImages.length]);
+  const showNext = useCallback(() => {
+    if (!contractImages.length) return;
+    setCurrentIndex((i) => (i + 1) % contractImages.length);
+  }, [contractImages.length]);
 
-  const formattedBirthday = new Date(profile.birthday).toLocaleDateString("th-TH", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") showPrev();
+      if (e.key === "ArrowRight") showNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen, showPrev, showNext]);
 
+  if (error) {
+    return <p className="text-red-600 text-center mt-4 font-medium">{error}</p>;
+  }
+  if (!profile) {
     return (
+      <div className="flex min-h-screen bg-white">
+        <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
+          <Sidebar role="user" />
+        </aside>
+        <main className="flex-1 p-8">
+          <div className="bg-white rounded-2xl shadow p-6 animate-pulse">กำลังโหลดข้อมูล...</div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
     <div className="flex min-h-screen bg-white">
       <aside className="w-64 border-r border-gray-200 sticky top-0 h-screen">
         <Sidebar role="user" />
@@ -245,9 +314,7 @@ export default function ProfilePage() {
         {/* Header */}
         <div>
           <h3 className="text-3xl font-bold mb-1 text-[#0F3659]">แก้ไขโปรไฟล์</h3>
-          <p className="text-gray-500 mb-8">
-            คุณสามารถจัดการข้อมูลส่วนตัวและรหัสผ่านได้ที่นี่
-          </p>
+          <p className="text-gray-500 mb-8">คุณสามารถจัดการข้อมูลส่วนตัวและรหัสผ่านได้ที่นี่</p>
         </div>
 
         {/* Tabs */}
@@ -276,149 +343,229 @@ export default function ProfilePage() {
 
         {/* Personal Info Tab */}
         {activeTab === "personal" && (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 flex flex-col lg:flex-row gap-6">
-            <div className="flex flex-col items-center w-full lg:w-1/3 pb-6 lg:pb-0">
-              <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-400 mb-4 flex items-center justify-center bg-gray-400 text-white text-5xl font-bold">
-                {profile
-                  ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`
-                  : ""}
+          <>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 flex flex-col lg:flex-row gap-6">
+              {/* Left avatar */}
+              <div className="flex flex-col items-center w-full lg:w-1/3 pb-6 lg:pb-0">
+                <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-gray-400 mb-4 flex items-center justify-center bg-gray-400 text-white text-5xl font-bold">
+                  {profile ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}` : ""}
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {profile?.firstName} {profile?.lastName}
+                </h2>
+                <p className="text-gray-500">{profile?.email}</p>
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">
-                {profile?.firstName} {profile?.lastName}
-              </h2>
-              <p className="text-gray-500">{profile?.email}</p>
+
+              {/* Right Form */}
+              <div className="flex-1 space-y-4 lg:ml-8">
+                <h2 className="text-2xl font-semibold text-[#0F3659] mb-4">ข้อมูลส่วนตัว</h2>
+
+                {/* First Name */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">ชื่อ</label>
+                  {editing ? (
+                    <input
+                      name="firstName"
+                      value={formData.firstName || ""}
+                      onChange={handleChange}
+                      className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    />
+                  ) : (
+                    <span className="flex-1 text-gray-800">{profile.firstName}</span>
+                  )}
+                </div>
+
+                {/* Last Name */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">นามสกุล</label>
+                  {editing ? (
+                    <input
+                      name="lastName"
+                      value={formData.lastName || ""}
+                      onChange={handleChange}
+                      className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    />
+                  ) : (
+                    <span className="flex-1 text-gray-800">{profile.lastName}</span>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">อีเมล</label>
+                  <span className="flex-1 text-gray-800">{profile.email}</span>
+                </div>
+
+                {/* Phone */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">เบอร์โทรศัพท์</label>
+                  {editing ? (
+                    <input
+                      name="phone"
+                      value={formData.phone || ""}
+                      onChange={handleChange}
+                      className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    />
+                  ) : (
+                    <span className="flex-1 text-gray-800">{profile.phone}</span>
+                  )}
+                </div>
+
+                {/* Birthday */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">วันเกิด</label>
+                  {editing ? (
+                    <input
+                      name="birthday"
+                      type="date"
+                      value={formData.birthday?.substring(0, 10) || ""}
+                      onChange={handleChange}
+                      className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    />
+                  ) : (
+                    <span className="flex-1 text-gray-800">{formattedBirthday}</span>
+                  )}
+                </div>
+
+                {/* Address */}
+                <div className="flex flex-col md:flex-row md:items-start gap-2">
+                  <label className="w-40 text-gray-600 font-medium">ที่อยู่</label>
+                  {editing ? (
+                    <textarea
+                      name="address"
+                      value={formData.address || ""}
+                      onChange={handleChange}
+                      className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
+                    />
+                  ) : (
+                    <span className="flex-1 text-gray-800">{profile.address}</span>
+                  )}
+                </div>
+
+                {/* National ID */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">เลขบัตรประชาชน</label>
+                  <span className="flex-1 text-gray-800">{profile.nationalId}</span>
+                </div>
+
+                {/* Room */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <label className="w-40 text-gray-600 font-medium">ห้องพัก</label>
+                  <span className="flex-1 text-gray-800">{profile.room?.roomNumber ?? "-"}</span>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-3 mt-4">
+                  {editing ? (
+                    <>
+                      <button
+                        onClick={handleSave}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition"
+                      >
+                        บันทึก
+                      </button>
+                      <button
+                        onClick={() => setEditing(false)}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md transition"
+                      >
+                        ยกเลิก
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-2 rounded-md transition"
+                    >
+                      แก้ไข
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Right Form */}
-            <div className="flex-1 space-y-4 ml-20">
-              <h2 className="text-2xl font-semibold text-[#0F3659] mb-4">
-                ข้อมูลส่วนตัว
-              </h2>
+            {/* ===== สัญญาเช่า ===== */}
+            <section className="mt-6 bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-[#0F3659]">สัญญาเช่า</h3>
+                <div className="text-sm text-gray-500">
+                  ทั้งหมด: {profile.contracts?.length ?? 0} ฉบับ
+                </div>
+              </div>
 
-              {/* First Name */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">ชื่อ</label>
-                {editing ? (
-                  <input
-                    name="firstName"
-                    value={formData.firstName || ""}
-                    onChange={handleChange}
-                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  />
+              {/* สรุปสัญญาล่าสุด */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                <div><span className="font-semibold">วันที่ทำสัญญา:</span> {toThaiDate(latestContract?.contractDate)}</div>
+                <div><span className="font-semibold">ค่าเช่ารายเดือน:</span> {latestContract?.rentPerMonth?.toLocaleString() ?? "-"}</div>
+                <div><span className="font-semibold">วันที่เริ่มสัญญา:</span> {toThaiDate(latestContract?.startDate)}</div>
+                <div><span className="font-semibold">วันที่สิ้นสุดสัญญา:</span> {toThaiDate(latestContract?.endDate)}</div>
+                <div><span className="font-semibold">ผู้ให้เช่า:</span> {latestContract?.dormOwnerName ?? "-"}</div>
+                <div><span className="font-semibold">ที่อยู่หอพัก:</span> {latestContract?.dormAddress ?? "-"}</div>
+              </div>
+
+              {/* รูปสัญญา — คลิกที่รูปย่อเพื่อดูเต็มจอ (เหมือนฝั่ง admin) */}
+              <div className="mt-4">
+                {contractImages.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {contractImages.map((src, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => openLightbox(i)}
+                        className="group relative w-full aspect-[4/3] overflow-hidden rounded border focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        title="คลิกเพื่อขยาย"
+                      >
+                        <Image
+                          src={src}
+                          alt={`contract-${i + 1}`}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-[1.03]"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                          priority={i === 0}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </button>
+                    ))}
+                  </div>
                 ) : (
-                  <span className="flex-1 text-gray-800">{profile.firstName}</span>
+                  <p className="text-gray-500">ไม่มีรูปสัญญา</p>
                 )}
               </div>
 
-              {/* Last Name */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">นามสกุล</label>
-                {editing ? (
-                  <input
-                    name="lastName"
-                    value={formData.lastName || ""}
-                    onChange={handleChange}
-                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  />
-                ) : (
-                  <span className="flex-1 text-gray-800">{profile.lastName}</span>
-                )}
+              {/* ตารางสัญญาทั้งหมด */}
+              <div className="mt-6 overflow-x-auto">
+                <table className="min-w-full table-auto border border-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left">ทำสัญญา</th>
+                      <th className="px-4 py-2 text-left">เริ่ม</th>
+                      <th className="px-4 py-2 text-left">สิ้นสุด</th>
+                      <th className="px-4 py-2 text-left">ค่าเช่า</th>
+                      <th className="px-4 py-2 text-left">จำนวนรูป</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(profile.contracts?.length ?? 0) > 0 ? (
+                      profile.contracts!.map((c) => (
+                        <tr key={c.id} className="border-t">
+                          <td className="px-4 py-2">{toThaiDate(c.contractDate)}</td>
+                          <td className="px-4 py-2">{toThaiDate(c.startDate)}</td>
+                          <td className="px-4 py-2">{toThaiDate(c.endDate)}</td>
+                          <td className="px-4 py-2">{c.rentPerMonth?.toLocaleString?.() ?? "-"}</td>
+                          <td className="px-4 py-2">{c.contractImages?.length ?? 0}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-3 text-center text-gray-500">
+                          ไม่มีข้อมูลสัญญา
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-
-              {/* Email */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">อีเมล</label>
-                <span className="flex-1 text-gray-800">{profile.email}</span>
-              </div>
-
-              {/* Phone */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">เบอร์โทรศัพท์</label>
-                {editing ? (
-                  <input
-                    name="phone"
-                    value={formData.phone || ""}
-                    onChange={handleChange}
-                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  />
-                ) : (
-                  <span className="flex-1 text-gray-800">{profile.phone}</span>
-                )}
-              </div>
-
-              {/* Birthday */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">วันเกิด</label>
-                {editing ? (
-                  <input
-                    name="birthday"
-                    type="date"
-                    value={formData.birthday?.substring(0, 10) || ""}
-                    onChange={handleChange}
-                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  />
-                ) : (
-                  <span className="flex-1 text-gray-800">{formattedBirthday}</span>
-                )}
-              </div>
-
-              {/* Address */}
-              <div className="flex flex-col md:flex-row md:items-start gap-2">
-                <label className="w-40 text-gray-600 font-medium">ที่อยู่</label>
-                {editing ? (
-                  <textarea
-                    name="address"
-                    value={formData.address || ""}
-                    onChange={handleChange}
-                    className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition resize-none"
-                  />
-                ) : (
-                  <span className="flex-1 text-gray-800">{profile.address}</span>
-                )}
-              </div>
-
-              {/* National ID */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">เลขบัตรประชาชน</label>
-                <span className="flex-1 text-gray-800">{profile.nationalId}</span>
-              </div>
-
-              {/* Room */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <label className="w-40 text-gray-600 font-medium">ห้องพัก</label>
-                <span className="flex-1 text-gray-800">
-                  {profile.room?.roomNumber || "-"}
-                </span>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 mt-4">
-                {editing ? (
-                  <>
-                    <button
-                      onClick={handleSave}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition"
-                    >
-                      บันทึก
-                    </button>
-                    <button
-                      onClick={() => setEditing(false)}
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md transition"
-                    >
-                      ยกเลิก
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-2 rounded-md transition"
-                  >
-                    แก้ไข
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+            </section>
+          </>
         )}
 
         {activeTab === "password" && (
@@ -460,6 +607,78 @@ export default function ProfilePage() {
           </div>
         )}
       </main>
+
+      {/* ===== Lightbox (ภาพสัญญา) ===== */}
+      {lightboxOpen && contractImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={closeLightbox}
+        >
+          {/* ปิด */}
+          <button
+            title="ปิด"
+            aria-label="ปิด"
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow flex items-center justify-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeLightbox();
+            }}
+          >
+            <i className="ri-close-line text-xl" />
+          </button>
+
+          {/* Prev/Next */}
+          {contractImages.length > 1 && (
+            <>
+              <button
+                title="ก่อนหน้า"
+                aria-label="ก่อนหน้า"
+                className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow flex items-center justify-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  showPrev();
+                }}
+              >
+                <i className="ri-arrow-left-s-line text-xl" />
+              </button>
+              <button
+                title="ถัดไป"
+                aria-label="ถัดไป"
+                className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow flex items-center justify-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  showNext();
+                }}
+              >
+                <i className="ri-arrow-right-s-line text-xl" />
+              </button>
+            </>
+          )}
+
+          {/* ภาพใหญ่ */}
+          <div
+            className="relative w-[90vw] h-[85vh] max-w-none bg-transparent rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={contractImages[currentIndex]}
+              alt={`contract-full-${currentIndex + 1}`}
+              fill
+              className="object-contain"
+              sizes="90vw"
+              priority
+            />
+          </div>
+
+
+          {/* ตัวนับ */}
+          {contractImages.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/90 text-sm">
+              {currentIndex + 1} / {contractImages.length}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

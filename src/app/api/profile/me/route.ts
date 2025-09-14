@@ -1,3 +1,4 @@
+// src/app/api/profile/me/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/prisma";
@@ -30,6 +31,20 @@ export async function GET() {
             roomNumber: true,
           },
         },
+        // ✅ ดึงสัญญาของผู้ใช้ (ล่าสุดก่อน)
+        contracts: {
+          orderBy: { startDate: "desc" },
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            rentPerMonth: true,
+            contractImages: true,
+            dormOwnerName: true,
+            dormAddress: true,
+            contractDate: true,
+          },
+        },
       },
     });
 
@@ -37,13 +52,17 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // ส่งคืนทั้งรูปแบบเดิม (roomId/roomNumber บนสุด) และ object room + contracts
     return NextResponse.json({
       ...user,
       roomId: user.room?.id ?? null,
       roomNumber: user.room?.roomNumber ?? null,
     });
   } catch (error) {
-    console.error("💥 Server error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("💥 /api/profile/me error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
