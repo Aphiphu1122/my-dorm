@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import dayjs from "dayjs";
+import { MoveOutStatus } from "@prisma/client";
 
 const moveOutSchema = z.object({
   roomId: z.string().uuid(),
@@ -17,61 +18,73 @@ const moveOutSchema = z.object({
   }),
 });
 
+const ACTIVE_STATUSES: MoveOutStatus[] = [
+  MoveOutStatus.PENDING_APPROVAL,
+  MoveOutStatus.APPROVED,
+];
+
 export async function POST(req: NextRequest) {
   try {
-    // ✅ ดึง userId + role จาก cookie
+    // 1) auth
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
     const role = cookieStore.get("role")?.value;
-
     if (!userId || role !== "user") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ รับและตรวจสอบข้อมูล input ด้วย Zod
+    // 2) validate
     const body = await req.json();
-    const parse = moveOutSchema.safeParse(body);
-
-    if (!parse.success) {
-      const formatted = parse.error.format();
-      return NextResponse.json({ error: formatted }, { status: 400 });
+    const parsed = moveOutSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
     }
+    const { roomId, reason, moveOutDate, password } = parsed.data;
 
-    const { roomId, reason, moveOutDate, password } = parse.data;
-
-    // ✅ ตรวจสอบว่าผู้ใช้เคยยื่นคำร้องไปแล้วหรือยัง
-    const existing = await db.moveOutRequest.findFirst({
-      where: { userId },
+    // 3) ตรวจรหัสผ่าน + ห้องที่พักจริง
+    const user = await db.profile.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true, roomId: true },
     });
-    if (existing) {
-      return NextResponse.json(
-        { error: "คุณได้ยื่นคำร้องไปแล้ว" },
-        { status: 400 }
-      );
-    }
+    if (!user) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
 
-    // ✅ ตรวจสอบรหัสผ่าน
-    const user = await db.profile.findUnique({ where: { id: userId } });
-    if (!user || !bcrypt.compareSync(password, user.password)) {
+    const passOk = await bcrypt.compare(password, user.password);
+    if (!passOk) {
       return NextResponse.json(
         { error: { password: ["รหัสผ่านไม่ถูกต้อง"] } },
         { status: 400 }
       );
     }
 
-    // ✅ ตรวจสอบวันย้ายออก
-    const today = dayjs();
-    const moveDate = dayjs(moveOutDate);
+    if (!user.roomId || user.roomId !== roomId) {
+      return NextResponse.json(
+        { error: "ไม่สามารถยื่นคำร้องสำหรับห้องที่คุณไม่ได้พักอยู่" },
+        { status: 400 }
+      );
+    }
 
-    // ต้องอย่างน้อย 30 วันล่วงหน้า
+    // 4) กันยื่นซ้ำถ้ามีคำร้องสถานะ active
+    const existing = await db.moveOutRequest.findFirst({
+      where: { userId, status: { in: ACTIVE_STATUSES } },
+      select: { id: true, status: true },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { error: "คุณได้ยื่นคำร้องไปแล้ว (ยังไม่ปิดคำร้องเดิม)" },
+        { status: 400 }
+      );
+    }
+
+    // 5) ตรวจวัน (เทียบแบบ startOf('day'))
+    const today = dayjs().startOf("day");
+    const moveDate = dayjs(moveOutDate).startOf("day");
+
     if (moveDate.diff(today, "day") < 30) {
       return NextResponse.json(
         { error: "ต้องยื่นคำร้องล่วงหน้าอย่างน้อย 30 วัน" },
         { status: 400 }
       );
     }
-
-    // ต้องเป็นเดือนถัดไปหรือหลังจากนั้น ห้ามเป็นเดือนเดียวกับวันนี้
     if (moveDate.month() === today.month() && moveDate.year() === today.year()) {
       return NextResponse.json(
         { error: "ไม่สามารถยื่นคำร้องภายในเดือนปัจจุบันได้" },
@@ -79,13 +92,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ สร้างคำร้องย้ายออก
+    // 6) บันทึกคำร้องเป็น PENDING_APPROVAL
     await db.moveOutRequest.create({
       data: {
         userId,
         roomId,
-        reason,
+        reason: reason.trim(),
         moveOutDate: moveDate.toDate(),
+        status: MoveOutStatus.PENDING_APPROVAL,
       },
     });
 
