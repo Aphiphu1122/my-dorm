@@ -120,7 +120,9 @@ model contract {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([profileId, roomId])
+  @@unique([profileId, roomId, startDate])
+  @@index([profileId, roomId, startDate])
+  @@index([roomId, startDate])
 }
 
 model maintenanceRequest {

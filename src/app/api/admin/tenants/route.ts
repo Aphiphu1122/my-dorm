@@ -10,26 +10,40 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // 2) ดึงข้อมูล profile + room + contracts (เอาล่าสุด)
+    // 2) ดึงข้อมูล profile + room + สัญญาล่าสุด
     const tenants = await db.profile.findMany({
       where: { role: "user" },
       include: {
-        room: true,
+        room: {
+          select: {
+            id: true,
+            roomNumber: true,
+            status: true,
+            assignedAt: true,
+          },
+        },
         contracts: {
-          orderBy: { startDate: "desc" },
+          orderBy: { startDate: "desc" }, // หรือจะสลับเป็น contractDate ก็ได้ ถ้าต้องการเรียงตามวันเซ็นจริง
           take: 1,
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            rentPerMonth: true,
+            contractDate: true,       // ✅ เพิ่ม field วันทำสัญญาจริง
+            contractImages: true,
+          },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // 3) แปลงรูปแบบข้อมูลให้ frontend ใช้งานง่าย
+    // 3) map เป็น payload ที่ frontend ใช้งานสะดวก
     const users = tenants.map((t) => {
-      // เอาสัญญาล่าสุด
-      const latestContract =
-        Array.isArray(t.contracts) && t.contracts.length > 0
-          ? t.contracts[0]
-          : null;
+      const latest = Array.isArray(t.contracts) && t.contracts.length > 0 ? t.contracts[0] : null;
+
+      // สถานะให้ใช้งานสะดวกขึ้น: ถ้าไม่มีห้องถือว่า MOVEOUT
+      const derivedStatus = t.room ? t.room.status : ("MOVEOUT" as const);
 
       return {
         id: t.id,
@@ -41,17 +55,21 @@ export async function GET() {
         address: t.address,
         nationalId: t.nationalId,
         userId: t.userId,
+
         // ห้อง
         roomNumber: t.room?.roomNumber ?? null,
-        status: t.room?.status ?? null,
-        roomStartDate: t.roomStartDate ?? null,
+        status: t.room?.status ?? null,        // คงค่าดั้งเดิมไว้
+        derivedStatus,                         // ✅ เพิ่มให้เลือกใช้
+        roomStartDate: t.roomStartDate ?? null, // ใช้เป็น "วันที่เข้าพักจริง"
         assignedAt: t.room?.assignedAt ?? null,
+
         // สัญญา
-        contractStartDate: latestContract?.startDate ?? null,
-        contractEndDate: latestContract?.endDate ?? null,
-        rentPerMonth: latestContract?.rentPerMonth ?? null,
-        contractId: latestContract?.id ?? null,
-        contractImages: latestContract?.contractImages ?? [],
+        contractId: latest?.id ?? null,
+        contractStartDate: latest?.startDate ?? null,
+        contractEndDate: latest?.endDate ?? null,
+        contractDate: latest?.contractDate ?? null, // ✅ วันทำสัญญาจริง
+        rentPerMonth: latest?.rentPerMonth ?? null,
+        contractImages: latest?.contractImages ?? [],
       };
     });
 

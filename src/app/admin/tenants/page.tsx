@@ -6,7 +6,7 @@ import Link from "next/link";
 import Sidebar from "@/components/sidebar";
 import { Toaster, toast } from "react-hot-toast";
 
-// ---------- Types ----------
+/* =================== Types =================== */
 interface Profile {
   id: string;
   firstName: string;
@@ -18,14 +18,14 @@ interface Profile {
   nationalId: string;
   userId: string;
   roomNumber: string | null;
-  status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
+  status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE"; // backend อาจยังส่งมาได้ จึงคง type ไว้
   roomStartDate?: string | null;
   assignedAt?: string | null;
   contractStartDate?: string | null;
   contractEndDate?: string | null;
 }
 
-type RoomStatus = "ALL" | "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
+type RoomStatus = "ALL" | "AVAILABLE" | "OCCUPIED"; // ❌ เอา Maintenance ออกจากตัวกรอง
 
 interface RoomOption {
   id: string;
@@ -40,20 +40,71 @@ interface CreateTenantForm {
   address: string;
   nationalId: string;
   roomId: string;
+
   rentPerMonth: string;
+
+  /** วันที่เริ่มสัญญา (ใช้คิดช่วงสัญญา) */
   startDate: string;
+
+  /** วันที่ทำสัญญาจริง (ไม่บังคับ) */
+  contractDate?: string;
+
+  /** วันที่เข้าพักจริง (ไม่บังคับ, เว้นว่างได้ถ้ายังไม่เข้าพัก) */
+  moveInDate?: string;
+
   dormOwnerName: string;
   dormAddress: string;
+
+  // ขั้นสูง
   tempPassword: string;
-  // optional (เก็บ URL รูปหลังอัปโหลด)
   emailPrefix: string;
   emailDomain: string;
+
+  // URLs (สูงสุด 10)
   contractImage1: string;
   contractImage2: string;
   contractImage3: string;
+  contractImage4: string;
+  contractImage5: string;
+  contractImage6: string;
+  contractImage7: string;
+  contractImage8: string;
+  contractImage9: string;
+  contractImage10: string;
 }
 
-// ---------- Helpers ----------
+/* =================== Helpers (top-level, type-safe) =================== */
+const imageKeys = [
+  "contractImage1",
+  "contractImage2",
+  "contractImage3",
+  "contractImage4",
+  "contractImage5",
+  "contractImage6",
+  "contractImage7",
+  "contractImage8",
+  "contractImage9",
+  "contractImage10",
+] as const;
+type ImageKey = (typeof imageKeys)[number];
+
+interface UploadRes {
+  urls: string[];
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function extractErrorMessage(v: unknown, fallback = "เกิดข้อผิดพลาด") {
+  if (isRecord(v) && typeof v.error === "string") return v.error;
+  if (isRecord(v) && isRecord(v.error) && typeof v.error.message === "string") {
+    return v.error.message;
+  }
+  return fallback;
+}
+
+/* =================== Utils =================== */
 const toThaiDate = (iso?: string | null) => {
   if (!iso) return "-";
   const t = new Date(iso);
@@ -66,7 +117,7 @@ const toThaiDate = (iso?: string | null) => {
       });
 };
 
-// ✅ ค่าเริ่มต้นตามที่ขอ (แก้ได้ภายหลัง)
+/* ค่าเริ่มต้นของฟอร์ม */
 const defaultForm: CreateTenantForm = {
   firstName: "",
   lastName: "",
@@ -75,38 +126,58 @@ const defaultForm: CreateTenantForm = {
   address: "",
   nationalId: "",
   roomId: "",
+
   rentPerMonth: "3000",
+
   startDate: "",
+  contractDate: "",
+  moveInDate: "",
+
   dormOwnerName: "John Doe",
   dormAddress: "มหาวิทยาลัยพะเยา",
-  tempPassword: "dorm01234",
+
+  // ขั้นสูง
+  tempPassword: "dorm001",
   emailPrefix: "Dormmy",
   emailDomain: "@dorm.com",
+
+  // รูป
   contractImage1: "",
   contractImage2: "",
   contractImage3: "",
+  contractImage4: "",
+  contractImage5: "",
+  contractImage6: "",
+  contractImage7: "",
+  contractImage8: "",
+  contractImage9: "",
+  contractImage10: "",
 };
 
 export default function AdminTenantsPage() {
-  // list states
+  /* ============== List states ============== */
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<RoomStatus>("ALL");
 
-  // modal + form states
+  /* ============== Modal + form states ============== */
   const [showModal, setShowModal] = useState(false);
   const [availableRooms, setAvailableRooms] = useState<RoomOption[]>([]);
   const [form, setForm] = useState<CreateTenantForm>(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // upload states (choose files)
+  /* ============== Upload states (เลือกไฟล์) ============== */
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
 
-  // ---------- Effects ----------
+  /* ============== Delete states ============== */
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* ============== Effects ============== */
   const loadTenants = async () => {
     setLoading(true);
     try {
@@ -126,7 +197,7 @@ export default function AdminTenantsPage() {
   const loadAvailableRooms = async () => {
     try {
       const res = await fetch("/api/admin/rooms/available", { credentials: "include" });
-      const data = await res.json();
+    const data = await res.json();
       const rooms: RoomOption[] = res.ok && Array.isArray(data?.rooms) ? data.rooms : [];
       setAvailableRooms(rooms);
     } catch {
@@ -139,15 +210,24 @@ export default function AdminTenantsPage() {
     loadAvailableRooms();
   }, []);
 
+  /* previews ของไฟล์ที่เลือก */
   useEffect(() => {
     const urls = selectedFiles.map((f) => URL.createObjectURL(f));
     setPreviews(urls);
-    return () => {
-      urls.forEach((u) => URL.revokeObjectURL(u));
-    };
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [selectedFiles]);
 
-  // ---------- Derived ----------
+  /* เลือกห้องแล้ว auto-gen รหัสผ่านจากเลขห้อง เป็น dorm### */
+  useEffect(() => {
+    if (!form.roomId) return;
+    const selected = availableRooms.find((r) => r.id === form.roomId);
+    if (!selected?.roomNumber) return;
+    const digits = (selected.roomNumber.match(/\d+/g) || []).join("");
+    const padded = digits.padStart(3, "0");
+    setForm((s) => ({ ...s, tempPassword: `dorm${padded}` }));
+  }, [form.roomId, availableRooms]);
+
+  /* ============== Derived ============== */
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const fullText = `${user.firstName ?? ""} ${user.lastName ?? ""} ${user.email ?? ""}`.toLowerCase();
@@ -155,13 +235,12 @@ export default function AdminTenantsPage() {
       const matchesStatus =
         filterStatus === "ALL" ||
         (filterStatus === "OCCUPIED" && user.status === "OCCUPIED") ||
-        (filterStatus === "AVAILABLE" && user.status === "AVAILABLE") ||
-        (filterStatus === "MAINTENANCE" && user.status === "MAINTENANCE");
+        (filterStatus === "AVAILABLE" && user.status === "AVAILABLE");
       return matchesSearch && matchesStatus;
     });
   }, [users, searchTerm, filterStatus]);
 
-  // ---------- Handlers ----------
+  /* ============== Handlers ============== */
   const handleOpenModal = () => {
     setForm(defaultForm);
     setSelectedFiles([]);
@@ -179,9 +258,10 @@ export default function AdminTenantsPage() {
 
   const onSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    setSelectedFiles(files.slice(0, 3)); // จำกัด 3 รูป
+    setSelectedFiles(files.slice(0, 10)); // สูงสุด 10 รูป
   };
 
+  /** อัปโหลดรูปแบบไม่ใช้ any + ป้อนลง contractImage1..10 */
   const uploadSelected = async () => {
     if (!selectedFiles.length) {
       toast.error("กรุณาเลือกไฟล์ก่อน");
@@ -192,21 +272,28 @@ export default function AdminTenantsPage() {
       const fd = new FormData();
       selectedFiles.forEach((f) => fd.append("files", f));
 
-      // ปรับ endpoint ให้ตรงกับโปรเจกต์ของคุณ
       const res = await fetch("/api/admin/uploads/contract", {
         method: "POST",
         body: fd,
         credentials: "include",
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "อัปโหลดล้มเหลว");
 
-      setForm((s) => ({
-        ...s,
-        contractImage1: data.urls[0] ?? "",
-        contractImage2: data.urls[1] ?? "",
-        contractImage3: data.urls[2] ?? "",
-      }));
+      const json: unknown = await res.json();
+      if (!res.ok) {
+        throw new Error(extractErrorMessage(json, "อัปโหลดล้มเหลว"));
+      }
+      const data = json as UploadRes;
+
+      // ใส่ URL ลงในช่อง contractImage1..10
+      setForm((prev) => {
+        const patch: Partial<CreateTenantForm> = {};
+        imageKeys.forEach((key, i) => {
+          const url = Array.isArray(data.urls) ? data.urls[i] : undefined;
+          if (typeof url === "string" && url) patch[key] = url;
+        });
+        return { ...prev, ...patch };
+      });
+
       setSelectedFiles([]);
       setPreviews([]);
       toast.success("อัปโหลดรูปสัญญาสำเร็จ");
@@ -217,21 +304,16 @@ export default function AdminTenantsPage() {
     }
   };
 
-  const removeUploadedAt = (idx: 0 | 1 | 2) => {
-    setForm((s) => {
-      const next = { ...s };
-      if (idx === 0) next.contractImage1 = "";
-      if (idx === 1) next.contractImage2 = "";
-      if (idx === 2) next.contractImage3 = "";
-      return next;
+  const removeUploadedAt = (idx: number) => {
+    setForm((prev) => {
+      const key = imageKeys[idx] as ImageKey | undefined;
+      if (!key) return prev;
+      return { ...prev, [key]: "" };
     });
   };
 
-  // ✅ ฟังก์ชัน validate ก่อน submit + ยิง toast
   const validateForm = (): boolean => {
-    const isEmpty = (v: string) => !v || !v.trim();
-
-    // เช็คว่ามีช่องไหนว่างไหม (เฉพาะช่องจำเป็น)
+    const isEmpty = (v: string | undefined) => !v || !v.trim();
     const requiredEmpty =
       isEmpty(form.firstName) ||
       isEmpty(form.lastName) ||
@@ -247,27 +329,22 @@ export default function AdminTenantsPage() {
       isEmpty(form.dormAddress);
 
     if (requiredEmpty) {
-      toast.error("กรุณากรอกให้ครบทุกช่อง");
+      toast.error("กรุณากรอกให้ครบทุกช่องที่จำเป็น");
       return false;
     }
-
-    // รูปแบบเพิ่มเติม
-    if (!/^\d{13}$/.test(form.nationalId.trim())) {
+    if (!/^\d{13}$/.test((form.nationalId || "").trim())) {
       toast.error("เลขบัตรประชาชนต้องมี 13 หลัก");
       return false;
     }
-
-    if (form.phone.replace(/\D/g, "").length < 9) {
+    if ((form.phone || "").replace(/\D/g, "").length < 9) {
       toast.error("กรุณากรอกเบอร์โทรให้ถูกต้อง (อย่างน้อย 9 หลัก)");
       return false;
     }
-
     const rent = Number(form.rentPerMonth);
     if (!Number.isFinite(rent) || rent <= 0) {
       toast.error("ค่าเช่าต้องมากกว่า 0");
       return false;
     }
-
     if (isNaN(Date.parse(form.birthday))) {
       toast.error("วันเกิดไม่ถูกต้อง");
       return false;
@@ -276,21 +353,25 @@ export default function AdminTenantsPage() {
       toast.error("วันที่เริ่มสัญญาไม่ถูกต้อง");
       return false;
     }
-
+    if (form.contractDate && isNaN(Date.parse(form.contractDate))) {
+      toast.error("วันที่ทำสัญญาจริงไม่ถูกต้อง");
+      return false;
+    }
+    if (form.moveInDate && isNaN(Date.parse(form.moveInDate))) {
+      toast.error("วันที่เข้าพักไม่ถูกต้อง");
+      return false;
+    }
     return true;
-    // หมายเหตุ: รูปสัญญาไม่บังคับอัปโหลดตาม backend ปัจจุบัน
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // ✅ ตรวจฟอร์มก่อน
     if (!validateForm()) return;
 
     setSubmitting(true);
     setBanner(null);
 
-    const images = [form.contractImage1, form.contractImage2, form.contractImage3].filter(Boolean);
+    const images = imageKeys.map((k) => form[k]).filter(Boolean);
 
     const payload = {
       firstName: form.firstName.trim(),
@@ -301,10 +382,16 @@ export default function AdminTenantsPage() {
       nationalId: form.nationalId.trim(),
       roomId: form.roomId,
       rentPerMonth: Number(form.rentPerMonth),
+
       startDate: form.startDate,
+      contractDate: form.contractDate || undefined,
+      moveInDate: form.moveInDate || undefined,
+
       dormOwnerName: form.dormOwnerName.trim(),
       dormAddress: form.dormAddress.trim(),
+
       tempPassword: form.tempPassword,
+
       contractImages: images,
       emailPrefix: form.emailPrefix.trim() || "Dormmy",
       emailDomain: form.emailDomain.trim() || "@dorm.com",
@@ -318,8 +405,7 @@ export default function AdminTenantsPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-
-      if (!res.ok) throw new Error(data?.error || "ไม่สามารถสร้างผู้เช่าได้");
+      if (!res.ok) throw new Error(extractErrorMessage(data, "ไม่สามารถสร้างผู้เช่าได้"));
 
       toast.success("สร้างผู้เช่าพร้อมสัญญาสำเร็จ");
       setBanner({ type: "success", text: "สร้างผู้เช่าพร้อมสัญญาสำเร็จ" });
@@ -334,10 +420,39 @@ export default function AdminTenantsPage() {
     }
   };
 
-  // ---------- UI ----------
+  /* ลบผู้ใช้ (ห้ามลบถ้า OCCUPIED) */
+  const requestDelete = (u: Profile) => {
+    if (u.status === "OCCUPIED") {
+      toast.error("ไม่สามารถลบผู้ใช้ที่กำลังเช่าอยู่ได้");
+      return;
+    }
+    setDeleteTarget({ id: u.id, name: `${u.firstName} ${u.lastName}`.trim() });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/tenants/${deleteTarget.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(extractErrorMessage(data, "ลบผู้ใช้ไม่สำเร็จ"));
+
+      toast.success("ลบผู้ใช้เรียบร้อย");
+      setDeleteTarget(null);
+      await loadTenants();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  /* ============== UI ============== */
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Toaster (ถ้ามีวางไว้ที่ root แล้ว จะซ้ำได้โดยไม่เป็นไร) */}
       <Toaster position="top-right" />
 
       {/* Sidebar */}
@@ -367,6 +482,7 @@ export default function AdminTenantsPage() {
               />
             </div>
 
+            {/* ❌ ไม่มีตัวเลือก Maintenance แล้ว */}
             <select
               className="border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none"
               value={filterStatus}
@@ -407,15 +523,17 @@ export default function AdminTenantsPage() {
                 <div key={i} className="bg-white rounded-2xl shadow p-4 h-44 animate-pulse" />
               ))
             : filteredUsers.map((user) => {
+                // ถ้าไม่มีห้อง -> แสดงเป็น MOVEOUT
+                const derivedStatus = user.roomNumber ? (user.status ?? "-") : ("MOVEOUT" as const);
+                const badgeClass =
+                  derivedStatus === "OCCUPIED"
+                    ? "bg-green-100 text-green-700"
+                    : derivedStatus === "MOVEOUT"
+                    ? "bg-fuchsia-100 text-fuchsia-700"
+                    : "bg-slate-100 text-slate-600";
+
                 const initials =
                   `${(user.firstName ?? "").charAt(0)}${(user.lastName ?? "").charAt(0)}`.toUpperCase() || "?";
-
-                const badgeClass =
-                  user.status === "OCCUPIED"
-                    ? "bg-green-100 text-green-700"
-                    : user.status === "MAINTENANCE"
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-slate-100 text-slate-600";
 
                 return (
                   <div
@@ -436,7 +554,7 @@ export default function AdminTenantsPage() {
                         </div>
                       </div>
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}`}>
-                        {user.status ?? "-"}
+                        {derivedStatus}
                       </span>
                     </div>
 
@@ -465,7 +583,18 @@ export default function AdminTenantsPage() {
                     </div>
 
                     {/* footer actions */}
-                    <div className="mt-4 flex justify-end">
+                    <div className="mt-4 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => requestDelete(user)}
+                        disabled={user.status === "OCCUPIED"}
+                        title={user.status === "OCCUPIED" ? "ผู้ใช้นี้กำลังเช่าอยู่ ไม่สามารถลบได้" : "ลบผู้ใช้"}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-rose-700 border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <i className="ri-delete-bin-line" />
+                        ลบ
+                      </button>
+
                       <Link
                         href={`/admin/tenants/${user.id}`}
                         className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -479,14 +608,11 @@ export default function AdminTenantsPage() {
         </div>
       </main>
 
-      {/* ---------- Modal: Add Tenant ---------- */}
+      {/* ========== Modal: Add Tenant ========== */}
       {showModal && (
         <div className="fixed inset-0 z-50">
           {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => !submitting && setShowModal(false)}
-          />
+          <div className="absolute inset-0 bg-black/40" onClick={() => !submitting && setShowModal(false)} />
 
           {/* Container */}
           <div className="relative flex min-h-full items-center justify-center p-4 sm:p-6">
@@ -506,7 +632,6 @@ export default function AdminTenantsPage() {
 
               {/* Body */}
               <div className="px-6 py-5 overflow-y-auto">
-                {/* form */}
                 <form id="createTenantForm" onSubmit={handleSubmit} className="space-y-5">
                   {/* ผู้เช่า */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -593,10 +718,9 @@ export default function AdminTenantsPage() {
                         ))}
                       </select>
                     </div>
+
                     <div className="flex flex-col">
-                      <label className="text-sm font-medium text-slate-700 mb-1">
-                        ค่าเช่า / เดือน (บาท)
-                      </label>
+                      <label className="text-sm font-medium text-slate-700 mb-1">ค่าเช่า / เดือน (บาท)</label>
                       <input
                         type="number"
                         min="0"
@@ -608,6 +732,7 @@ export default function AdminTenantsPage() {
                         required
                       />
                     </div>
+
                     <div className="flex flex-col">
                       <label className="text-sm font-medium text-slate-700 mb-1">วันที่เริ่มสัญญา</label>
                       <input
@@ -619,15 +744,32 @@ export default function AdminTenantsPage() {
                         required
                       />
                     </div>
+
+                    {/* ✅ ช่องใหม่: วันที่ทำสัญญาจริง */}
                     <div className="flex flex-col">
-                      <label className="text-sm font-medium text-slate-700 mb-1">รหัสผ่านเริ่มต้น</label>
+                      <label className="text-sm font-medium text-slate-700 mb-1">วันที่ทำสัญญาฉบับจริง (ถ้ามี)</label>
                       <input
-                        name="tempPassword"
+                        type="date"
+                        name="contractDate"
                         className="border border-slate-300 rounded-lg px-3 py-2"
-                        value={form.tempPassword}
+                        value={form.contractDate}
                         onChange={handleChange}
-                        placeholder="เช่น Temp12345"
-                        required
+                        placeholder="ถ้ายังไม่มีให้เว้นว่าง"
+                      />
+                    </div>
+
+                    {/* ✅ ช่องใหม่: วันที่เข้าพักจริง (เว้นว่างได้ถ้ายังไม่เข้าพัก) */}
+                    <div className="flex flex-col md:col-span-2">
+                      <label className="text-sm font-medium text-slate-700 mb-1">
+                        วันที่เข้าพักจริง
+                      </label>
+                      <input
+                        type="date"
+                        name="moveInDate"
+                        className="border border-slate-300 rounded-lg px-3 py-2"
+                        value={form.moveInDate}
+                        onChange={handleChange}
+                        placeholder="ถ้ายังไม่เข้าพักให้เว้นว่าง"
                       />
                     </div>
                   </div>
@@ -656,10 +798,10 @@ export default function AdminTenantsPage() {
                     </div>
                   </div>
 
-                  {/* รูปสัญญา: เลือกไฟล์ + อัปโหลด (ไม่มีช่องกรอก URL) */}
+                  {/* รูปสัญญา: เลือกไฟล์ + อัปโหลด */}
                   <div>
                     <label className="text-sm font-medium text-slate-700">
-                      รูปสัญญา (อัปโหลดได้สูงสุด 3 รูป)
+                      รูปสัญญาที่เกี่ยวข้อง (อัปโหลดได้สูงสุด 10 รูป)
                     </label>
 
                     <div className="mt-2 flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -678,11 +820,10 @@ export default function AdminTenantsPage() {
                       >
                         {uploading ? "กำลังอัปโหลด..." : "อัปโหลดไฟล์ไป Cloudinary"}
                       </button>
-                      <span className="text-xs text-slate-500">
-                        เลือกได้สูงสุด 3 รูป (ไฟล์ภาพเท่านั้น)
-                      </span>
+                      <span className="text-xs text-slate-500">เลือกได้สูงสุด 10 รูป (ไฟล์ภาพเท่านั้น)</span>
                     </div>
 
+                    {/* พรีวิวไฟล์ที่จะอัปโหลด */}
                     {previews.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-3">
                         {previews.map((src, idx) => (
@@ -693,17 +834,18 @@ export default function AdminTenantsPage() {
                       </div>
                     )}
 
-                    {(form.contractImage1 || form.contractImage2 || form.contractImage3) && (
+                    {/* แสดงรูปที่อัปโหลดแล้ว */}
+                    {imageKeys.map((k) => form[k]).some(Boolean) && (
                       <div className="mt-4">
                         <div className="text-xs text-slate-600 mb-2">อัปโหลดแล้ว</div>
                         <div className="flex flex-wrap gap-3">
-                          {[form.contractImage1, form.contractImage2, form.contractImage3].map((u, i) =>
-                            u ? (
-                              <div key={i} className="relative w-28 h-28 rounded-lg overflow-hidden border">
-                                <img src={u} alt={`uploaded-${i}`} className="w-full h-full object-cover" />
+                          {imageKeys.map((k, i) =>
+                            form[k] ? (
+                              <div key={k} className="relative w-28 h-28 rounded-lg overflow-hidden border">
+                                <img src={form[k]} alt={`uploaded-${i}`} className="w-full h-full object-cover" />
                                 <button
                                   type="button"
-                                  onClick={() => removeUploadedAt(i as 0 | 1 | 2)}
+                                  onClick={() => removeUploadedAt(i)}
                                   className="absolute top-1 right-1 bg-white/90 hover:bg-white text-rose-600 rounded-full h-6 w-6 flex items-center justify-center shadow"
                                   title="ลบรูปนี้"
                                 >
@@ -717,11 +859,13 @@ export default function AdminTenantsPage() {
                     )}
                   </div>
 
-                  {/* Advanced: email prefix/domain */}
+                  {/* ขั้นสูง: อีเมล & รหัสผ่านเริ่มต้น */}
                   <details className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                     <summary className="cursor-pointer text-sm text-slate-700">
-                      ตั้งค่าอีเมลอัตโนมัติจากเลขห้อง (ขั้นสูง)
+                      ขั้นสูง: ชื่อผู้ใช้ & รหัสผ่านเริ่มต้น
                     </summary>
+
+                    {/* Email */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                       <div className="flex flex-col">
                         <label className="text-xs font-medium text-slate-600 mb-1">Prefix</label>
@@ -740,6 +884,43 @@ export default function AdminTenantsPage() {
                           value={form.emailDomain}
                           onChange={handleChange}
                         />
+                      </div>
+                    </div>
+
+                    {/* Password */}
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-slate-600 mb-1">รหัสผ่านเริ่มต้น</label>
+                        <input
+                          name="tempPassword"
+                          className="border border-slate-300 rounded-lg px-3 py-2"
+                          value={form.tempPassword}
+                          onChange={handleChange}
+                          placeholder="เช่น dorm001"
+                          required
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          ระบบจะสร้างให้อัตโนมัติจากเลขห้องในรูปแบบ <code>dorm###</code> (เช่น 001 ⇒ dorm001)
+                        </p>
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50"
+                          onClick={() => {
+                            const sel = availableRooms.find((r) => r.id === form.roomId);
+                            if (!sel?.roomNumber) {
+                              toast.error("กรุณาเลือกห้องก่อน");
+                              return;
+                            }
+                            const digits = (sel.roomNumber.match(/\d+/g) || []).join("");
+                            const padded = digits.padStart(3, "0");
+                            setForm((s) => ({ ...s, tempPassword: `dorm${padded}` }));
+                            toast.success("สร้างรหัสผ่านจากเลขห้องแล้ว");
+                          }}
+                        >
+                          สร้างจากเลขห้อง
+                        </button>
                       </div>
                     </div>
                   </details>
@@ -762,6 +943,43 @@ export default function AdminTenantsPage() {
                   className="px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
                 >
                   {submitting ? "กำลังบันทึก..." : "บันทึก"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== Modal: Confirm Delete ========== */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !deleting && setDeleteTarget(null)} />
+          <div className="relative flex min-h-full items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="px-5 py-4 border-b">
+                <h3 className="text-lg font-semibold text-slate-800">ยืนยันการลบผู้ใช้</h3>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-slate-700">
+                  ต้องการลบผู้ใช้ <span className="font-semibold">{deleteTarget.name}</span> ใช่หรือไม่?
+                </p>
+                <p className="text-sm text-slate-500 mt-2">
+                  การลบนี้ไม่สามารถกู้คืนได้ โปรดตรวจสอบให้แน่ใจว่าผู้ใช้ไม่ได้เช่าอยู่
+                </p>
+              </div>
+              <div className="px-5 py-4 border-t flex justify-end gap-2">
+                <button
+                  className="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50"
+                  onClick={() => !deleting && setDeleteTarget(null)}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "กำลังลบ..." : "ลบผู้ใช้"}
                 </button>
               </div>
             </div>

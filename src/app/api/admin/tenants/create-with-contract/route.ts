@@ -7,17 +7,15 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-// ✅ type สำหรับจับ Prisma P2002 โดยไม่ต้อง import type จาก client
+/** Lightweight Prisma error type */
 interface PrismaKnownError {
   code?: string;
-  meta?: {
-    target?: string[];
-  };
+  meta?: { target?: string[] };
 }
 
-// --------- Zod Schema ---------
+/* ---------------- Zod Schema ---------------- */
 const PayloadSchema = z.object({
-  // ข้อมูลผู้เช่า
+  // ผู้เช่า
   firstName: z.string().min(1, "กรุณาระบุชื่อ"),
   lastName: z.string().min(1, "กรุณาระบุนามสกุล"),
   phone: z.string().min(9, "เบอร์โทรไม่ถูกต้อง"),
@@ -32,28 +30,28 @@ const PayloadSchema = z.object({
   endDate: z
     .string()
     .refine((v) => !isNaN(Date.parse(v)), "วันสิ้นสุดสัญญาไม่ถูกต้อง")
-    .optional(), // ไม่ส่งมาก็ได้ เดี๋ยวคำนวณ +1 ปีให้
+    .optional(), // ไม่ส่งมาก็จะ +1 ปีอัตโนมัติ
   contractDate: z
     .string()
     .refine((v) => !isNaN(Date.parse(v)), "วันที่ทำสัญญาไม่ถูกต้อง")
     .optional(),
 
-  // ข้อมูลหอ (เจ้าของ/ที่อยู่หอ)
+  // ข้อมูลหอ
   dormOwnerName: z.string().min(1, "กรุณาระบุชื่อผู้ให้เช่า"),
   dormAddress: z.string().min(1, "กรุณาระบุที่อยู่หอ"),
 
-  // รูปสัญญา (Cloudinary URLs สูงสุด 3 รูป)
-  contractImages: z.array(z.string().url("URL รูปไม่ถูกต้อง")).max(3).default([]),
+  // รูปสัญญา (สูงสุด 10)
+  contractImages: z.array(z.string().url("URL รูปไม่ถูกต้อง")).max(10).default([]),
 
-  // login เริ่มต้น (ให้ผู้เช่าเปลี่ยนทีหลัง)
+  // login เริ่มต้น
   tempPassword: z.string().min(6, "รหัสผ่านอย่างน้อย 6 ตัวอักษร"),
 
-  // ตั้งค่า email อัตโนมัติจากเลขห้อง เช่น Dormmy001@dorm.com
+  // อีเมลอัตโนมัติจากเลขห้อง เช่น Dormmy001@dorm.com
   emailPrefix: z.string().default("Dormmy"),
   emailDomain: z.string().default("@dorm.com"),
 });
 
-// --------- Helpers ---------
+/* ---------------- Helpers ---------------- */
 function addOneYear(d: Date) {
   const nd = new Date(d);
   nd.setFullYear(nd.getFullYear() + 1);
@@ -67,7 +65,7 @@ function sanitizeEmail(prefix: string, roomNumber: string, domain: string) {
   return `${p}${roomNumber}${withAt}`.toLowerCase();
 }
 
-// --------- POST: Admin create tenant + contract ----------
+/* -------------- POST: create tenant + contract -------------- */
 export async function POST(req: Request) {
   try {
     // 1) ต้องเป็น admin
@@ -104,7 +102,7 @@ export async function POST(req: Request) {
       emailDomain,
     } = parsed.data;
 
-    // 3) ตรวจห้อง & สร้าง email อัตโนมัติจากเลขห้อง
+    // 3) ตรวจห้อง
     const room = await db.room.findUnique({
       where: { id: roomId },
       select: { id: true, roomNumber: true, status: true },
@@ -116,16 +114,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "ห้องนี้ไม่ว่าง" }, { status: 400 });
     }
 
-    // กันเคสมีคนถือห้องอยู่แล้ว (ป้องกันชนกับ unique อีกชั้น)
+    // กันเคสมีผู้เช่าเซ็ตอยู่แล้ว (ความปลอดภัยอีกชั้น)
     const holder = await db.profile.findFirst({ where: { roomId } });
     if (holder) {
       return NextResponse.json({ success: false, error: "มีผู้เช่าห้องนี้อยู่แล้ว" }, { status: 400 });
     }
 
-    // email เช่น Dormmy001@dorm.com (toLowerCase)
-    const email = sanitizeEmail(emailPrefix, room.roomNumber, emailDomain);
+    // 4) วันสัญญา/วันเริ่ม-สิ้นสุด
+    const start = new Date(startDate);
+    const endDt = endDate ? new Date(endDate) : addOneYear(start);
+    const cDate = contractDate ? new Date(contractDate) : new Date();
 
-    // ตรวจซ้ำข้อมูลสำคัญ
+    if (endDt <= start) {
+      return NextResponse.json(
+        { success: false, error: "วันสิ้นสุดสัญญาต้องอยู่หลังวันเริ่มสัญญา" },
+        { status: 400 }
+      );
+    }
+
+    // 5) ตรวจวันทับซ้อนกับสัญญาห้องเดิม (สำคัญ)
+    // เงื่อนไขทับซ้อน: existing.start <= newEnd AND existing.end >= newStart
+    const overlap = await db.contract.findFirst({
+      where: {
+        roomId,
+        startDate: { lte: endDt },
+        endDate: { gte: start },
+      },
+      select: { id: true, startDate: true, endDate: true },
+    });
+    if (overlap) {
+      return NextResponse.json(
+        { success: false, error: "ช่วงวันที่สัญญาทับซ้อนกับสัญญาเดิมของห้องนี้" },
+        { status: 400 }
+      );
+    }
+
+    // 6) อีเมลจากเลขห้อง + กันข้อมูลซ้ำ (email/nationalId)
+    const email = sanitizeEmail(emailPrefix, room.roomNumber, emailDomain);
     const dup = await db.profile.findFirst({
       where: { OR: [{ email }, { nationalId }] },
       select: { id: true },
@@ -137,18 +162,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4) เตรียมคำนวณวัน
-    const start = new Date(startDate);
-    const endDt = endDate ? new Date(endDate) : addOneYear(start);
-    const cDate = contractDate ? new Date(contractDate) : new Date();
-
-    // 5) แฮชรหัสผ่านชั่วคราว
+    // 7) แฮชรหัสผ่านเริ่มต้น
     const hashed = await bcrypt.hash(tempPassword, 10);
 
-    // 6) ทำงานแบบ atomic
-    const result = await db.$transaction(async (tx) => {
-      // (1) สร้าง profile
-      const user = await tx.profile.create({
+    // 8) ทำธุรกรรม
+    const user = await db.$transaction(async (tx) => {
+      // (1) profile
+      const created = await tx.profile.create({
         data: {
           userId: randomUUID(),
           email,
@@ -161,21 +181,21 @@ export async function POST(req: Request) {
           nationalId,
           role: "user",
           roomId,
-          roomStartDate: start,
+          roomStartDate: start, // วันที่เข้าพัก
           isActive: true,
         },
         select: { id: true, firstName: true, lastName: true, email: true },
       });
 
-      // (2) สร้าง contract
+      // (2) contract
       await tx.contract.create({
         data: {
-          profileId: user.id,
+          profileId: created.id,
           roomId,
           dormOwnerName,
           dormAddress,
-          contractDate: cDate,
-          startDate: start,
+          contractDate: cDate,      // วันที่ทำสัญญาจริง
+          startDate: start,         // วันที่เริ่มสัญญา/เข้าพัก
           endDate: endDt,
           rentPerMonth,
           tenantNationalId: nationalId,
@@ -184,17 +204,17 @@ export async function POST(req: Request) {
         },
       });
 
-      // (3) อัปเดตสถานะห้อง
+      // (3) อัพเดตสถานะห้อง
       await tx.room.update({
         where: { id: roomId },
         data: { status: "OCCUPIED", assignedAt: new Date() },
       });
 
-      return user;
+      return created;
     });
 
     return NextResponse.json(
-      { success: true, message: "สร้างผู้เช่าพร้อมสัญญาแล้ว", user: result, email },
+      { success: true, message: "สร้างผู้เช่าพร้อมสัญญาแล้ว", user, email },
       { status: 201 }
     );
   } catch (err: unknown) {
@@ -206,7 +226,6 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
-
     console.error("create-with-contract error:", err);
     return NextResponse.json(
       { success: false, error: "เกิดข้อผิดพลาดภายในระบบ" },
