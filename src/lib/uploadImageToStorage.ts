@@ -18,7 +18,7 @@ if (process.env.NODE_ENV !== "production") {
 export async function uploadImageToStorage(
   file: File,
   filename?: string,
-  folder = "contracts" // ใช้โฟลเดอร์สำหรับสัญญา (เดิมคุณตั้ง "maintenance")
+  folder = "contracts"
 ): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -27,10 +27,10 @@ export async function uploadImageToStorage(
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
-        public_id: filename,           // ไม่ใส่ก็ให้ Cloudinary gen เอง
+        public_id: filename,           
         resource_type: "image",
         overwrite: false,
-        unique_filename: !filename,    // ถ้าไม่มีชื่อ ให้สุ่มชื่อไม่ชน
+        unique_filename: !filename,   
       },
       (error, result) => {
         if (error || !result) return reject(error);

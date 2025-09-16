@@ -21,7 +21,6 @@ const roleLinks: Record<Role, { href: string; label: string; icon: string }[]> =
     { href: "/profile", label: "โปรไฟล์", icon: "ri-user-settings-line" },
     { href: "/bills", label: "บิลและการชำระเงิน", icon: "ri-refund-2-line" },
     { href: "/maintenance", label: "แจ้งซ่อม", icon: "ri-tools-line" },
-    { href: "/rules", label: "กฎระเบียบและสัญญา", icon: "ri-file-text-line" },
     { href: "/moveout", label: "แจ้งย้ายออก", icon: "ri-door-open-line" },
   ],
 };

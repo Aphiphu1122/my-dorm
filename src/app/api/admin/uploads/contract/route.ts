@@ -1,11 +1,16 @@
+// /api/admin/tenants/uploads/contract/route.ts
 import { NextResponse } from "next/server";
 import { getRoleFromCookie } from "@/lib/auth";
 import { uploadManyImagesToStorage } from "@/lib/uploadImageToStorage";
 
-// ให้แน่ใจว่าใช้ Node runtime (ต้องใช้ Cloudinary SDK)
+// ใช้ Cloudinary/SDK ต่าง ๆ -> ต้องเป็น Node runtime
 export const runtime = "nodejs";
+// ป้องกันการ cache เส้นทางอัปโหลด
+export const dynamic = "force-dynamic";
 
-// POST multipart/form-data  => field name: files (multiple)
+const MAX_FILES = 10;                
+const MAX_SIZE = 10 * 1024 * 1024;   
+
 export async function POST(req: Request) {
   try {
     const role = await getRoleFromCookie();
@@ -14,15 +19,39 @@ export async function POST(req: Request) {
     }
 
     const form = await req.formData();
-    const files = form.getAll("files") as File[];
-    if (!files || files.length === 0) {
+
+    // formData อาจมีค่าอื่นปะปนมา -> filter เฉพาะที่เป็น File จริง ๆ
+    const files = form.getAll("files").filter((f): f is File => f instanceof File);
+
+    if (files.length === 0) {
       return NextResponse.json({ success: false, error: "ไม่พบไฟล์อัปโหลด" }, { status: 400 });
     }
-    if (files.length > 3) {
-      return NextResponse.json({ success: false, error: "อัปโหลดได้สูงสุด 3 ไฟล์" }, { status: 400 });
+    if (files.length > MAX_FILES) {
+      return NextResponse.json(
+        { success: false, error: `อัปโหลดได้สูงสุด ${MAX_FILES} ไฟล์` },
+        { status: 400 }
+      );
     }
 
+    // ตรวจชนิดไฟล์และขนาด
+    for (const f of files) {
+      if (!f.type || !f.type.startsWith("image/")) {
+        return NextResponse.json(
+          { success: false, error: `ไฟล์ ${f.name} ไม่ใช่รูปภาพ` },
+          { status: 400 }
+        );
+      }
+      if (typeof f.size === "number" && f.size > MAX_SIZE) {
+        return NextResponse.json(
+          { success: false, error: `ไฟล์ ${f.name} มีขนาดเกิน ${Math.floor(MAX_SIZE / (1024 * 1024))}MB` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // อัปโหลดขึ้น storage (เช่น Cloudinary) โฟลเดอร์ "contract"
     const urls = await uploadManyImagesToStorage(files, "contract");
+
     return NextResponse.json({ success: true, urls }, { status: 200 });
   } catch (err) {
     console.error("Upload contract images error:", err);

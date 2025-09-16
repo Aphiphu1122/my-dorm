@@ -86,10 +86,9 @@ export default function LoginPage() {
           <p className="text-gray-800">
             ยังไม่มีบัญชีผู้ใช้?{" "}
             <a
-              href=""
               className="text-blue-700 hover:underline font-semibold"
             >
-              โปรดติดต่อเจ้าของหอพักเพื่อรับ Account
+              โปรดติดต่อเจ้าของหอพักเพื่อรับบัญชี
             </a>
           </p>
         </div>

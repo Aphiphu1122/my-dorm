@@ -1,8 +1,8 @@
+// api/profile/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
-import bcrypt from "bcryptjs";
-
+// แนะนำใช้ตัวเดียวกับที่ใช้ทั่วโปรเจกต์ เช่น: import { db } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const supabase = createClient(
@@ -10,45 +10,34 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type ProfileData = {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  birthday: string;
-  address: string;
-  nationalId: string;
-  password: string;
-  userId: string;
-  role?: "user" | "admin"; 
-};
+// ---- helper: ดึง user จาก Authorization: Bearer <token> ----
+async function getUserFromReq(req: Request) {
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  if (!token) return null;
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error) return null;
+  return data.user ?? null;
+}
 
+/** ================= POST: create profile ================= */
 export async function POST(req: Request) {
-  const body = (await req.json()) as ProfileData;
-
-  const {
-    email,
-    firstName,
-    lastName,
-    phone,
-    birthday,
-    address,
-    nationalId,
-    password,
-    userId,
-    role = "user",
-  } = body;
-
   try {
-    const existing = await prisma.profile.findUnique({ where: { email } });
+    const body = await req.json();
+    const {
+      email, firstName, lastName, phone, birthday, address,
+      nationalId, password, userId, role = "user",
+    } = body;
 
+    const existing = await prisma.profile.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ message: "Profile already exists" }, { status: 409 });
     }
 
+    // !! อย่าคืน password กลับ
+    const bcrypt = await import("bcryptjs");
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const profile = await prisma.profile.create({
+    const created = await prisma.profile.create({
       data: {
         email,
         firstName,
@@ -61,57 +50,87 @@ export async function POST(req: Request) {
         userId,
         role,
       },
+      select: {
+        id: true, email: true, firstName: true, lastName: true, phone: true,
+        birthday: true, address: true, nationalId: true, role: true,
+        isActive: true, moveOutDate: true,
+      },
     });
 
-    return NextResponse.json({ message: "Profile created", profile });
+    return NextResponse.json({ message: "Profile created", profile: created });
   } catch (error) {
     console.error("POST /api/profile error:", error);
     return NextResponse.json({ message: "Failed to create profile" }, { status: 500 });
   }
 }
 
-// 🔹 PUT: Update user profile
+/** ================= PUT: update โปรไฟล์ของ user ปัจจุบัน ================= */
 export async function PUT(req: Request) {
-  const body = await req.json();
-  const { email, ...data } = body;
-
   try {
+    const user = await getUserFromReq(req);
+    if (!user?.email) {
+      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { firstName, lastName, phone, birthday, address } = body;
+
     const updated = await prisma.profile.update({
-      where: { email },
+      where: { email: user.email },
       data: {
-        ...data,
-        birthday: data.birthday ? new Date(data.birthday) : undefined,
+        firstName,
+        lastName,
+        phone,
+        address,
+        birthday: birthday ? new Date(birthday) : undefined,
+      },
+      // คืนข้อมูลให้พอกับหน้า FE ใช้งาน (ห้อง + สัญญา)
+      select: {
+        firstName: true, lastName: true, email: true, phone: true,
+        birthday: true, address: true, nationalId: true,
+        isActive: true, moveOutDate: true,
+        room: { select: { roomNumber: true } },
+        contracts: {
+          orderBy: { startDate: "asc" },
+          select: {
+            id: true, startDate: true, endDate: true, rentPerMonth: true,
+            contractImages: true, dormOwnerName: true, dormAddress: true, contractDate: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json({ message: "Profile updated", updated });
+    // FE ของคุณคาดรูปแบบ { user: ... }
+    return NextResponse.json({ message: "Profile updated", user: updated });
   } catch (error) {
     console.error("PUT /api/profile error:", error);
     return NextResponse.json({ message: "Failed to update profile" }, { status: 500 });
   }
 }
 
-// 🔹 GET: Get profile from logged-in Supabase user
+/** ================= GET: ดึงโปรไฟล์ (พร้อม room + contracts) ================= */
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("Authorization");
-  const token = authHeader?.replace("Bearer ", "");
-
-  if (!token) {
-    return NextResponse.json({ message: "No token provided" }, { status: 401 });
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-  }
-
   try {
+    const user = await getUserFromReq(req);
+    if (!user?.email) {
+      return NextResponse.json({ message: "No/Invalid token" }, { status: 401 });
+    }
+
     const profile = await prisma.profile.findUnique({
-      where: { email: user.email! },
+      where: { email: user.email },
+      select: {
+        firstName: true, lastName: true, email: true, phone: true,
+        birthday: true, address: true, nationalId: true,
+        isActive: true, moveOutDate: true,
+        room: { select: { roomNumber: true } },
+        contracts: {
+          orderBy: { startDate: "asc" },
+          select: {
+            id: true, startDate: true, endDate: true, rentPerMonth: true,
+            contractImages: true, dormOwnerName: true, dormAddress: true, contractDate: true,
+          },
+        },
+      },
     });
 
     if (!profile) {

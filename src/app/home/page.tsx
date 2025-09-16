@@ -1,16 +1,15 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import dayjs from "dayjs";
 import { toast } from "react-hot-toast";
+import Link from "next/link";
 import NotificationBell from "@/components/NotificationBell";
 import Sidebar from "@/components/sidebar";
 
-/** ---------- Types (defensive ตามโครงสร้าง API จริง) ---------- */
+/** ---------- Types ---------- */
 type Bill = {
   id: string;
-  billingMonth: string; // ISO (ใช้แค่เดือน-ปี)
+  billingMonth: string;
   totalAmount: number;
   status: "PAID" | "UNPAID" | "PENDING_APPROVAL";
 };
@@ -46,16 +45,11 @@ type MeApi = {
   firstName: string;
   lastName: string;
   email: string;
-  // บางระบบส่ง room แยก บางระบบ flatten roomNumber มาให้
   room?: { roomNumber?: string | null; rentAmount?: number | null } | null;
   roomNumber?: string | null;
   roomStartDate?: string | null;
-
-  // ข้อมูลสัญญา
   contracts?: Contract[];
   lastContract?: Partial<Contract> | null;
-
-  // ถ้า API ฝั่งคุณเพิ่มไว้
   activeMoveOut?: ActiveMoveOut;
 };
 
@@ -73,32 +67,10 @@ type UserForUI = {
   activeMoveOut?: ActiveMoveOut;
 };
 
-const bannerImages = [
-  "https://i.ytimg.com/vi/N9mpV2Muv8k/maxresdefault.jpg",
-  "https://s.isanook.com/wo/0/ud/42/210425/210425-20221223071830-5775dce.jpg?ip/resize/w728/q80/jpg",
-  "https://bcdn.renthub.in.th/listing_picture/202401/20240119/W2E2K69JvJqgFauZ97By.jpg?class=doptimized",
-];
-
 export default function HomePage() {
   const [user, setUser] = useState<UserForUI | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  // Banner states
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isHover, setIsHover] = useState(false);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-
-  const goPrev = () =>
-    setCurrentIndex((i) => (i === 0 ? bannerImages.length - 1 : i - 1));
-  const goNext = () =>
-    setCurrentIndex((i) => (i === bannerImages.length - 1 ? 0 : i + 1));
-
-  useEffect(() => {
-    if (isHover || bannerImages.length <= 1) return;
-    const id = setInterval(goNext, 4000);
-    return () => clearInterval(id);
-  }, [isHover]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -106,24 +78,21 @@ export default function HomePage() {
         const res = await fetch("/api/profile/me", { credentials: "include" });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          toast.error(
-            (body && (body.error as string)) || "ไม่สามารถโหลดข้อมูลผู้ใช้ได้"
-          );
+          toast.error((body && (body.error as string)) || "ไม่สามารถโหลดข้อมูลผู้ใช้ได้");
           return;
         }
         const data = (await res.json()) as MeApi;
 
         const latest: Partial<Contract> | null =
-      (data.lastContract as Partial<Contract> | null) ??
-      (Array.isArray(data.contracts) && data.contracts.length
-        ? data.contracts.reduce<Contract | null>((acc, c) => {
-            if (!acc) return c;
-            return new Date(c.startDate) > new Date(acc.startDate) ? c : acc;
-          }, null)
-        : null);
+          (data.lastContract as Partial<Contract> | null) ??
+          (Array.isArray(data.contracts) && data.contracts.length
+            ? data.contracts.reduce<Contract | null>((acc, c) => {
+                if (!acc) return c;
+                return new Date(c.startDate) > new Date(acc.startDate) ? c : acc;
+              }, null)
+            : null);
 
-        const roomNumber =
-          data.room?.roomNumber ?? data.roomNumber ?? null;
+        const roomNumber = data.room?.roomNumber ?? data.roomNumber ?? null;
         const rentAmount =
           (latest?.rentPerMonth as number | undefined) ??
           data.room?.rentAmount ??
@@ -253,81 +222,64 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Banner */}
-        <div
-          className="px-4 md:px-6 mb-8"
-          onMouseEnter={() => setIsHover(true)}
-          onMouseLeave={() => setIsHover(false)}
-        >
-          <div
-            className="relative w-full rounded-2xl overflow-hidden shadow-sm
-                       aspect-[21/9] sm:aspect-[16/6] md:aspect-[16/5] lg:aspect-[16/4]"
-            onTouchStart={(e) => setTouchStartX(e.changedTouches[0].clientX)}
-            onTouchEnd={(e) => {
-              if (touchStartX === null) return;
-              const dx = e.changedTouches[0].clientX - touchStartX;
-              if (dx > 50) goPrev();
-              if (dx < -50) goNext();
-              setTouchStartX(null);
-            }}
-            aria-roledescription="carousel"
-          >
-            {bannerImages.map((src, index) => (
-              <Image
-                key={src + index}
-                src={src}
-                alt={`แบนเนอร์ ${index + 1}`}
-                fill
-                className={`absolute inset-0 object-cover transition-opacity duration-700 ${
-                  currentIndex === index ? "opacity-100" : "opacity-0"
-                }`}
-                unoptimized={src.startsWith("http")}
-                sizes="100vw"
-                priority={currentIndex === index}
-              />
+        {/* ===== Quick Actions (แทนสไลด์รูป) ===== */}
+        <section className="px-4 md:px-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                href: "/profile",
+                title: "โปรไฟล์",
+                desc: "ตรวจสอบ/แก้ไขข้อมูลส่วนตัว",
+                icon: "ri-id-card-line",
+              },
+              {
+                href: "/bills",
+                title: "บิลค่าเช่า",
+                desc: "ดูบิล แนบสลิป ชำระเงิน",
+                icon: "ri-bill-line",
+              },
+              {
+                href: "/maintenance",
+                title: "แจ้งซ่อม",
+                desc: "ส่งคำขอซ่อม ติดตามสถานะ",
+                icon: "ri-tools-line",
+              },
+              {
+                href: "/moveout",
+                title: "ย้ายออก",
+                desc: "ยื่นคำร้อง แจ้งกำหนดการ",
+                icon: "ri-logout-box-r-line",
+              },
+            ].map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {/* แถบไฮไลต์บนการ์ด */}
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0F3659] via-indigo-500 to-sky-400" />
+                <div className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-11 w-11 rounded-xl border border-gray-200 bg-gray-50
+                                 grid place-items-center group-hover:scale-105 transition"
+                    >
+                      <i className={`${a.icon} text-2xl text-[#0F3659]`} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-[#0F3659]">
+                        {a.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">{a.desc}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* เส้นขอบล่างตอน hover */}
+                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-transparent group-hover:bg-[#0F3659]/70 transition" />
+              </Link>
             ))}
-
-            {bannerImages.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  aria-label="สไลด์ก่อนหน้า"
-                  onClick={goPrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white
-                             backdrop-blur px-3 py-2 shadow-md"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  aria-label="สไลด์ถัดไป"
-                  onClick={goNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white
-                             backdrop-blur px-3 py-2 shadow-md"
-                >
-                  ›
-                </button>
-              </>
-            )}
-
-            {bannerImages.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                {bannerImages.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentIndex(i)}
-                    aria-label={`ไปสไลด์ที่ ${i + 1}`}
-                    className={`h-2.5 w-2.5 rounded-full border transition ${
-                      currentIndex === i
-                        ? "bg-white border-white"
-                        : "border-white/70 bg-white/40"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
-        </div>
+        </section>
 
         {/* Tenant Info (ข้อมูลผู้เช่า) */}
         <div className="mb-8 px-4 md:px-6">
@@ -344,9 +296,7 @@ export default function HomePage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-gray-500 text-sm">ค่าเช่ารายเดือน</div>
               <div className="text-lg font-semibold">
-                {user?.rentAmount
-                  ? `${user.rentAmount.toLocaleString()} บาท`
-                  : "-"}
+                {user?.rentAmount ? `${user.rentAmount.toLocaleString()} บาท` : "-"}
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 กำหนดชำระภายในวันที่ 5 ของทุกเดือน
@@ -356,39 +306,29 @@ export default function HomePage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-gray-500 text-sm">วันที่เข้าพัก</div>
               <div className="text-lg font-semibold">
-                {user?.roomStartDate
-                  ? dayjs(user.roomStartDate).format("DD MMM YYYY")
-                  : "-"}
+                {user?.roomStartDate ? dayjs(user.roomStartDate).format("DD MMM YYYY") : "-"}
               </div>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-gray-500 text-sm">เริ่มสัญญา</div>
               <div className="text-lg font-semibold">
-                {user?.contractStart
-                  ? dayjs(user.contractStart).format("DD MMM YYYY")
-                  : "-"}
+                {user?.contractStart ? dayjs(user.contractStart).format("DD MMM YYYY") : "-"}
               </div>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-gray-500 text-sm">สิ้นสุดสัญญา</div>
               <div className="text-lg font-semibold">
-                {user?.contractEnd
-                  ? dayjs(user.contractEnd).format("DD MMM YYYY")
-                  : "-"}
+                {user?.contractEnd ? dayjs(user.contractEnd).format("DD MMM YYYY") : "-"}
               </div>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-gray-500 text-sm">ผู้ให้เช่า / ที่อยู่หอ</div>
               <div className="text-sm">
-                <div className="font-semibold">
-                  {user?.dormOwnerName || "-"}
-                </div>
-                <div className="text-gray-700">
-                  {user?.dormAddress || "-"}
-                </div>
+                <div className="font-semibold">{user?.dormOwnerName || "-"}</div>
+                <div className="text-gray-700">{user?.dormAddress || "-"}</div>
               </div>
             </div>
 
@@ -396,14 +336,11 @@ export default function HomePage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm md:col-span-2 lg:col-span-3">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="text-gray-700">
-                  <span className="font-semibold">บิลเดือนนี้:</span>{" "}
-                  {dayjs().format("MMMM YYYY")}
+                  <span className="font-semibold">บิลเดือนนี้:</span> {dayjs().format("MMMM YYYY")}
                 </div>
                 <div className="text-gray-700">
                   <span className="font-semibold">ยอดรวม:</span>{" "}
-                  {currentMonthBill
-                    ? `${currentMonthBill.totalAmount.toLocaleString()} บาท`
-                    : "-"}
+                  {currentMonthBill ? `${currentMonthBill.totalAmount.toLocaleString()} บาท` : "-"}
                 </div>
                 <div className="text-gray-700">
                   <span className="font-semibold">สถานะ:</span>{" "}
@@ -422,17 +359,15 @@ export default function HomePage() {
                 <div className="text-gray-700">
                   <span className="font-semibold">ครบกำหนด:</span>{" "}
                   {dayjs().date(dueDay).format("DD MMM YYYY")}{" "}
-                  <span className="text-xs text-gray-500">
-                    (เหลืออีก {daysLeftToDue} วัน)
-                  </span>
+                  <span className="text-xs text-gray-500">(เหลืออีก {daysLeftToDue} วัน)</span>
                 </div>
                 {currentMonthBill && (
-                  <a
+                  <Link
                     href={`/bills/${currentMonthBill.id}`}
                     className="ml-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                   >
                     ดูบิลเดือนนี้
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>
@@ -464,9 +399,7 @@ export default function HomePage() {
                   </div>
                   <div className="text-gray-700">
                     <span className="font-semibold">วันที่ย้ายออก:</span>{" "}
-                    {dayjs(user.activeMoveOut.moveOutDate).format(
-                      "DD MMM YYYY"
-                    )}
+                    {dayjs(user.activeMoveOut.moveOutDate).format("DD MMM YYYY")}
                   </div>
                 </div>
               </div>
@@ -489,44 +422,33 @@ export default function HomePage() {
               </thead>
               <tbody>
                 {bills.map((bill) => (
-                  <tr
-                    key={bill.id}
-                    className="border-t border-gray-200 hover:bg-gray-50"
-                  >
+                  <tr key={bill.id} className="border-t border-gray-200 hover:bg-gray-50">
                     <td className="p-3">
                       {new Date(bill.billingMonth).toLocaleDateString("th-TH", {
                         year: "numeric",
                         month: "long",
                       })}
                     </td>
-                    <td className="p-3">
-                      {bill.totalAmount.toLocaleString()} บาท
-                    </td>
+                    <td className="p-3">{bill.totalAmount.toLocaleString()} บาท</td>
                     <td className="p-3">
                       {bill.status === "PAID" ? (
                         <span className="inline-flex bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs items-center gap-1">
-                          <i className="ri-checkbox-circle-fill text-green-600"></i>{" "}
-                          ชำระแล้ว
+                          <i className="ri-checkbox-circle-fill text-green-600" /> ชำระแล้ว
                         </span>
                       ) : bill.status === "PENDING_APPROVAL" ? (
                         <span className="inline-flex bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs items-center gap-1">
-                          <i className="ri-indeterminate-circle-fill text-yellow-600"></i>{" "}
-                          รอการอนุมัติ
+                          <i className="ri-indeterminate-circle-fill text-yellow-600" /> รอการอนุมัติ
                         </span>
                       ) : (
                         <span className="inline-flex bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs items-center gap-1">
-                          <i className="ri-close-circle-fill text-red-600"></i>{" "}
-                          ยังไม่ชำระ
+                          <i className="ri-close-circle-fill text-red-600" /> ยังไม่ชำระ
                         </span>
                       )}
                     </td>
                     <td className="p-3">
-                      <a
-                        href={`/bills/${bill.id}`}
-                        className="text-blue-600 underline text-sm hover:text-blue-800"
-                      >
+                      <Link href={`/bills/${bill.id}`} className="text-blue-600 underline text-sm hover:text-blue-800">
                         ดูรายละเอียด
-                      </a>
+                      </Link>
                     </td>
                   </tr>
                 ))}

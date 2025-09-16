@@ -1,3 +1,4 @@
+// /api/admin/tenants/create-with-contract/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -52,6 +53,11 @@ const PayloadSchema = z.object({
 });
 
 /* ---------------- Helpers ---------------- */
+// ปกติ <input type="date"> จะได้สตริง YYYY-MM-DD (ไม่มีเวลา/โซน)
+// เพื่อให้เทียบช่วงได้เสถียร เราตรึงเป็นต้นวัน/ท้ายวันตาม UTC
+const asStartOfDayUTC = (d: string) => new Date(`${d}T00:00:00.000Z`);
+const asEndOfDayUTC   = (d: string) => new Date(`${d}T23:59:59.999Z`);
+
 function addOneYear(d: Date) {
   const nd = new Date(d);
   nd.setFullYear(nd.getFullYear() + 1);
@@ -120,10 +126,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "มีผู้เช่าห้องนี้อยู่แล้ว" }, { status: 400 });
     }
 
-    // 4) วันสัญญา/วันเริ่ม-สิ้นสุด
-    const start = new Date(startDate);
-    const endDt = endDate ? new Date(endDate) : addOneYear(start);
-    const cDate = contractDate ? new Date(contractDate) : new Date();
+    // 4) วันสัญญา/วันเริ่ม-สิ้นสุด (normalize ให้คงที่)
+    const start = asStartOfDayUTC(startDate);
+    const endDt = endDate ? asEndOfDayUTC(endDate) : asEndOfDayUTC(new Date(addOneYear(start)).toISOString().slice(0,10));
+    const cDate = contractDate ? asStartOfDayUTC(contractDate) : new Date();
 
     if (endDt <= start) {
       return NextResponse.json(
@@ -132,13 +138,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5) ตรวจวันทับซ้อนกับสัญญาห้องเดิม (สำคัญ)
-    // เงื่อนไขทับซ้อน: existing.start <= newEnd AND existing.end >= newStart
+    // 5) ตรวจวันทับซ้อนกับสัญญาของ "ห้องเดียวกัน"
+    // ใช้ exclusive-end: overlap ถ้า (existing.start < newEnd) && (existing.end > newStart)
     const overlap = await db.contract.findFirst({
       where: {
         roomId,
-        startDate: { lte: endDt },
-        endDate: { gte: start },
+        startDate: { lt: endDt },
+        endDate:   { gt: start },
       },
       select: { id: true, startDate: true, endDate: true },
     });
@@ -194,8 +200,8 @@ export async function POST(req: Request) {
           roomId,
           dormOwnerName,
           dormAddress,
-          contractDate: cDate,      // วันที่ทำสัญญาจริง
-          startDate: start,         // วันที่เริ่มสัญญา/เข้าพัก
+          contractDate: cDate, // วันที่ทำสัญญาจริง
+          startDate: start,    // วันที่เริ่มสัญญา/เข้าพัก
           endDate: endDt,
           rentPerMonth,
           tenantNationalId: nationalId,
