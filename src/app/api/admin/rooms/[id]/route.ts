@@ -1,36 +1,57 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/admin/rooms/[id]/route.ts
+import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/prisma";
-import { Prisma, RoomStatus } from "@prisma/client";
-import { getRoleFromCookie } from "@/lib/auth";
+import { checkAdminAuthOrReject, getRoleFromCookie } from "@/lib/auth";
+import { z } from "zod";
+import { RoomStatus } from "@prisma/client";
 
-/* ---------- helpers ---------- */
-const ok = (data: unknown, init: number = 200) =>
-  NextResponse.json({ success: true, ...((data as object) ?? {}) }, { status: init });
-const err = (message: string, init: number) =>
-  NextResponse.json({ success: false, error: message }, { status: init });
+/** route นี้ผูก cookie → ปิด cache ทั้งหมด */
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+const noStoreHeaders = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+} as const;
+
+const ok = (data: unknown, status = 200) =>
+  NextResponse.json({ success: true, ...(data as object) }, { status, headers: noStoreHeaders });
+const err = (message: string, status: number) =>
+  NextResponse.json({ success: false, error: message }, { status, headers: noStoreHeaders });
 
 const ALLOWED_STATUS: RoomStatus[] = ["AVAILABLE", "OCCUPIED", "MAINTENANCE"];
 
-/* --------------------------------
- * GET /api/admin/rooms/[id]
- * ส่งข้อมูลตามที่หน้า UI ต้องใช้:
+/* ----------------------------- Schemas ----------------------------- */
+const ParamsSchema = z.object({ id: z.string().min(1) });
+const PatchSchema = z
+  .object({
+    roomNumber: z.string().trim().min(1).optional(),
+    status: z.enum(["AVAILABLE", "OCCUPIED", "MAINTENANCE"]).optional(),
+    tenantId: z.string().uuid().optional(),
+  })
+  .refine((o) => Object.keys(o).length > 0, { message: "ไม่มีข้อมูลสำหรับปรับปรุง" });
+
+/* =============================== GET =============================== */
+/**
+ * ส่งข้อมูลให้หน้า UI:
  * - room basic + assignedAt
- * - tenant ปัจจุบัน (จาก profile.roomId)
- * - latestContract (ของห้องนี้ เรียงล่าสุด)
- * - contracts (ทั้งหมดของห้องนี้ เรียงล่าสุดก่อน)
+ * - tenant ปัจจุบัน (อิงจาก profile.roomId)
+ * - latestContract ของห้องนี้
+ * - contracts ทั้งหมดของห้องนี้ (ล่าสุดก่อน)
  * - maintenanceCount
- * -------------------------------- */
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+ */
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const role = await getRoleFromCookie();
   if (role !== "admin") return err("Unauthorized", 403);
 
+  const { id } = ParamsSchema.parse(params);
+
   const room = await db.room.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { maintenanceRequests: true },
   });
   if (!room) return err("ไม่พบห้อง", 404);
 
-  // ผู้เช่าปัจจุบันของห้อง (ถ้ามี)
   const tenant = await db.profile.findFirst({
     where: { roomId: room.id },
     select: {
@@ -43,7 +64,6 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     },
   });
 
-  // สัญญาของ "ห้องนี้" ทั้งหมด (จะครอบคลุมหลายช่วงต่อสัญญา)
   const contracts = await db.contract.findMany({
     where: { roomId: room.id },
     orderBy: { startDate: "desc" },
@@ -68,48 +88,51 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       updatedAt: room.updatedAt,
       assignedAt: room.assignedAt,
       maintenanceCount: room.maintenanceRequests.length,
-      tenant,          // ข้อมูลผู้เช่าปัจจุบัน (ถ้ามี)
-      latestContract,  // สัญญาล่าสุดของห้อง
-      contracts,       // สัญญาทั้งหมดของห้อง
+      tenant,
+      latestContract,
+      contracts,
     },
   });
 }
 
-/* --------------------------------
- * PATCH /api/admin/rooms/[id]
+/* ============================== PATCH ============================== */
+/**
  * รองรับ:
  * - เปลี่ยนหมายเลขห้อง / สถานะห้อง
- * - assign tenant เข้าห้องนี้ (กันชนกับผู้เช่าคนอื่น)
- *   - ถ้า tenant เดิมมีห้องอยู่ → ปล่อยห้องเดิม AVAILABLE
- *   - ตั้ง room.status = OCCUPIED และ assignedAt = now
- *   - อัปเดต profile.roomId และ roomStartDate (วันที่เข้าพักใหม่)
- * -------------------------------- */
+ * - Assign tenant เข้าห้องนี้แบบ atomic
+ *   - ถ้า tenant เดิมมีห้อง → ปลดห้องเดิม AVAILABLE
+ *   - ตั้งห้องปัจจุบันเป็น OCCUPIED + assignedAt = now
+ *   - อัปเดต profile.roomId + roomStartDate
+ */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const role = await getRoleFromCookie();
-  if (role !== "admin") return err("Unauthorized", 403);
+  const auth = await checkAdminAuthOrReject();
+  if (auth instanceof NextResponse) {
+    auth.headers.set("Cache-Control", noStoreHeaders["Cache-Control"]);
+    return auth;
+  }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const roomId = params.id as string;
+    const { id: roomId } = ParamsSchema.parse(params);
+    const body = PatchSchema.parse(await req.json());
 
     const room = await db.room.findUnique({ where: { id: roomId } });
     if (!room) return err("ไม่พบห้อง", 404);
 
-    const { roomNumber, status, tenantId } = body as {
-      roomNumber?: string;
-      status?: RoomStatus;
-      tenantId?: string;
-    };
+    const { roomNumber, status, tenantId } = body;
 
-    // validate status (ถ้าส่งมา)
+    // validate status ถ้าส่งมา
     if (status && !ALLOWED_STATUS.includes(status)) {
       return err("สถานะห้องไม่ถูกต้อง", 400);
     }
 
-    // เตรียมข้อมูลที่อัปเดต
-    const dataToUpdate: Partial<Prisma.roomUncheckedUpdateInput> = {};
-    if (roomNumber) dataToUpdate.roomNumber = roomNumber;
-    if (status) dataToUpdate.status = status;
+    // กันเลขห้องซ้ำ (กรณีเปลี่ยนเลข)
+    if (roomNumber && roomNumber.trim() !== room.roomNumber) {
+      const dup = await db.room.findFirst({
+        where: { roomNumber: { equals: roomNumber.trim(), mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (dup) return err("มีเลขห้องนี้อยู่แล้ว", 409);
+    }
 
     // ถ้ามีการ assign tenant ใหม่
     if (tenantId) {
@@ -119,18 +142,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
       if (!tenant) return err("ไม่พบผู้ใช้ที่ต้องการผูกห้อง", 404);
 
-      // มีผู้ถือห้องนี้อยู่แล้วและไม่ใช่ tenantId ที่จะใส่ → ห้าม
+      // ห้องนี้มีผู้เช่าคนอื่นอยู่แล้ว → ห้าม
       const currentHolder = await db.profile.findFirst({
         where: { roomId: roomId },
-        select: { id: true, firstName: true, lastName: true },
+        select: { id: true },
       });
       if (currentHolder && currentHolder.id !== tenantId) {
         return err("ห้องนี้มีผู้เช่าอยู่แล้ว", 400);
       }
 
-      // ทำธุรกรรม: ปลดห้องเดิมของ tenant (ถ้ามี) และผูกกับห้องใหม่
       await db.$transaction(async (tx) => {
-        // ถ้ามีห้องเดิมและไม่ใช่ห้องนี้ → ปลดห้องเดิม AVAILABLE
+        // ปลดห้องเดิมของ tenant (ถ้ามี และไม่ใช่ห้องนี้)
         if (tenant.roomId && tenant.roomId !== roomId) {
           await tx.room.update({
             where: { id: tenant.roomId },
@@ -138,31 +160,42 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           });
         }
 
-        // set tenant -> ห้องนี้
+        // ผูก tenant -> ห้องนี้
         await tx.profile.update({
           where: { id: tenantId },
-          data: { roomId: roomId, roomStartDate: new Date() },
+          data: { roomId, roomStartDate: new Date() },
         });
 
-        // ปรับสถานะห้องปัจจุบัน -> OCCUPIED
+        // ตั้งห้องนี้ให้ OCCUPIED
         await tx.room.update({
           where: { id: roomId },
           data: { status: "OCCUPIED", assignedAt: new Date() },
         });
+
+        // ถ้าพร้อมกันอยากแก้เลขห้องด้วย
+        if (roomNumber && roomNumber.trim() !== room.roomNumber) {
+          await tx.room.update({
+            where: { id: roomId },
+            data: { roomNumber: roomNumber.trim() },
+          });
+        }
       });
 
-      // ไม่ต้องอัปเดตซ้ำอีกด้านล่าง
       return ok({ message: "กำหนดผู้เช่าให้ห้องนี้เรียบร้อย" });
     }
 
-    // กรณีอัปเดตสถานะด้วยตัวเอง:
-    // ถ้าจะเปลี่ยนเป็น AVAILABLE แต่ยังมีผู้เช่าเกาะอยู่ → บล็อก
+    // กรณีอัปเดตเลข/สถานะอย่างเดียว
+    type RoomUpdateData = Parameters<typeof db.room.update>[0]["data"];
+    const dataToUpdate: RoomUpdateData = {};
+    if (roomNumber) dataToUpdate.roomNumber = roomNumber.trim();
+    if (status) dataToUpdate.status = status;
+
+    // ถ้าจะตั้ง AVAILABLE แต่ยังมีผู้เช่าเกาะอยู่ → บล็อก
     if (status === "AVAILABLE") {
       const holder = await db.profile.findFirst({ where: { roomId } });
       if (holder) {
         return err("ไม่สามารถตั้งเป็น AVAILABLE ได้: ยังมีผู้เช่าอยู่ในห้องนี้", 400);
       }
-      // AVAILABLE → ล้าง assignedAt เพื่อความชัดเจน
       dataToUpdate.assignedAt = null;
     }
 
@@ -172,24 +205,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
 
     return ok({ room: updatedRoom });
-  } catch (error) {
-    console.error("❌ PATCH ROOM ERROR:", error);
+  } catch (e) {
+    console.error("❌ PATCH ROOM ERROR:", e);
     return err("เกิดข้อผิดพลาดในการอัปเดตห้อง", 500);
   }
 }
 
-/* --------------------------------
- * DELETE /api/admin/rooms/[id]
+/* ============================== DELETE ============================== */
+/**
  * ลบห้องได้เมื่อ:
  * - ไม่มีผู้เช่าเกาะอยู่
- * - ไม่มีบิล/คำร้องซ่อมในระบบ (เพื่อความปลอดภัย)
- * -------------------------------- */
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const role = await getRoleFromCookie();
-  if (role !== "admin") return err("Unauthorized", 403);
+ * - ไม่มีบิล/คำร้องซ่อมค้างในระบบ
+ */
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await checkAdminAuthOrReject();
+  if (auth instanceof NextResponse) {
+    auth.headers.set("Cache-Control", noStoreHeaders["Cache-Control"]);
+    return auth;
+  }
 
   try {
-    const roomId = params.id;
+    const { id: roomId } = ParamsSchema.parse(params);
 
     const room = await db.room.findUnique({
       where: { id: roomId },
@@ -206,8 +242,8 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
 
     await db.room.delete({ where: { id: roomId } });
     return ok({ message: "ลบห้องสำเร็จ" });
-  } catch (error) {
-    console.error("❌ DELETE ROOM ERROR:", error);
+  } catch (e) {
+    console.error("❌ DELETE ROOM ERROR:", e);
     return err("เกิดข้อผิดพลาดในการลบห้อง", 500);
   }
 }

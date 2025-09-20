@@ -489,8 +489,8 @@ export default function AdminTenantsPage() {
               onChange={(e) => setFilterStatus(e.target.value as RoomStatus)}
             >
               <option value="ALL">ทั้งหมด</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="OCCUPIED">Occupied</option>
+              <option value="AVAILABLE">ว่าง</option>
+              <option value="OCCUPIED">ใช้งาน</option>
             </select>
 
             <button

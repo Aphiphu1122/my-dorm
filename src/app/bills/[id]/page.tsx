@@ -11,48 +11,67 @@ type BillStatus = "PAID" | "UNPAID" | "PENDING_APPROVAL";
 
 type Bill = {
   id: string;
-  billingMonth: string;
-  rentAmount: number;
-  waterUnit: number;
-  waterRate: number;
-  electricUnit: number;
-  electricRate: number;
-  totalAmount: number;
+  billingMonth: string;               // ISO
+  rentAmount?: number | null;
+  waterUnit?: number | null;
+  waterRate?: number | null;
+  electricUnit?: number | null;
+  electricRate?: number | null;
+  totalAmount?: number | null;
   status: BillStatus;
-  paymentSlipUrl?: string;
-  paymentDate?: string;
+  paymentSlipUrl?: string | null;
+  paymentDate?: string | null;
 };
 
 export default function BillDetailPage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const billId = typeof params.id === "string" ? params.id : "";
+  const billId = params?.id;
+
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [slipFile, setSlipFile] = useState<File | null>(null);
-  const now = new Date();
-  const defaultDateTime = now.toISOString().slice(0, 16);
 
-  const [paymentDate, setPaymentDate] = useState(defaultDateTime);
+  // default datetime-local value
+  const [paymentDate, setPaymentDate] = useState(
+    new Date().toISOString().slice(0, 16)
+  );
+
+  // ---- helpers (กัน undefined) ----
+  const money = (n: number | null | undefined) =>
+    typeof n === "number" && !Number.isNaN(n) ? n.toLocaleString() : "-";
+
+  const num = (n: number | null | undefined) =>
+    typeof n === "number" && !Number.isNaN(n) ? n : 0;
+
+  const tMonth = (iso?: string) =>
+    iso
+      ? new Date(iso).toLocaleDateString("th-TH", { month: "long", year: "numeric" })
+      : "-";
 
   useEffect(() => {
     if (!billId) return;
-
-    const fetchBill = async () => {
+    (async () => {
       try {
-        const res = await fetch(`/api/bills/${billId}`);
-        if (!res.ok) throw new Error("ไม่สามารถโหลดบิลได้");
+        const res = await fetch(`/api/bills/${billId}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
         const data = await res.json();
-        setBill(data.bill);
+        if (!res.ok) {
+          toast.error(data?.error || "ไม่สามารถโหลดบิลได้");
+          setBill(null);
+          return;
+        }
+        // API ของคุณส่ง { bill: {...} }
+        setBill(data.bill as Bill);
       } catch (e) {
         console.error(e);
         toast.error("ไม่พบข้อมูลบิล");
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchBill();
+    })();
   }, [billId]);
 
   const handleUpload = async () => {
@@ -64,31 +83,36 @@ export default function BillDetailPage() {
     formData.append("paymentDate", paymentDate);
 
     try {
-      const res = await fetch(`/api/bills/${bill.id}/upload`, {
+      // ✅ endpoint ที่คุณมีคือ /api/bills/[id]/uploads (เติม s)
+      const res = await fetch(`/api/bills/${bill.id}/uploads`, {
         method: "POST",
         body: formData,
+        credentials: "include",
+        cache: "no-store",
       });
 
-      if (res.ok) {
-        toast.success("แนบสลิปสำเร็จ");
-        router.refresh();
-      } else {
-        const errorData = await res.json();
-        toast.error("อัปโหลดไม่สำเร็จ: " + (errorData.error || "เกิดข้อผิดพลาด"));
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error("อัปโหลดไม่สำเร็จ: " + (data?.error || "เกิดข้อผิดพลาด"));
+        return;
       }
+
+      toast.success("แนบสลิปสำเร็จ");
+      // อัปเดต state ทันทีให้ UI เปลี่ยนโดยไม่ต้องรีโหลดทั้งหน้า
+      setBill(data.bill as Bill);
+      setSlipFile(null);
+      router.refresh();
     } catch (e) {
       console.error("❌ Upload failed:", e);
       toast.error("เกิดข้อผิดพลาด");
     }
   };
 
-  if (loading)
-    return <p className="text-center mt-8 text-gray-500">กำลังโหลด...</p>;
-  if (!bill)
-    return <p className="text-center mt-8 text-gray-500">ไม่พบบิล</p>;
+  if (loading) return <p className="text-center mt-8 text-gray-500">กำลังโหลด...</p>;
+  if (!bill)   return <p className="text-center mt-8 text-gray-500">ไม่พบบิล</p>;
 
-  const waterTotal = bill.waterUnit * bill.waterRate;
-  const electricTotal = bill.electricUnit * bill.electricRate;
+  const waterTotal = num(bill.waterUnit) * num(bill.waterRate);
+  const electricTotal = num(bill.electricUnit) * num(bill.electricRate);
 
   const statusDisplay = {
     UNPAID: {
@@ -106,7 +130,7 @@ export default function BillDetailPage() {
       color: "text-green-600",
       icon: <i className="ri-checkbox-circle-fill" />,
     },
-  };
+  } as const;
 
   return (
     <div className="flex min-h-screen bg-white text-black">
@@ -119,12 +143,9 @@ export default function BillDetailPage() {
         <p className="text-gray-500 mb-8">จัดการบิลและค่าเช่าของคุณ</p>
 
         <h2 className="text-lg font-semibold text-[#0F3659] mb-1">
-          บิลค่าเช่า{" "}
-          {new Date(bill.billingMonth).toLocaleDateString("th-TH", {
-            month: "long",
-            year: "numeric",
-          })}
+          บิลค่าเช่า {tMonth(bill.billingMonth)}
         </h2>
+
         <section className="mb-6 bg-white shadow-md rounded-lg p-2 flex justify-between items-center">
           <span className="text-gray-700 font-medium p-2">สถานะบิล</span>
           <span
@@ -141,19 +162,19 @@ export default function BillDetailPage() {
           <div className="divide-y divide-gray-200">
             <div className="flex justify-between py-3 p-2 text-gray-700">
               <span>ค่าเช่าห้อง</span>
-              <span>{bill.rentAmount.toLocaleString()} บาท</span>
+              <span>{money(bill.rentAmount)} บาท</span>
             </div>
             <div className="flex justify-between py-3 p-2 text-gray-700">
               <span>ค่าน้ำ</span>
-              <span>{waterTotal.toLocaleString()} บาท</span>
+              <span>{money(waterTotal)} บาท</span>
             </div>
             <div className="flex justify-between py-3 p-2 text-gray-700">
               <span>ค่าไฟ</span>
-              <span>{electricTotal.toLocaleString()} บาท</span>
+              <span>{money(electricTotal)} บาท</span>
             </div>
-            <div className="flex justify-between py-3  p-2 font-bold text-yellow-700">
+            <div className="flex justify-between py-3 p-2 font-bold text-yellow-700">
               <span>รวมทั้งหมด</span>
-              <span>{bill.totalAmount.toLocaleString()} บาท</span>
+              <span>{money(bill.totalAmount)} บาท</span>
             </div>
           </div>
         </section>
@@ -225,14 +246,15 @@ export default function BillDetailPage() {
             </div>
           </section>
         )}
+
         <div className="justify-between flex">
           <div className="flex justify-start">
-            <a
-              href="http://localhost:3000/bills"
+            <Link
+              href="/bills"
               className="inline-block mt-5 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition duration-200 transform hover:scale-105"
             >
               กลับไปหน้าบิลทั้งหมด
-            </a>
+            </Link>
           </div>
 
           {bill.status === "PAID" && (

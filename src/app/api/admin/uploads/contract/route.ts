@@ -1,63 +1,92 @@
-// /api/admin/tenants/uploads/contract/route.ts
+// src/app/api/admin/tenants/uploads/contract/route.ts
 import { NextResponse } from "next/server";
 import { getRoleFromCookie } from "@/lib/auth";
 import { uploadManyImagesToStorage } from "@/lib/uploadImageToStorage";
 
-// ใช้ Cloudinary/SDK ต่าง ๆ -> ต้องเป็น Node runtime
 export const runtime = "nodejs";
-// ป้องกันการ cache เส้นทางอัปโหลด
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
-const MAX_FILES = 10;                
-const MAX_SIZE = 10 * 1024 * 1024;   
+const noStore = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+} as const;
+
+const MAX_FILES = 10;
+const MAX_SIZE = 10 * 1024 * 1024;
+const ALLOWED_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+]);
 
 export async function POST(req: Request) {
   try {
     const role = await getRoleFromCookie();
     if (role !== "admin") {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401, headers: noStore });
     }
 
     const form = await req.formData();
 
-    // formData อาจมีค่าอื่นปะปนมา -> filter เฉพาะที่เป็น File จริง ๆ
-    const files = form.getAll("files").filter((f): f is File => f instanceof File);
+    const rawEntries = [
+      ...form.getAll("files"),
+      ...form.getAll("file"),
+      ...Array.from(form.values()),
+    ];
+    const files: File[] = Array.from(
+      new Set(rawEntries.filter((v): v is File => v instanceof File))
+    );
 
     if (files.length === 0) {
-      return NextResponse.json({ success: false, error: "ไม่พบไฟล์อัปโหลด" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "ไม่พบไฟล์อัปโหลด" },
+        { status: 400, headers: noStore }
+      );
     }
     if (files.length > MAX_FILES) {
       return NextResponse.json(
-        { success: false, error: `อัปโหลดได้สูงสุด ${MAX_FILES} ไฟล์` },
-        { status: 400 }
+        { success: false, error: `อัปโหลดได้สูงสุด ${MAX_FILES} ไฟล์ต่อครั้ง` },
+        { status: 400, headers: noStore }
       );
     }
 
-    // ตรวจชนิดไฟล์และขนาด
     for (const f of files) {
-      if (!f.type || !f.type.startsWith("image/")) {
+      if (!f.type || !ALLOWED_MIME.has(f.type)) {
         return NextResponse.json(
-          { success: false, error: `ไฟล์ ${f.name} ไม่ใช่รูปภาพ` },
-          { status: 400 }
+          {
+            success: false,
+            error: `ไฟล์ ${f.name} ไม่ใช่รูปภาพประเภทที่อนุญาต`,
+          },
+          { status: 415, headers: noStore }
         );
       }
       if (typeof f.size === "number" && f.size > MAX_SIZE) {
         return NextResponse.json(
-          { success: false, error: `ไฟล์ ${f.name} มีขนาดเกิน ${Math.floor(MAX_SIZE / (1024 * 1024))}MB` },
-          { status: 400 }
+          {
+            success: false,
+            error: `ไฟล์ ${f.name} มีขนาดเกิน ${Math.floor(MAX_SIZE / (1024 * 1024))}MB`,
+          },
+          { status: 400, headers: noStore }
         );
       }
     }
 
-    // อัปโหลดขึ้น storage (เช่น Cloudinary) โฟลเดอร์ "contract"
-    const urls = await uploadManyImagesToStorage(files, "contract");
+    // ✅ แก้ตรงนี้: ส่งเป็น options object ให้ตรง type ใหม่
+    const urls = await uploadManyImagesToStorage(files, {
+      prefix: "contract",
+      folder: "contracts",
+    });
 
-    return NextResponse.json({ success: true, urls }, { status: 200 });
+    return NextResponse.json({ success: true, urls }, { status: 200, headers: noStore });
   } catch (err) {
     console.error("Upload contract images error:", err);
     return NextResponse.json(
       { success: false, error: "อัปโหลดล้มเหลว" },
-      { status: 500 }
+      { status: 500, headers: noStore }
     );
   }
 }

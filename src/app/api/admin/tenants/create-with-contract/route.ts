@@ -1,4 +1,4 @@
-// /api/admin/tenants/create-with-contract/route.ts
+// src/app/api/admin/tenants/create-with-contract/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -7,6 +7,13 @@ import { getRoleFromCookie } from "@/lib/auth";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+const noStore = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+} as const;
 
 /** Lightweight Prisma error type */
 interface PrismaKnownError {
@@ -14,7 +21,9 @@ interface PrismaKnownError {
   meta?: { target?: string[] };
 }
 
-/* ---------------- Zod Schema ---------------- */
+/* ---------------- Zod Schema ----------------
+ * ใช้ z.coerce.number() เพื่อรองรับค่าที่มาจากฟอร์ม (string → number)
+ */
 const PayloadSchema = z.object({
   // ผู้เช่า
   firstName: z.string().min(1, "กรุณาระบุชื่อ"),
@@ -26,7 +35,7 @@ const PayloadSchema = z.object({
 
   // ห้อง/สัญญา
   roomId: z.string().uuid("roomId ไม่ถูกต้อง"),
-  rentPerMonth: z.number().positive("ค่าเช่าต้องมากกว่า 0"),
+  rentPerMonth: z.coerce.number().positive("ค่าเช่าต้องมากกว่า 0"),
   startDate: z.string().refine((v) => !isNaN(Date.parse(v)), "วันเริ่มเช่าไม่ถูกต้อง"),
   endDate: z
     .string()
@@ -56,7 +65,7 @@ const PayloadSchema = z.object({
 // ปกติ <input type="date"> จะได้สตริง YYYY-MM-DD (ไม่มีเวลา/โซน)
 // เพื่อให้เทียบช่วงได้เสถียร เราตรึงเป็นต้นวัน/ท้ายวันตาม UTC
 const asStartOfDayUTC = (d: string) => new Date(`${d}T00:00:00.000Z`);
-const asEndOfDayUTC   = (d: string) => new Date(`${d}T23:59:59.999Z`);
+const asEndOfDayUTC = (d: string) => new Date(`${d}T23:59:59.999Z`);
 
 function addOneYear(d: Date) {
   const nd = new Date(d);
@@ -77,7 +86,7 @@ export async function POST(req: Request) {
     // 1) ต้องเป็น admin
     const role = await getRoleFromCookie();
     if (role !== "admin") {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401, headers: noStore });
     }
 
     // 2) validate payload
@@ -85,7 +94,7 @@ export async function POST(req: Request) {
     const parsed = PayloadSchema.safeParse(body);
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง";
-      return NextResponse.json({ success: false, error: msg }, { status: 400 });
+      return NextResponse.json({ success: false, error: msg }, { status: 400, headers: noStore });
     }
 
     const {
@@ -114,27 +123,28 @@ export async function POST(req: Request) {
       select: { id: true, roomNumber: true, status: true },
     });
     if (!room) {
-      return NextResponse.json({ success: false, error: "ไม่พบห้องที่เลือก" }, { status: 404 });
+      return NextResponse.json({ success: false, error: "ไม่พบห้องที่เลือก" }, { status: 404, headers: noStore });
     }
     if (room.status !== "AVAILABLE") {
-      return NextResponse.json({ success: false, error: "ห้องนี้ไม่ว่าง" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "ห้องนี้ไม่ว่าง" }, { status: 400, headers: noStore });
     }
 
     // กันเคสมีผู้เช่าเซ็ตอยู่แล้ว (ความปลอดภัยอีกชั้น)
     const holder = await db.profile.findFirst({ where: { roomId } });
     if (holder) {
-      return NextResponse.json({ success: false, error: "มีผู้เช่าห้องนี้อยู่แล้ว" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "มีผู้เช่าห้องนี้อยู่แล้ว" }, { status: 400, headers: noStore });
     }
 
     // 4) วันสัญญา/วันเริ่ม-สิ้นสุด (normalize ให้คงที่)
     const start = asStartOfDayUTC(startDate);
-    const endDt = endDate ? asEndOfDayUTC(endDate) : asEndOfDayUTC(new Date(addOneYear(start)).toISOString().slice(0,10));
+    const endDateStr = endDate ?? addOneYear(start).toISOString().slice(0, 10);
+    const endDt = asEndOfDayUTC(endDateStr);
     const cDate = contractDate ? asStartOfDayUTC(contractDate) : new Date();
 
     if (endDt <= start) {
       return NextResponse.json(
         { success: false, error: "วันสิ้นสุดสัญญาต้องอยู่หลังวันเริ่มสัญญา" },
-        { status: 400 }
+        { status: 400, headers: noStore }
       );
     }
 
@@ -144,27 +154,32 @@ export async function POST(req: Request) {
       where: {
         roomId,
         startDate: { lt: endDt },
-        endDate:   { gt: start },
+        endDate: { gt: start },
       },
-      select: { id: true, startDate: true, endDate: true },
+      select: { id: true },
     });
     if (overlap) {
       return NextResponse.json(
         { success: false, error: "ช่วงวันที่สัญญาทับซ้อนกับสัญญาเดิมของห้องนี้" },
-        { status: 400 }
+        { status: 400, headers: noStore }
       );
     }
 
-    // 6) อีเมลจากเลขห้อง + กันข้อมูลซ้ำ (email/nationalId)
+    // 6) อีเมลจากเลขห้อง + กันข้อมูลซ้ำ (email / nationalId)
     const email = sanitizeEmail(emailPrefix, room.roomNumber, emailDomain);
     const dup = await db.profile.findFirst({
-      where: { OR: [{ email }, { nationalId }] },
+      where: {
+        OR: [
+          { email: { equals: email, mode: "insensitive" } },
+          { nationalId },
+        ],
+      },
       select: { id: true },
     });
     if (dup) {
       return NextResponse.json(
         { success: false, error: "ข้อมูลซ้ำ (email หรือ เลขบัตรประชาชน)" },
-        { status: 409 }
+        { status: 409, headers: noStore }
       );
     }
 
@@ -201,7 +216,7 @@ export async function POST(req: Request) {
           dormOwnerName,
           dormAddress,
           contractDate: cDate, // วันที่ทำสัญญาจริง
-          startDate: start,    // วันที่เริ่มสัญญา/เข้าพัก
+          startDate: start, // วันที่เริ่มสัญญา/เข้าพัก
           endDate: endDt,
           rentPerMonth,
           tenantNationalId: nationalId,
@@ -221,21 +236,21 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { success: true, message: "สร้างผู้เช่าพร้อมสัญญาแล้ว", user, email },
-      { status: 201 }
+      { status: 201, headers: noStore }
     );
   } catch (err: unknown) {
     const e = err as PrismaKnownError;
-    if (e.code === "P2002") {
+    if (e?.code === "P2002") {
       const fields = e.meta?.target?.join(", ") ?? "field";
       return NextResponse.json(
         { success: false, error: `ข้อมูลซ้ำใน ${fields}` },
-        { status: 409 }
+        { status: 409, headers: noStore }
       );
     }
     console.error("create-with-contract error:", err);
     return NextResponse.json(
       { success: false, error: "เกิดข้อผิดพลาดภายในระบบ" },
-      { status: 500 }
+      { status: 500, headers: noStore }
     );
   }
 }

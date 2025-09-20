@@ -1,29 +1,88 @@
-// /api/admin/tenants/route.ts
-import { NextResponse } from "next/server";
+// src/app/api/admin/tenants/route.ts
+import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/prisma";
-import { getRoleFromCookie } from "@/lib/auth";
+import { checkAdminAuthOrReject } from "@/lib/auth";
+import { z } from "zod";
 
-export async function GET() {
+/** เส้นทางนี้อาศัยคุกกี้ → ปิดแคชทั้งหมด */
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+const noStore = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+} as const;
+
+/** Query params: ค้นหา/กรอง/แบ่งหน้า */
+const QuerySchema = z.object({
+  q: z.string().trim().optional(),
+  // กรองด้วยสถานะจริงของห้อง หรือกรณีไม่มีห้อง = MOVEOUT
+  status: z.enum(["OCCUPIED", "AVAILABLE", "MAINTENANCE", "MOVEOUT"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export async function GET(req: NextRequest) {
+  // 🔐 ตรวจสิทธิ์แอดมิน
+  const auth = await checkAdminAuthOrReject();
+  if (auth instanceof NextResponse) {
+    auth.headers.set("Cache-Control", noStore["Cache-Control"]);
+    return auth;
+  }
+
   try {
-    // 1) ตรวจสิทธิ์ ต้องเป็น admin
-    const role = await getRoleFromCookie();
-    if (role !== "admin") {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // 🧭 อ่าน query
+    const url = new URL(req.url);
+    const parsed = QuerySchema.safeParse({
+      q: url.searchParams.get("q") ?? undefined,
+      status: url.searchParams.get("status") ?? undefined,
+      page: url.searchParams.get("page") ?? undefined,
+      pageSize: url.searchParams.get("pageSize") ?? undefined,
+    });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.flatten() },
+        { status: 400, headers: noStore }
+      );
     }
 
-    // 2) ดึงข้อมูล profile + room + สัญญาล่าสุด + สถานะคำร้องย้ายออก (เผื่อใช้)
-    const tenants = await db.profile.findMany({
-      where: { role: "user" },
+    const { q, status, page, pageSize } = parsed.data;
+
+    // ✅ where แบบ type-safe โดยอิงจาก signature ของ Prisma client
+    type FindManyArg = NonNullable<Parameters<typeof db.profile.findMany>[0]>;
+    const where: NonNullable<FindManyArg["where"]> = {
+      role: "user",
+      ...(q
+        ? {
+            OR: [
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName:  { contains: q, mode: "insensitive" } },
+              { email:     { contains: q, mode: "insensitive" } },
+              { room: { is: { roomNumber: { contains: q, mode: "insensitive" } } } },
+            ],
+          }
+        : {}),
+      ...(status
+        ? status === "MOVEOUT"
+          ? { roomId: null }
+          : { room: { is: { status } } }
+        : {}),
+    };
+
+    // 📊 นับทั้งหมดเพื่อทำ pagination
+    const total = await db.profile.count({ where });
+
+    // 📥 ดึงรายการ
+    const rows = await db.profile.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
       include: {
         room: {
-          select: {
-            id: true,
-            roomNumber: true,
-            status: true,
-            assignedAt: true,
-          },
+          select: { id: true, roomNumber: true, status: true, assignedAt: true },
         },
-        // สัญญาล่าสุด (เรียงตามวันเริ่มสัญญาใหม่สุด)
+        // สัญญาล่าสุด
         contracts: {
           orderBy: { startDate: "desc" },
           take: 1,
@@ -32,26 +91,29 @@ export async function GET() {
             startDate: true,
             endDate: true,
             rentPerMonth: true,
-            contractDate: true,      // วันที่ทำสัญญาจริง
+            contractDate: true,
             contractImages: true,
           },
         },
-        // เอาไว้เช็คว่ามีคำร้องย้ายออกที่ยังค้างอยู่ไหม
+        // คำร้องย้ายออกที่ยังค้าง
         moveOutRequests: {
           where: { status: "PENDING_APPROVAL" },
-          select: { id: true },
           take: 1,
+          select: { id: true },
+        },
+        // บิลค้างชำระ (ไว้ทำสรุป)
+        bills: {
+          where: { status: "UNPAID" },
+          select: { id: true, totalAmount: true },
         },
       },
-      orderBy: { createdAt: "desc" },
     });
 
-    // 3) map payload ให้ frontend ใช้งานสะดวก
-    const users = tenants.map((t) => {
-      const latest =
-        Array.isArray(t.contracts) && t.contracts.length > 0 ? t.contracts[0] : null;
-
-      // ถ้าไม่มีห้อง ให้ตีความเป็น MOVEOUT (ไว้ใช้ใน UI โดยไม่แตะ enum เดิม)
+    // 🧮 map payload ให้ FE ใช้งานสะดวก
+    const users = rows.map((t) => {
+      const latest = t.contracts?.[0] ?? null;
+      const unpaidBillsCount = t.bills.length;
+      const unpaidBillsTotal = t.bills.reduce((s, b) => s + b.totalAmount, 0);
       const derivedStatus = t.room ? t.room.status : ("MOVEOUT" as const);
 
       return {
@@ -60,40 +122,55 @@ export async function GET() {
         lastName: t.lastName,
         email: t.email,
         phone: t.phone,
-        birthday: t.birthday,     // ISO string (NextResponse.json จะ serialize เป็น ISO ให้)
+        birthday: t.birthday,
         address: t.address,
         nationalId: t.nationalId,
         userId: t.userId,
         isActive: t.isActive,
 
         // ห้อง
-        roomId: t.room?.id ?? null,              // ✅ เพิ่มไว้ให้ใช้ต่อ (ต่อสัญญา/อ้างอิง)
+        roomId: t.room?.id ?? null,
         roomNumber: t.room?.roomNumber ?? null,
-        status: t.room?.status ?? null,          // ค่าเดิม (AVAILABLE/OCCUPIED/MAINTENANCE)
-        derivedStatus,                           // ✅ ถ้าไม่มีห้องจะแสดง MOVEOUT ได้ง่าย
-        roomStartDate: t.roomStartDate ?? null,  // วันที่เข้าพักจริง
-        assignedAt: t.room?.assignedAt ?? null,  // วันที่ระบบจัดสรรห้อง (แสดงว่า "กำหนดห้องเมื่อไหร่")
+        status: t.room?.status ?? null, // ค่าสถานะเดิมของห้อง
+        derivedStatus,                  // ถ้าไม่มีห้อง -> "MOVEOUT"
+        roomStartDate: t.roomStartDate ?? null,
+        assignedAt: t.room?.assignedAt ?? null,
 
         // สัญญาล่าสุด
         contractId: latest?.id ?? null,
         contractStartDate: latest?.startDate ?? null,
         contractEndDate: latest?.endDate ?? null,
-        contractDate: latest?.contractDate ?? null, // วันที่ทำสัญญาจริง
+        contractDate: latest?.contractDate ?? null,
         rentPerMonth: latest?.rentPerMonth ?? null,
-        contractImages: latest?.contractImages ?? [],
+        contractImages: Array.isArray(latest?.contractImages)
+          ? latest!.contractImages
+          : [],
 
-        // สถานะคำร้องย้ายออกที่ยังค้าง
+        // คำร้องย้ายออกที่ยังค้าง + สรุปบิลค้าง
         hasPendingMoveOut: t.moveOutRequests.length > 0,
+        unpaidBillsCount,
+        unpaidBillsTotal,
       };
     });
 
-    // 4) ส่งข้อมูลออก
-    return NextResponse.json({ success: true, users }, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        users,
+        meta: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      },
+      { status: 200, headers: noStore }
+    );
   } catch (err) {
     console.error("GET /api/admin/tenants error:", err);
     return NextResponse.json(
       { success: false, error: "เกิดข้อผิดพลาดภายในระบบ" },
-      { status: 500 }
+      { status: 500, headers: noStore }
     );
   }
 }

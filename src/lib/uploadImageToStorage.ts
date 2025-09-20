@@ -1,50 +1,104 @@
-import { v2 as cloudinary } from "cloudinary";
+// src/lib/uploadImageToStorage.ts
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
-  api_key: process.env.CLOUDINARY_API_KEY!,
-  api_secret: process.env.CLOUDINARY_API_SECRET!,
-});
+let _configured = false;
+function ensureCloudinaryConfigured() {
+  if (_configured) return;
+  const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } =
+    process.env;
 
-// อย่า log secret ใน production จริง ๆ นะครับ
-if (process.env.NODE_ENV !== "production") {
-  console.log("Cloudinary config:", {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY ? "✅" : "❌",
-    api_secret: process.env.CLOUDINARY_API_SECRET ? "✅" : "❌",
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    throw new Error(
+      "Missing Cloudinary envs (CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET)"
+    );
+  }
+  cloudinary.config({
+    cloud_name: CLOUDINARY_CLOUD_NAME,
+    api_key: CLOUDINARY_API_KEY,
+    api_secret: CLOUDINARY_API_SECRET,
   });
+  _configured = true;
+
+  if (process.env.NODE_ENV !== "production") {
+    // แสดงแค่ว่ามีค่า ไม่ log ค่าเต็ม
+    console.log("Cloudinary ready:", {
+      cloud_name: CLOUDINARY_CLOUD_NAME,
+      api_key: CLOUDINARY_API_KEY ? "✅" : "❌",
+      api_secret: CLOUDINARY_API_SECRET ? "✅" : "❌",
+    });
+  }
 }
 
+type SingleUploadOpts = {
+  folder?: string;           // โฟลเดอร์บน Cloudinary
+  filename?: string;         // public_id (ไม่ต้องใส่นามสกุล)
+  overwrite?: boolean;       // default: false
+  uniqueFilename?: boolean;  // default: auto จาก filename
+  tags?: string[];           // ออปชัน
+};
+
+/** อัปโหลดรูปเดียว — คืน secure_url */
 export async function uploadImageToStorage(
-  file: File,
-  filename?: string,
-  folder = "contracts"
+  file: Blob, // รับ File หรือ Blob ก็ได้
+  opts: SingleUploadOpts = {}
 ): Promise<string> {
+  ensureCloudinaryConfigured();
+
+  const {
+    folder = "contracts",
+    filename,
+    overwrite = false,
+    uniqueFilename = !filename,
+    tags,
+  } = opts;
+
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
-        public_id: filename,           
+        public_id: filename, // ถ้าส่งมา จะใช้เป็นชื่อไฟล์
         resource_type: "image",
-        overwrite: false,
-        unique_filename: !filename,   
+        overwrite,
+        unique_filename: uniqueFilename,
+        tags,
+        // ถ้าต้องการให้ Cloudinary แปลงเป็น webp/avif อัตโนมัติ:
+        // format: "auto",
       },
-      (error, result) => {
+      (error, result?: UploadApiResponse) => {
         if (error || !result) return reject(error);
         resolve(result.secure_url);
       }
     );
+
+    // กัน error ระหว่างส่ง buffer
+    stream.on("error", reject);
     stream.end(buffer);
   });
 }
 
-export async function uploadManyImagesToStorage(files: File[], prefix = "contract"): Promise<string[]> {
+type MultiUploadOpts = {
+  folder?: string;
+  prefix?: string; // คำนำหน้าชื่อไฟล์
+};
+
+/** อัปโหลดหลายรูป — คืน array ของ secure_url */
+export async function uploadManyImagesToStorage(
+  files: Blob[],
+  { folder = "contracts", prefix = "contract" }: MultiUploadOpts = {}
+): Promise<string[]> {
+  ensureCloudinaryConfigured();
   const now = Date.now();
-  const tasks = files.map((f, idx) =>
-    uploadImageToStorage(f, `${prefix}-${now}-${idx + 1}`, "contracts")
+
+  const tasks = files.map((f, i) =>
+    uploadImageToStorage(f, {
+      folder,
+      filename: `${prefix}-${now}-${i + 1}`,
+      overwrite: false,
+      uniqueFilename: false, // เรากำหนดชื่อเองแล้ว
+    })
   );
   return Promise.all(tasks);
 }

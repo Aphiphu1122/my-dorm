@@ -189,14 +189,14 @@ export default function RoomManagementPage() {
           <div className="w-full">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6 px-4 md:px-6">
               <div>
-                <h1 className="text-3xl font-bold text-[#0F3659]">Room Management</h1>
-                <p className="text-gray-600">Manage rooms and status</p>
+                <h1 className="text-3xl font-bold text-[#0F3659]">จัดการห้องพัก</h1>
+                <p className="text-gray-600">จัดการห้องพักและสถานะ</p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex items-center gap-2">
                   <label htmlFor="filter" className="font-medium text-gray-700 whitespace-nowrap">
-                    Status:
+                    สถานะ:
                   </label>
                   <select
                     id="filter"
@@ -204,10 +204,10 @@ export default function RoomManagementPage() {
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value as "ALL" | RoomStatus)}
                   >
-                    <option value="ALL">All</option>
-                    <option value="AVAILABLE">Available</option>
-                    <option value="OCCUPIED">Occupied</option>
-                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="ALL">ทั้งหมด</option>
+                    <option value="AVAILABLE">ว่าง</option>
+                    <option value="OCCUPIED">มีผู้เช่า</option>
+                    <option value="MAINTENANCE">ซ่อมบำรุง</option>
                   </select>
                 </div>
 
@@ -219,7 +219,7 @@ export default function RoomManagementPage() {
                     pattern="\d*"
                     maxLength={4}
                     className="border border-gray-300 rounded-md px-4 py-2 w-full sm:w-52 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Room number"
+                    placeholder="หมายเลขห้อง"
                     value={newRoomNumber}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, "").slice(0, 4);
@@ -231,7 +231,7 @@ export default function RoomManagementPage() {
                     onClick={handleAddRoom}
                     disabled={!newRoomNumber || !isValidRoomNumber}
                   >
-                    + Add Room
+                    + เพิ่มห้อง
                   </button>
                 </div>
               </div>
@@ -283,12 +283,12 @@ export default function RoomManagementPage() {
 
                         <div className="text-sm mt-2">
                           <div>
-                            Status:{" "}
+                            สถานะ:{" "}
                             {room.status === "AVAILABLE"
-                              ? "Available"
+                              ? "ว่าง"
                               : room.status === "OCCUPIED"
-                              ? "Occupied"
-                              : "Maintenance"}
+                              ? "มีผู้เช่า"
+                              : "ซ่อมบำรุง"}
                           </div>
 
                           {tenantName || room.tenant?.email ? (
@@ -309,9 +309,9 @@ export default function RoomManagementPage() {
                           value={room.status}
                           onChange={(e) => handleStatusChange(room, e.target.value as RoomStatus)}
                         >
-                          <option value="AVAILABLE">Available</option>
-                          <option value="OCCUPIED">Occupied</option>
-                          <option value="MAINTENANCE">Maintenance</option>
+                          <option value="AVAILABLE">ว่าง</option>
+                          <option value="OCCUPIED">มีผู้เช่า</option>
+                          <option value="MAINTENANCE">ซ่อมบำรุง</option>
                         </select>
                       </div>
                     );
