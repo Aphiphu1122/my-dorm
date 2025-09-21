@@ -7,6 +7,8 @@ import Sidebar from "@/components/sidebar";
 import { Toaster, toast } from "react-hot-toast";
 
 /* =================== Types =================== */
+type DerivedStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE" | "MOVEOUT";
+
 interface Profile {
   id: string;
   firstName: string;
@@ -17,15 +19,21 @@ interface Profile {
   address: string;
   nationalId: string;
   userId: string;
+
   roomNumber: string | null;
-  status?: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE"; // backend อาจยังส่งมาได้ จึงคง type ไว้
+  // สถานะจากห้อง (อาจไม่มาก็ได้)
+  status?: Exclude<DerivedStatus, "MOVEOUT"> | null;
+  // สถานะที่คำนวณจากฝั่ง API (ถ้าไม่มีห้อง = MOVEOUT)
+  derivedStatus?: DerivedStatus;
+
   roomStartDate?: string | null;
   assignedAt?: string | null;
+
   contractStartDate?: string | null;
   contractEndDate?: string | null;
 }
 
-type RoomStatus = "ALL" | "AVAILABLE" | "OCCUPIED"; // ❌ เอา Maintenance ออกจากตัวกรอง
+type ListFilter = "ALL" | "OCCUPIED" | "MOVEOUT";
 
 interface RoomOption {
   id: string;
@@ -40,27 +48,15 @@ interface CreateTenantForm {
   address: string;
   nationalId: string;
   roomId: string;
-
   rentPerMonth: string;
-
-  /** วันที่เริ่มสัญญา (ใช้คิดช่วงสัญญา) */
   startDate: string;
-
-  /** วันที่ทำสัญญาจริง (ไม่บังคับ) */
   contractDate?: string;
-
-  /** วันที่เข้าพักจริง (ไม่บังคับ, เว้นว่างได้ถ้ายังไม่เข้าพัก) */
   moveInDate?: string;
-
   dormOwnerName: string;
   dormAddress: string;
-
-  // ขั้นสูง
   tempPassword: string;
   emailPrefix: string;
   emailDomain: string;
-
-  // URLs (สูงสุด 10)
   contractImage1: string;
   contractImage2: string;
   contractImage3: string;
@@ -104,6 +100,9 @@ function extractErrorMessage(v: unknown, fallback = "เกิดข้อผิ
   return fallback;
 }
 
+const statusRank = (s: DerivedStatus) =>
+  s === "OCCUPIED" ? 0 : s === "AVAILABLE" ? 1 : s === "MAINTENANCE" ? 2 : 3;
+
 /* =================== Utils =================== */
 const toThaiDate = (iso?: string | null) => {
   if (!iso) return "-";
@@ -126,22 +125,15 @@ const defaultForm: CreateTenantForm = {
   address: "",
   nationalId: "",
   roomId: "",
-
   rentPerMonth: "3000",
-
   startDate: "",
   contractDate: "",
   moveInDate: "",
-
   dormOwnerName: "John Doe",
   dormAddress: "มหาวิทยาลัยพะเยา",
-
-  // ขั้นสูง
   tempPassword: "dorm001",
   emailPrefix: "Dormmy",
   emailDomain: "@dorm.com",
-
-  // รูป
   contractImage1: "",
   contractImage2: "",
   contractImage3: "",
@@ -159,7 +151,8 @@ export default function AdminTenantsPage() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<RoomStatus>("ALL");
+  // ✅ เปลี่ยนตัวกรอง: ALL / OCCUPIED / MOVEOUT
+  const [filterStatus, setFilterStatus] = useState<ListFilter>("ALL");
 
   /* ============== Modal + form states ============== */
   const [showModal, setShowModal] = useState(false);
@@ -181,14 +174,18 @@ export default function AdminTenantsPage() {
   const loadTenants = async () => {
     setLoading(true);
     try {
+      // ไม่ส่ง query → ให้ API จัดเรียง OCCUPIED มาก่อน MOVEOUT อยู่แล้ว
       const res = await fetch("/api/admin/tenants", { credentials: "include" });
-      const data = await res.json();
-      const list: Profile[] = res.ok && Array.isArray(data?.users) ? data.users : [];
+      const json: unknown = await res.json();
+      const list: Profile[] =
+        isRecord(json) && Array.isArray((json as Record<string, unknown>).users)
+          ? ((json as Record<string, unknown>).users as Profile[])
+          : [];
       setUsers(list);
     } catch (e) {
       console.error("loadTenants error:", e);
       setUsers([]);
-      setBanner({ type: "error", text: "โหลดรายชื่อผู้เช่าไม่สำเร็จ" });
+      setBanner({ type: "error", text: "ไม่สามารถโหลดรายชื่อผู้เช่าได้" });
     } finally {
       setLoading(false);
     }
@@ -197,8 +194,11 @@ export default function AdminTenantsPage() {
   const loadAvailableRooms = async () => {
     try {
       const res = await fetch("/api/admin/rooms/available", { credentials: "include" });
-    const data = await res.json();
-      const rooms: RoomOption[] = res.ok && Array.isArray(data?.rooms) ? data.rooms : [];
+      const json: unknown = await res.json();
+      const rooms: RoomOption[] =
+        isRecord(json) && Array.isArray((json as Record<string, unknown>).rooms)
+          ? ((json as Record<string, unknown>).rooms as RoomOption[])
+          : [];
       setAvailableRooms(rooms);
     } catch {
       setAvailableRooms([]);
@@ -228,15 +228,32 @@ export default function AdminTenantsPage() {
   }, [form.roomId, availableRooms]);
 
   /* ============== Derived ============== */
+  // กรองและเรียงด้านหน้าเพิ่ม (กันกรณีมีการเปลี่ยนข้อมูลแบบไคลเอนต์)
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const fullText = `${user.firstName ?? ""} ${user.lastName ?? ""} ${user.email ?? ""}`.toLowerCase();
-      const matchesSearch = fullText.includes(searchTerm.toLowerCase());
+    const term = searchTerm.trim().toLowerCase();
+
+    const visible = users.filter((u) => {
+      const ds: DerivedStatus =
+        u.derivedStatus ?? (u.roomNumber ? (u.status ?? "AVAILABLE") : "MOVEOUT");
+      const matchesText = `${u.firstName ?? ""} ${u.lastName ?? ""} ${u.email ?? ""}`
+        .toLowerCase()
+        .includes(term);
+
       const matchesStatus =
         filterStatus === "ALL" ||
-        (filterStatus === "OCCUPIED" && user.status === "OCCUPIED") ||
-        (filterStatus === "AVAILABLE" && user.status === "AVAILABLE");
-      return matchesSearch && matchesStatus;
+        (filterStatus === "OCCUPIED" && ds === "OCCUPIED") ||
+        (filterStatus === "MOVEOUT" && ds === "MOVEOUT");
+
+      return matchesText && matchesStatus;
+    });
+
+    // เรียง: OCCUPIED → AVAILABLE → MAINTENANCE → MOVEOUT
+    return visible.sort((a, b) => {
+      const sa: DerivedStatus =
+        a.derivedStatus ?? (a.roomNumber ? (a.status ?? "AVAILABLE") : "MOVEOUT");
+      const sb: DerivedStatus =
+        b.derivedStatus ?? (b.roomNumber ? (b.status ?? "AVAILABLE") : "MOVEOUT");
+      return statusRank(sa) - statusRank(sb);
     });
   }, [users, searchTerm, filterStatus]);
 
@@ -261,7 +278,7 @@ export default function AdminTenantsPage() {
     setSelectedFiles(files.slice(0, 10)); // สูงสุด 10 รูป
   };
 
-  /** อัปโหลดรูปแบบไม่ใช้ any + ป้อนลง contractImage1..10 */
+  /** อัปโหลดรูปสัญญา */
   const uploadSelected = async () => {
     if (!selectedFiles.length) {
       toast.error("กรุณาเลือกไฟล์ก่อน");
@@ -272,19 +289,16 @@ export default function AdminTenantsPage() {
       const fd = new FormData();
       selectedFiles.forEach((f) => fd.append("files", f));
 
-      const res = await fetch("/api/admin/uploads/contract", {
+      const res = await fetch("/api/admin/tenants/uploads/contract", {
         method: "POST",
         body: fd,
         credentials: "include",
       });
 
       const json: unknown = await res.json();
-      if (!res.ok) {
-        throw new Error(extractErrorMessage(json, "อัปโหลดล้มเหลว"));
-      }
-      const data = json as UploadRes;
+      if (!res.ok) throw new Error(extractErrorMessage(json, "อัปโหลดล้มเหลว"));
 
-      // ใส่ URL ลงในช่อง contractImage1..10
+      const data = json as UploadRes;
       setForm((prev) => {
         const patch: Partial<CreateTenantForm> = {};
         imageKeys.forEach((key, i) => {
@@ -382,16 +396,12 @@ export default function AdminTenantsPage() {
       nationalId: form.nationalId.trim(),
       roomId: form.roomId,
       rentPerMonth: Number(form.rentPerMonth),
-
       startDate: form.startDate,
       contractDate: form.contractDate || undefined,
       moveInDate: form.moveInDate || undefined,
-
       dormOwnerName: form.dormOwnerName.trim(),
       dormAddress: form.dormAddress.trim(),
-
       tempPassword: form.tempPassword,
-
       contractImages: images,
       emailPrefix: form.emailPrefix.trim() || "Dormmy",
       emailDomain: form.emailDomain.trim() || "@dorm.com",
@@ -404,7 +414,7 @@ export default function AdminTenantsPage() {
         credentials: "include",
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data: unknown = await res.json();
       if (!res.ok) throw new Error(extractErrorMessage(data, "ไม่สามารถสร้างผู้เช่าได้"));
 
       toast.success("สร้างผู้เช่าพร้อมสัญญาสำเร็จ");
@@ -422,7 +432,8 @@ export default function AdminTenantsPage() {
 
   /* ลบผู้ใช้ (ห้ามลบถ้า OCCUPIED) */
   const requestDelete = (u: Profile) => {
-    if (u.status === "OCCUPIED") {
+    const ds: DerivedStatus = u.derivedStatus ?? (u.roomNumber ? (u.status ?? "AVAILABLE") : "MOVEOUT");
+    if (ds === "OCCUPIED") {
       toast.error("ไม่สามารถลบผู้ใช้ที่กำลังเช่าอยู่ได้");
       return;
     }
@@ -437,8 +448,8 @@ export default function AdminTenantsPage() {
         method: "DELETE",
         credentials: "include",
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(extractErrorMessage(data, "ลบผู้ใช้ไม่สำเร็จ"));
+      const json: unknown = await res.json();
+      if (!res.ok) throw new Error(extractErrorMessage(json, "ลบผู้ใช้ไม่สำเร็จ"));
 
       toast.success("ลบผู้ใช้เรียบร้อย");
       setDeleteTarget(null);
@@ -448,6 +459,17 @@ export default function AdminTenantsPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const statusBadge = (s: DerivedStatus) => {
+    const map: Record<DerivedStatus, { text: string; cls: string }> = {
+      OCCUPIED: { text: "กำลังเช่า", cls: "bg-green-100 text-green-700" },
+      AVAILABLE: { text: "ว่าง", cls: "bg-slate-100 text-slate-700" },
+      MAINTENANCE: { text: "ซ่อมบำรุง", cls: "bg-amber-100 text-amber-700" },
+      MOVEOUT: { text: "ย้ายออก", cls: "bg-fuchsia-100 text-fuchsia-700" },
+    };
+    const it = map[s];
+    return <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${it.cls}`}>{it.text}</span>;
   };
 
   /* ============== UI ============== */
@@ -482,15 +504,15 @@ export default function AdminTenantsPage() {
               />
             </div>
 
-            {/* ❌ ไม่มีตัวเลือก Maintenance แล้ว */}
+            {/* ✅ ตัวกรองใหม่: ทั้งหมด / กำลังเช่า / ย้ายออก */}
             <select
               className="border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none"
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as RoomStatus)}
+              onChange={(e) => setFilterStatus(e.target.value as ListFilter)}
             >
               <option value="ALL">ทั้งหมด</option>
-              <option value="AVAILABLE">ว่าง</option>
-              <option value="OCCUPIED">ใช้งาน</option>
+              <option value="OCCUPIED">กำลังเช่า</option>
+              <option value="MOVEOUT">ย้ายออก</option>
             </select>
 
             <button
@@ -523,14 +545,8 @@ export default function AdminTenantsPage() {
                 <div key={i} className="bg-white rounded-2xl shadow p-4 h-44 animate-pulse" />
               ))
             : filteredUsers.map((user) => {
-                // ถ้าไม่มีห้อง -> แสดงเป็น MOVEOUT
-                const derivedStatus = user.roomNumber ? (user.status ?? "-") : ("MOVEOUT" as const);
-                const badgeClass =
-                  derivedStatus === "OCCUPIED"
-                    ? "bg-green-100 text-green-700"
-                    : derivedStatus === "MOVEOUT"
-                    ? "bg-fuchsia-100 text-fuchsia-700"
-                    : "bg-slate-100 text-slate-600";
+                const ds: DerivedStatus =
+                  user.derivedStatus ?? (user.roomNumber ? (user.status ?? "AVAILABLE") : "MOVEOUT");
 
                 const initials =
                   `${(user.firstName ?? "").charAt(0)}${(user.lastName ?? "").charAt(0)}`.toUpperCase() || "?";
@@ -553,9 +569,7 @@ export default function AdminTenantsPage() {
                           <div className="text-sm text-slate-500">{user.email}</div>
                         </div>
                       </div>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}`}>
-                        {derivedStatus}
-                      </span>
+                      {statusBadge(ds)}
                     </div>
 
                     {/* body */}
@@ -587,8 +601,8 @@ export default function AdminTenantsPage() {
                       <button
                         type="button"
                         onClick={() => requestDelete(user)}
-                        disabled={user.status === "OCCUPIED"}
-                        title={user.status === "OCCUPIED" ? "ผู้ใช้นี้กำลังเช่าอยู่ ไม่สามารถลบได้" : "ลบผู้ใช้"}
+                        disabled={ds === "OCCUPIED"}
+                        title={ds === "OCCUPIED" ? "ผู้ใช้นี้กำลังเช่าอยู่ ไม่สามารถลบได้" : "ลบผู้ใช้"}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-rose-700 border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <i className="ri-delete-bin-line" />
@@ -745,7 +759,7 @@ export default function AdminTenantsPage() {
                       />
                     </div>
 
-                    {/* ✅ ช่องใหม่: วันที่ทำสัญญาจริง */}
+                    {/* วันที่ทำสัญญาจริง */}
                     <div className="flex flex-col">
                       <label className="text-sm font-medium text-slate-700 mb-1">วันที่ทำสัญญาฉบับจริง (ถ้ามี)</label>
                       <input
@@ -758,11 +772,9 @@ export default function AdminTenantsPage() {
                       />
                     </div>
 
-                    {/* ✅ ช่องใหม่: วันที่เข้าพักจริง (เว้นว่างได้ถ้ายังไม่เข้าพัก) */}
+                    {/* วันที่เข้าพักจริง */}
                     <div className="flex flex-col md:col-span-2">
-                      <label className="text-sm font-medium text-slate-700 mb-1">
-                        วันที่เข้าพักจริง
-                      </label>
+                      <label className="text-sm font-medium text-slate-700 mb-1">วันที่เข้าพักจริง</label>
                       <input
                         type="date"
                         name="moveInDate"

@@ -17,10 +17,22 @@ const noStore = {
 const QuerySchema = z.object({
   q: z.string().trim().optional(),
   // กรองด้วยสถานะจริงของห้อง หรือกรณีไม่มีห้อง = MOVEOUT
-  status: z.enum(["OCCUPIED", "AVAILABLE", "MAINTENANCE", "MOVEOUT"]).optional(),
+  status: z
+    .enum(["OCCUPIED", "AVAILABLE", "MAINTENANCE", "MOVEOUT"])
+    .optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
+
+type DerivedStatus = "OCCUPIED" | "AVAILABLE" | "MAINTENANCE" | "MOVEOUT";
+const statusRank = (s: DerivedStatus | null) =>
+  s === "OCCUPIED"
+    ? 0
+    : s === "AVAILABLE"
+    ? 1
+    : s === "MAINTENANCE"
+    ? 2
+    : /* MOVEOUT หรือ null */ 3;
 
 export async function GET(req: NextRequest) {
   // 🔐 ตรวจสิทธิ์แอดมิน
@@ -56,12 +68,13 @@ export async function GET(req: NextRequest) {
         ? {
             OR: [
               { firstName: { contains: q, mode: "insensitive" } },
-              { lastName:  { contains: q, mode: "insensitive" } },
-              { email:     { contains: q, mode: "insensitive" } },
+              { lastName: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
               { room: { is: { roomNumber: { contains: q, mode: "insensitive" } } } },
             ],
           }
         : {}),
+      // 🔎 กรอง: ถ้า status=MOVEOUT -> ผู้ที่ไม่มี roomId
       ...(status
         ? status === "MOVEOUT"
           ? { roomId: null }
@@ -72,7 +85,7 @@ export async function GET(req: NextRequest) {
     // 📊 นับทั้งหมดเพื่อทำ pagination
     const total = await db.profile.count({ where });
 
-    // 📥 ดึงรายการ
+    // 📥 ดึงรายการ (เรียงตามเวลาเพื่อความเสถียรของ paging)
     const rows = await db.profile.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -109,12 +122,12 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // 🧮 map payload ให้ FE ใช้งานสะดวก
+    // 🧮 map payload ให้ FE ใช้งานสะดวก + คำนวณ derivedStatus
     const users = rows.map((t) => {
       const latest = t.contracts?.[0] ?? null;
       const unpaidBillsCount = t.bills.length;
       const unpaidBillsTotal = t.bills.reduce((s, b) => s + b.totalAmount, 0);
-      const derivedStatus = t.room ? t.room.status : ("MOVEOUT" as const);
+      const derivedStatus: DerivedStatus = t.room ? t.room.status : "MOVEOUT";
 
       return {
         id: t.id,
@@ -132,7 +145,7 @@ export async function GET(req: NextRequest) {
         roomId: t.room?.id ?? null,
         roomNumber: t.room?.roomNumber ?? null,
         status: t.room?.status ?? null, // ค่าสถานะเดิมของห้อง
-        derivedStatus,                  // ถ้าไม่มีห้อง -> "MOVEOUT"
+        derivedStatus, // ถ้าไม่มีห้อง -> "MOVEOUT"
         roomStartDate: t.roomStartDate ?? null,
         assignedAt: t.room?.assignedAt ?? null,
 
@@ -150,7 +163,20 @@ export async function GET(req: NextRequest) {
         hasPendingMoveOut: t.moveOutRequests.length > 0,
         unpaidBillsCount,
         unpaidBillsTotal,
+
+        // ไว้ช่วยเรียงเสถียรเมื่อคะแนนเท่ากัน
+        createdAt: (t as { createdAt?: Date }).createdAt ?? null,
       };
+    });
+
+    // ⬆️ จัดเรียงให้ OCCUPIED มาก่อน MOVEOUT (และสถานะอื่น ๆ ตามลำดับ)
+    users.sort((a, b) => {
+      const r = statusRank(a.derivedStatus) - statusRank(b.derivedStatus);
+      if (r !== 0) return r;
+      // สำรอง: ถ้าคะแนนเท่ากันให้เรียงตามเวลาสร้างใหม่ก่อน
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db_ = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return db_ - da;
     });
 
     return NextResponse.json(
