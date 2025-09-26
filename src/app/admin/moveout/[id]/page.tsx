@@ -1,32 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/sidebar";
 
+/* ================= Types ================= */
 type MoveOutStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+type BillStatus = "UNPAID" | "PENDING_APPROVAL" | "PAID";
 
 type Bill = {
   id: string;
-  billingMonth: string;
+  billingMonth: string; // ISO string from API (Date serialized)
   totalAmount: number;
-  status: string;
+  status: BillStatus;
 };
 
 type MoveOutRequest = {
   id: string;
   reason: string;
+  note?: string | null;
   moveOutDate: string;
   createdAt: string;
   status: MoveOutStatus;
-  imageUrl?: string;
+  imageUrl?: string | null;
   user: {
     firstName: string;
     lastName: string;
     email: string;
+    phone?: string;
     bills?: Bill[];
   };
   room: {
@@ -34,55 +38,146 @@ type MoveOutRequest = {
   };
 };
 
+type GetResponse =
+  | { success: true; request: MoveOutRequest }
+  | { success?: false; error: unknown };
+
+/* ================= Utils ================= */
+function formatMonthTH(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("th-TH", {
+    year: "numeric",
+    month: "long",
+  });
+}
+function formatDateTH(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("th-TH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === "object" && x !== null;
+}
+
+function extractErrorMessage(e: unknown): string {
+  if (!e) return "เกิดข้อผิดพลาด";
+  if (typeof e === "string") return e;
+
+  // Error object ทั่วไป
+  if (e instanceof Error && e.message) return e.message;
+
+  if (isRecord(e)) {
+    const obj = e as Record<string, unknown>;
+
+    // รูปแบบ { error: "..." }
+    const errVal = obj["error"];
+    if (typeof errVal === "string") return errVal;
+
+    // รูปแบบ Zod: { error: { formErrors: { formErrors: string[] } } }
+    if (isRecord(errVal)) {
+      const formErrorsObj = errVal["formErrors"];
+      if (isRecord(formErrorsObj)) {
+        const fe = formErrorsObj["formErrors"];
+        if (Array.isArray(fe) && fe.length) {
+          return fe.filter((s): s is string => typeof s === "string").join(", ");
+        }
+      }
+    }
+
+    // รูปแบบ { message: "..." }
+    const msg = obj["message"];
+    if (typeof msg === "string") return msg;
+  }
+
+  return "เกิดข้อผิดพลาด";
+}
+
+/* ================= Page ================= */
 export default function AdminMoveOutDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = params?.id as string | undefined;
+
   const [request, setRequest] = useState<MoveOutRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Confirm modal
   const [showConfirm, setShowConfirm] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<MoveOutStatus | null>(null);
+  const [confirmAction, setConfirmAction] = useState<MoveOutStatus | null>(
+    null
+  );
+  const [rejectNote, setRejectNote] = useState("");
+
+  const hasUnpaid = useMemo(
+    () => (request?.user?.bills?.length ?? 0) > 0,
+    [request]
+  );
 
   useEffect(() => {
+    if (!id) {
+      toast.error("ไม่พบรหัสคำร้อง");
+      router.push("/admin/moveout");
+      return;
+    }
     const fetchDetail = async () => {
+      setLoading(true);
       try {
         const res = await fetch(`/api/admin/moveout/${id}`, {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("ไม่พบคำร้อง");
-        const data = await res.json();
-        setRequest(data);
+        const data: GetResponse = await res.json();
+
+        if (!res.ok || !("success" in data) || !data.success) {
+          throw new Error(extractErrorMessage(data));
+        }
+        setRequest(data.request);
       } catch (err) {
         console.error(err);
-        toast.error("ไม่สามารถโหลดข้อมูลได้");
+        toast.error(extractErrorMessage(err));
       } finally {
         setLoading(false);
       }
     };
     fetchDetail();
-  }, [id]);
+  }, [id, router]);
 
   const handleConfirm = (status: MoveOutStatus) => {
     setConfirmAction(status);
+    setRejectNote("");
     setShowConfirm(true);
   };
 
   const handleUpdateStatus = async (status: MoveOutStatus) => {
-    setIsProcessing(true);
+    if (!id) return;
 
+    // client-side validation: require note when REJECTED
+    if (status === "REJECTED" && !rejectNote.trim()) {
+      toast.error("กรุณากรอกหมายเหตุเมื่อปฏิเสธคำร้อง");
+      return;
+    }
+
+    setIsProcessing(true);
     try {
       const res = await fetch(`/api/admin/moveout/${id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          ...(status === "REJECTED" ? { note: rejectNote.trim() } : {}),
+        }),
       });
 
-      if (!res.ok) throw new Error("ไม่สามารถอัปเดตสถานะได้");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(extractErrorMessage(data));
+      }
 
-      setRequest((prev) => (prev ? { ...prev, status } : prev));
+      setRequest((prev) => (prev ? { ...prev, status, note: data?.request?.note ?? prev.note } : prev));
       toast.success(
         `อัปเดตสถานะเป็น ${
           status === "APPROVED" ? "อนุมัติแล้ว" : "ปฏิเสธแล้ว"
@@ -91,7 +186,7 @@ export default function AdminMoveOutDetailPage() {
       router.push("/admin/moveout");
     } catch (err) {
       console.error(err);
-      toast.error("เกิดข้อผิดพลาด");
+      toast.error(extractErrorMessage(err));
     } finally {
       setIsProcessing(false);
       setShowConfirm(false);
@@ -115,12 +210,8 @@ export default function AdminMoveOutDetailPage() {
 
       <div className="flex-1 max-w-5xl mx-auto p-8">
         <div>
-          <h1 className="text-3xl font-bold text-[#0F3659]">
-            รายละเอียดคำร้องขอย้ายออก
-          </h1>
-          <p className="text-gray-600 mt-1">
-            จัดการคำร้องขอย้ายออกของผู้เช่าทั้งหมดในระบบ
-          </p>
+          <h1 className="text-3xl font-bold text-[#0F3659]">รายละเอียดคำร้องขอย้ายออก</h1>
+          <p className="text-gray-600 mt-1">จัดการคำร้องขอย้ายออกของผู้เช่า</p>
         </div>
 
         <div className="bg-white mt-5">
@@ -139,6 +230,12 @@ export default function AdminMoveOutDetailPage() {
                   <strong className="p-2 text-gray-700">อีเมล</strong>
                   <span className="text-right mr-5">{request.user.email}</span>
                 </div>
+                {request.user?.phone && (
+                  <div className="grid grid-cols-2 py-1">
+                    <strong className="p-2 text-gray-700">เบอร์โทร</strong>
+                    <span className="text-right mr-5">{request.user.phone}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -162,19 +259,25 @@ export default function AdminMoveOutDetailPage() {
                 <div className="grid grid-cols-2 py-1">
                   <strong className="p-2 text-gray-700">วันที่ส่งคำร้อง</strong>
                   <span className="text-right mr-5">
-                    {new Date(request.createdAt).toLocaleDateString("th-TH")}
+                    {formatDateTH(request.createdAt)}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 py-1">
                   <strong className="p-2 text-gray-700">วันที่จะย้ายออก</strong>
                   <span className="text-right mr-5">
-                    {new Date(request.moveOutDate).toLocaleDateString("th-TH")}
+                    {formatDateTH(request.moveOutDate)}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 py-1">
                   <strong className="p-2 text-gray-700">เหตุผล</strong>
                   <span className="text-right mr-5">{request.reason}</span>
                 </div>
+                {request.note && (
+                  <div className="grid grid-cols-2 py-1">
+                    <strong className="p-2 text-gray-700">หมายเหตุ</strong>
+                    <span className="text-right mr-5">{request.note}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -182,7 +285,7 @@ export default function AdminMoveOutDetailPage() {
           {/* Attached image */}
           {request.imageUrl && (
             <div className="mt-5">
-              <p>
+              <p className="mb-2">
                 <strong>รูปประกอบ:</strong>
               </p>
               <Image
@@ -202,18 +305,27 @@ export default function AdminMoveOutDetailPage() {
               <div className="bg-white shadow-md rounded-lg p-2">
                 <div className="divide-y divide-gray-200">
                   {request.user.bills.map((bill) => (
-                    <div
-                      key={bill.id}
-                      className="grid grid-cols-4 items-center py-2"
-                    >
+                    <div key={bill.id} className="grid grid-cols-4 items-center py-2">
                       <span className="font-medium text-gray-700">
-                        {bill.billingMonth}
+                        {formatMonthTH(bill.billingMonth)}
                       </span>
                       <span className="text-gray-600 text-right">
                         {bill.totalAmount.toLocaleString()} ฿
                       </span>
-                      <span className="text-right text-red-600 font-semibold">
-                        {bill.status}
+                      <span
+                        className={`text-right font-semibold ${
+                          bill.status === "UNPAID"
+                            ? "text-red-600"
+                            : bill.status === "PAID"
+                            ? "text-green-600"
+                            : "text-yellow-700"
+                        }`}
+                      >
+                        {bill.status === "UNPAID"
+                          ? "ยังไม่ชำระ"
+                          : bill.status === "PAID"
+                          ? "ชำระแล้ว"
+                          : "รอตรวจสอบ"}
                       </span>
                       <Link
                         href={`/admin/bills/${bill.id}`}
@@ -225,10 +337,13 @@ export default function AdminMoveOutDetailPage() {
                   ))}
                 </div>
               </div>
+              <p className="text-sm text-gray-600">
+                * ระบบจะไม่อนุมัติคำร้องถ้ายังมีบิลค้างชำระ
+              </p>
             </div>
           )}
 
-          {/* Status */}
+          {/* Status + Actions */}
           <div className="space-y-2 mt-5">
             <h2 className="text-xl font-semibold text-blue-950">สถานะ</h2>
             <div className="bg-white shadow-md rounded-lg p-2">
@@ -258,8 +373,12 @@ export default function AdminMoveOutDetailPage() {
                     <>
                       <button
                         onClick={() => handleConfirm("APPROVED")}
-                        disabled={isProcessing}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
+                        disabled={isProcessing || hasUnpaid}
+                        className={`px-4 py-2 rounded text-white transition disabled:opacity-50 ${
+                          hasUnpaid
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-green-600 hover:bg-green-700"
+                        }`}
                       >
                         อนุมัติ
                       </button>
@@ -292,19 +411,28 @@ export default function AdminMoveOutDetailPage() {
               <h2 className="text-xl font-bold text-center text-gray-800">
                 ยืนยันการดำเนินการ
               </h2>
-              <p className="text-center text-gray-600">
-                คุณแน่ใจหรือไม่ว่าต้องการ{" "}
-                <span
-                  className={
-                    confirmAction === "APPROVED"
-                      ? "text-green-600 font-semibold"
-                      : "text-red-600 font-semibold"
-                  }
-                >
-                  {confirmAction === "APPROVED" ? "อนุมัติ" : "ปฏิเสธ"}
-                </span>{" "}
-                คำร้องนี้?
-              </p>
+
+              {confirmAction === "REJECTED" ? (
+                <>
+                  <p className="text-center text-gray-600">
+                    กรุณาระบุ <span className="font-semibold">หมายเหตุ</span> สำหรับการปฏิเสธคำร้องนี้
+                  </p>
+                  <textarea
+                    className="w-full rounded border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-red-300"
+                    placeholder="ระบุเหตุผล/หมายเหตุ..."
+                    rows={4}
+                    value={rejectNote}
+                    onChange={(e) => setRejectNote(e.target.value)}
+                  />
+                </>
+              ) : (
+                <p className="text-center text-gray-600">
+                  คุณแน่ใจหรือไม่ว่าต้องการ{" "}
+                  <span className="text-green-600 font-semibold">อนุมัติ</span>{" "}
+                  คำร้องนี้?
+                </p>
+              )}
+
               <div className="flex justify-center gap-4 pt-2">
                 <button
                   onClick={() => setShowConfirm(false)}
@@ -313,15 +441,13 @@ export default function AdminMoveOutDetailPage() {
                   ยกเลิก
                 </button>
                 <button
-                  onClick={() =>
-                    confirmAction && handleUpdateStatus(confirmAction)
-                  }
+                  onClick={() => confirmAction && handleUpdateStatus(confirmAction)}
                   className={`px-4 py-2 rounded text-white flex items-center gap-2 ${
                     confirmAction === "APPROVED"
                       ? "bg-green-600 hover:bg-green-700"
                       : "bg-red-600 hover:bg-red-700"
                   }`}
-                  disabled={isProcessing}
+                  disabled={isProcessing || (confirmAction === "REJECTED" && !rejectNote.trim())}
                 >
                   {isProcessing && (
                     <svg
