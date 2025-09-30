@@ -17,7 +17,7 @@ const noStore = {
 type ContractUpdateData = Partial<{
   startDate: Date;
   endDate: Date;
-  contractDate: Date; // ❗ ไม่รองรับ null ตาม Option A
+  contractDate: Date;
   rentPerMonth: number;
   dormOwnerName: string;
   dormAddress: string;
@@ -29,16 +29,7 @@ interface PrismaKnownError {
   meta?: { target?: string[] };
 }
 
-/**
- * RouteContext: แบบปลอดภัยกว่า any — รองรับทั้งกรณีที่ Next ส่ง params เป็น Promise หรือ เป็น object
- * `params` shape สามารถขยายได้ถ้าคุณมีพารามิเตอร์อื่นนอกจาก `id`
- */
-type RouteContext = {
-  params: Promise<{ id: string }> | { id: string };
-};
-
 /** ---------- Zod ---------- */
-// ❗ ไม่อนุญาต null สำหรับ contractDate
 const UpdateSchema = z
   .object({
     startDate: z.string().datetime().optional(),
@@ -52,7 +43,10 @@ const UpdateSchema = z
   .refine((o) => Object.keys(o).length > 0, { message: "ไม่มีข้อมูลสำหรับแก้ไข" });
 
 /* =============================== GET =============================== */
-export async function GET(_req: NextRequest, context: RouteContext) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -60,9 +54,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
   }
 
   try {
-    // await works with both Promise<{id}> and {id}
-    const params = await context.params;
-    const id = params.id;
+    const { id } = params;
 
     const contract = await db.contract.findUnique({
       where: { id },
@@ -109,7 +101,10 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 }
 
 /* ============================== PATCH ============================== */
-export async function PATCH(req: NextRequest, context: RouteContext) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -117,8 +112,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   }
 
   try {
-    const params = await context.params;
-    const id = params.id;
+    const { id } = params;
 
     const json = await req.json();
     const parsed = UpdateSchema.safeParse(json);
@@ -178,11 +172,10 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // 4) เตรียม updateData (ไม่รองรับ null สำหรับ contractDate)
+    // 4) เตรียม updateData
     const updateData: ContractUpdateData = {};
     if (payload.startDate) updateData.startDate = newStart;
     if (payload.endDate) updateData.endDate = newEnd;
-
     if (typeof payload.contractDate === "string") {
       updateData.contractDate = new Date(payload.contractDate);
     }
@@ -242,7 +235,10 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 }
 
 /* ============================== DELETE ============================== */
-export async function DELETE(_req: NextRequest, context: RouteContext) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -250,8 +246,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   }
 
   try {
-    const params = await context.params;
-    const id = params.id;
+    const { id } = params;
 
     const existed = await db.contract.findUnique({
       where: { id },
