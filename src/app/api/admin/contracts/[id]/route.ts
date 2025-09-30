@@ -29,6 +29,14 @@ interface PrismaKnownError {
   meta?: { target?: string[] };
 }
 
+/**
+ * RouteContext: แบบปลอดภัยกว่า any — รองรับทั้งกรณีที่ Next ส่ง params เป็น Promise หรือ เป็น object
+ * `params` shape สามารถขยายได้ถ้าคุณมีพารามิเตอร์อื่นนอกจาก `id`
+ */
+type RouteContext = {
+  params: Promise<{ id: string }> | { id: string };
+};
+
 /** ---------- Zod ---------- */
 // ❗ ไม่อนุญาต null สำหรับ contractDate
 const UpdateSchema = z
@@ -44,10 +52,7 @@ const UpdateSchema = z
   .refine((o) => Object.keys(o).length > 0, { message: "ไม่มีข้อมูลสำหรับแก้ไข" });
 
 /* =============================== GET =============================== */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, context: RouteContext) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -55,6 +60,8 @@ export async function GET(
   }
 
   try {
+    // await works with both Promise<{id}> and {id}
+    const params = await context.params;
     const id = params.id;
 
     const contract = await db.contract.findUnique({
@@ -102,10 +109,7 @@ export async function GET(
 }
 
 /* ============================== PATCH ============================== */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, context: RouteContext) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -113,7 +117,9 @@ export async function PATCH(
   }
 
   try {
+    const params = await context.params;
     const id = params.id;
+
     const json = await req.json();
     const parsed = UpdateSchema.safeParse(json);
     if (!parsed.success) {
@@ -164,7 +170,10 @@ export async function PATCH(
     });
     if (overlap) {
       return NextResponse.json(
-        { success: false, error: "ช่วงวันที่สัญญาทับซ้อนกับสัญญาอื่นของห้องนี้" },
+        {
+          success: false,
+          error: "ช่วงวันที่สัญญาทับซ้อนกับสัญญาอื่นของห้องนี้",
+        },
         { status: 400, headers: noStore }
       );
     }
@@ -233,10 +242,7 @@ export async function PATCH(
 }
 
 /* ============================== DELETE ============================== */
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: NextRequest, context: RouteContext) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
@@ -244,7 +250,9 @@ export async function DELETE(
   }
 
   try {
+    const params = await context.params;
     const id = params.id;
+
     const existed = await db.contract.findUnique({
       where: { id },
       select: { id: true },

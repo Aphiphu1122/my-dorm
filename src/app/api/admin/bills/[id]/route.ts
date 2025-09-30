@@ -17,7 +17,7 @@ const noStore = {
 /** ---------- GET: ดึงบิลแบบละเอียด (แอดมิน) ---------- */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // <-- params เป็น Promise
 ) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
@@ -25,7 +25,7 @@ export async function GET(
     return auth;
   }
 
-  const billId = params.id;
+  const { id: billId } = await params;
 
   try {
     const bill = await db.bill.findUnique({
@@ -79,7 +79,7 @@ const PatchSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // <-- params เป็น Promise
 ) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
@@ -87,7 +87,7 @@ export async function PATCH(
     return auth;
   }
 
-  const billId = params.id;
+  const { id: billId } = await params;
 
   try {
     const json = await req.json();
@@ -157,15 +157,15 @@ export async function PATCH(
 /** ---------- DELETE: ลบบิล ---------- */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // <-- params เป็น Promise
 ) {
   const auth = await checkAdminAuthOrReject();
   if (auth instanceof NextResponse) {
     auth.headers.set("Cache-Control", noStore["Cache-Control"]);
     return auth;
   }
-
-  const billId = params.id;
+  
+  const { id: billId } = await params;
 
   try {
     const deleted = await db.bill.delete({
